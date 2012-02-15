@@ -419,7 +419,7 @@ void SendDefaultMenu_custom_npc_buffmaster(Player* pPlayer, Creature* pCreature,
 			}
 
 			pCreature->CastSpell(pPlayer,38588,false); // Healing effect
-			pPlayer->RemoveAurasDueToSpell(15007,0);
+			pPlayer->RemoveAurasDueToSpell(15007);
 			pPlayer->CLOSE_GOSSIP_MENU();
 			break;
 
