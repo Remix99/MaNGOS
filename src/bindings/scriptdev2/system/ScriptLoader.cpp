@@ -12,13 +12,13 @@ extern void AddSC_battlegroundIC();
 // custom
 extern void AddSC_mob_teleguy();
 extern void AddSC_npc_arena_honor();
-//extern void AddSC_custom_npc_teleportmaster();
-//extern void AddSC_custom_npc_spellmaster();
-//extern void AddSC_custom_npc_renamecharacter();
-//extern void AddSC_custom_npc_professionmaster();
-//extern void AddSC_custom_npc_buffmaster();
-//extern void AddSC_custom_items();
-//extern void AddSC_custom_gameobjects();
+extern void AddSC_custom_npc_teleportmaster();
+extern void AddSC_custom_npc_spellmaster();
+extern void AddSC_custom_npc_renamecharacter();
+extern void AddSC_custom_npc_professionmaster();
+extern void AddSC_custom_npc_buffmaster();
+extern void AddSC_custom_items();
+extern void AddSC_custom_gameobjects();
 
 // examples
 extern void AddSC_example_creature();
@@ -549,13 +549,13 @@ void AddScripts()
     // custom
     AddSC_mob_teleguy();
     AddSC_npc_arena_honor();
-    //AddSC_custom_npc_teleportmaster();
-    //AddSC_custom_npc_spellmaster();
-    //AddSC_custom_npc_renamecharacter();
-    //AddSC_custom_npc_professionmaster();
-    //AddSC_custom_npc_buffmaster();
-    //AddSC_custom_items();
-    //AddSC_custom_gameobjects();
+    AddSC_custom_npc_teleportmaster();
+    AddSC_custom_npc_spellmaster();
+    AddSC_custom_npc_renamecharacter();
+    AddSC_custom_npc_professionmaster();
+    AddSC_custom_npc_buffmaster();
+    AddSC_custom_items();
+    AddSC_custom_gameobjects();
 
     // examples
     AddSC_example_creature();
