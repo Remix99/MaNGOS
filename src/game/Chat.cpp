@@ -1063,6 +1063,16 @@ void ChatHandler::PSendSysMessage(const char *format, ...)
     SendSysMessage(str);
 }
 
+void ChatHandler::PSendGlobalSysMessage(const char *format, ...)
+{
+    va_list ap;
+    char str [2048];
+    va_start(ap, format);
+    vsnprintf(str,2048,format, ap );
+    va_end(ap);
+    SendGlobalSysMessage(str);
+}
+
 void ChatHandler::CheckIntegrity( ChatCommand *table, ChatCommand *parentCommand )
 {
     for(uint32 i = 0; table[i].Name != NULL; ++i)

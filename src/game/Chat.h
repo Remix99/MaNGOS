@@ -97,6 +97,7 @@ class MANGOS_DLL_SPEC ChatHandler
         void SendSysMessage(          int32     entry);
         void PSendSysMessage(         const char *format, ...) ATTR_PRINTF(2,3);
         void PSendSysMessage(         int32     entry, ...  );
+        void PSendGlobalSysMessage(   const char *format, ...) ATTR_PRINTF(2,3);
 
         void SendGlobalSysMessage(const char *str);
         void PSendGlobalSysMessage(const char *format, ...) ATTR_PRINTF(2,3);

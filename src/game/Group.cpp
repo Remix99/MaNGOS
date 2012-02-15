@@ -34,6 +34,7 @@
 #include "Util.h"
 #include "LootMgr.h"
 #include "LFGMgr.h"
+#include "Chat.h"
 
 // Playerbot  	
 #include "playerbot/PlayerbotMgr.h"
@@ -2041,6 +2042,7 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
     uint32 sum_level = 0;
     Player* member_with_max_level = NULL;
     Player* not_gray_member_with_max_level = NULL;
+    Player* victim = NULL;
 
     GetDataForXPAtKill(pVictim,count,sum_level,member_with_max_level,not_gray_member_with_max_level,player_tap);
 
@@ -2053,6 +2055,9 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
         bool is_raid = PvP ? false : sMapStore.LookupEntry(pVictim->GetMapId())->IsRaid() && isRaidGroup();
         bool is_dungeon = PvP ? false : sMapStore.LookupEntry(pVictim->GetMapId())->IsDungeon();
         float group_rate = MaNGOS::XP::xp_in_group_rate(count,is_raid);
+    
+        if(pVictim->GetTypeId() == TYPEID_PLAYER && PvP)
+            victim = (Player*)pVictim;
 
         for(GroupReference *itr = GetFirstMember(); itr != NULL; itr = itr->next())
         {
@@ -2068,14 +2073,31 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
                 continue;                               // member (alive or dead) or his corpse at req. distance
 
             RewardGroupAtKill_helper(pGroupGuy, pVictim, count, PvP, group_rate, sum_level, is_dungeon, not_gray_member_with_max_level, member_with_max_level, xp);
-        }
+      
+      // Reward group members
+            if(victim && (player_tap->GetSession()->GetRemoteAddress() != victim->GetSession()->GetRemoteAddress()))
+            {
+                ChatHandler(pGroupGuy).PSendSysMessage(PVP_CHAT_COLOR"Group member %s killed %s, you have been awarded a Badge of Justice", player_tap->GetName(), victim->GetName());
+                pGroupGuy->StoreNewItemInBestSlots(29434, 1);
+            }
+    }
 
         if(player_tap)
         {
             // member (alive or dead) or his corpse at req. distance
             if(player_tap->IsAtGroupRewardDistance(pVictim))
                 RewardGroupAtKill_helper(player_tap, pVictim, count, PvP, group_rate, sum_level, is_dungeon, not_gray_member_with_max_level, member_with_max_level, xp);
-        }
+        
+      // Handle victims death for PvP mod
+            if(victim && (player_tap->GetSession()->GetRemoteAddress() != victim->GetSession()->GetRemoteAddress()))
+            {
+                victim->HandlePvPDeath(player_tap);
+                ChatHandler(player_tap).PSendSysMessage(PVP_CHAT_COLOR"Group member %s killed %s, you have been awarded a Badge of Justice", player_tap->GetName(), victim->GetName());
+                player_tap->StoreNewItemInBestSlots(29434, 1);
+                player_tap->PvP_CurrentDeaths = 0;
+                player_tap->CastSpell(player_tap, 47883, true);
+            }
+    }
     }
 }
 

@@ -68,6 +68,9 @@ typedef std::deque<Mail*> PlayerMails;
 #define PLAYER_MAX_DAILY_QUESTS     25
 #define PLAYER_EXPLORED_ZONES_SIZE  128
 
+#define PVP_CHAT_COLOR "|c000000ff[PvP]|r|cFFDAA520" //(Blue)[PvP](Goldenrod)Message
+#define PVP_CHAT_GLOBAL_COLOR "|c00ff0000[PvP]|r|cFF32CD32" //(Red)[PvP](Lime Green)Message
+
 // Note: SPELLMOD_* values is aura types in fact
 enum SpellModType
 {
@@ -877,6 +880,7 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOADWEEKLYQUESTSTATUS,
     PLAYER_LOGIN_QUERY_LOADMONTHLYQUESTSTATUS,
     PLAYER_LOGIN_QUERY_LOADRANDOMBG,
+    PLAYER_LOGIN_QUERY_LOADPVP,
 
     MAX_PLAYER_LOGIN_QUERY
 };
@@ -1135,6 +1139,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool isGMVisible() const { return !(m_ExtraFlags & PLAYER_EXTRA_GM_INVISIBLE); }
         void SetGMVisible(bool on);
         void SetPvPDeath(bool on) { if (on) m_ExtraFlags |= PLAYER_EXTRA_PVP_DEATH; else m_ExtraFlags &= ~PLAYER_EXTRA_PVP_DEATH; }
+
+        void HandlePvPDeath(Player* pKiller);
 
         // 0 = own auction, -1 = enemy auction, 1 = goblin auction
         int GetAuctionAccessMode() const { return m_ExtraFlags & PLAYER_EXTRA_AUCTION_ENEMY ? -1 : (m_ExtraFlags & PLAYER_EXTRA_AUCTION_NEUTRAL ? 1 : 0); }
@@ -2010,6 +2016,24 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         //End of PvP System
 
+        /*********************************************************/
+        /***               CUSTOM PVP SYSTEM START             ***/
+        /*********************************************************/
+        uint32 PvP_TotalKills;
+        uint32 PvP_CurrentKills;
+
+        uint32 PvP_TotalDeaths;
+        uint32 PvP_CurrentDeaths;
+
+        uint32 PvP_KillStreak;
+        uint32 PvP_GroupKills;
+
+        uint32 PvP_LastKillGuid;
+        uint32 PvP_LastKillCount;
+
+        // End of custom PvP System
+    
+    
         void SetDrunkValue(uint16 newDrunkValue, uint32 itemid=0);
         uint16 GetDrunkValue() const { return m_drunk; }
         static DrunkenState GetDrunkenstateByValue(uint16 value);
@@ -2515,6 +2539,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _LoadBGData(QueryResult* result);
         void _LoadGlyphs(QueryResult *result);
         void _LoadIntoDataField(const char* data, uint32 startOffset, uint32 count);
+        void _LoadPvPData(QueryResult* result);
 
         /*********************************************************/
         /***                   SAVE SYSTEM                     ***/
@@ -2535,6 +2560,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _SaveGlyphs();
         void _SaveTalents();
         void _SaveStats();
+        void _SavePvPData();
 
         void _SetCreateBits(UpdateMask *updateMask, Player *target) const;
         void _SetUpdateBits(UpdateMask *updateMask, Player *target) const;
