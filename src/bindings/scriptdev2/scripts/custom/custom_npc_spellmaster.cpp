@@ -112,7 +112,7 @@ bool GossipHello_custom_npc_spellmaster(Player* pPlayer, Creature* pCreature)
         pCreature->MonsterWhisper("You need more levels to learn the spells!", pPlayer, false);
     }
 
-    pPlayer->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE,pCreature->GetGUID());
+    pPlayer->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE,pCreature->GetObjectGuid());
     return true;
 }
 

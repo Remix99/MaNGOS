@@ -30,7 +30,7 @@ bool GossipHello_custom_npc_renamecharacter(Player* pPlayer, Creature* pCreature
     pPlayer->ADD_GOSSIP_ITEM(0, "Do you want to rename your character ?", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
     pPlayer->ADD_GOSSIP_ITEM(0, "You're not interested.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
 
-    pPlayer->SEND_GOSSIP_MENU(907,pCreature->GetGUID());
+    pPlayer->SEND_GOSSIP_MENU(907,pCreature->GetObjectGuid());
     return true;
 }
 

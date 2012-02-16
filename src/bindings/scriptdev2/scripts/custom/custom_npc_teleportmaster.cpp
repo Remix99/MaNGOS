@@ -305,7 +305,7 @@ void ProcessMenu_custom_npc_teleportmaster(Player *player, Creature *Creature, u
 		if( GroupID==0 || (action<100 && GroupID>0) )
 			player->ADD_GOSSIP_ITEM( 4, "<- Main Menu", GOSSIP_SENDER_MAIN,  100000 );
 	}
-	player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE,Creature->GetGUID());
+	player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE,Creature->GetObjectGuid());
 	return;
 }
 
@@ -320,7 +320,7 @@ bool GossipHello_custom_npc_teleportmaster(Player *player, Creature *Creature)
 		return false;
 	}
 	// Make sure player is not in combat
-	if(!player->getAttackers().empty()){
+	if(!player->IsInCombat()){
 		player->CLOSE_GOSSIP_MENU();
 		Creature->MonsterWhisper("You are in combat!", player, false);
 		return false;
