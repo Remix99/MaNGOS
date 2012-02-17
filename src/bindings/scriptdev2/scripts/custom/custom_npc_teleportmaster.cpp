@@ -324,7 +324,7 @@ bool GossipHello_custom_npc_teleportmaster(Player *player, Creature *Creature)
     {
         player->CLOSE_GOSSIP_MENU();
         Creature->MonsterSay("You are in combat!", LANG_UNIVERSAL);
-        return true;
+        return false;
     }
 
 	ProcessMenu_custom_npc_teleportmaster(player, Creature,0,0,0);
