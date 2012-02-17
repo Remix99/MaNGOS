@@ -151,7 +151,7 @@ UPDATE `gameobject_template` SET `flags` = 0 WHERE `gameobject_template`.`entry`
 UPDATE `creature_template` SET `ScriptName`='boss_rotface', `AIName`=''  WHERE `entry`= 36627;
 UPDATE `gameobject_template` SET `faction` = '114' WHERE `gameobject_template`.`entry` IN (201370);
 UPDATE `gameobject` SET `state` = '0' WHERE `id` IN (201370);
-UPDATE `creature_template` SET `ScriptName`='mob_little_ooze', `AIName`='' WHERE `entry`= 36897;
+UPDATE `creature_template` SET `ScriptName`='mob_little_ooze', `AIName`='', `flags_extra` = `flags_extra`|0x100 WHERE `entry`= 36897;
 UPDATE `creature_template` SET `ScriptName`='mob_big_ooze', `AIName`='' WHERE `entry`= 36899;
 UPDATE `creature_template` SET `minlevel` = 80, `maxlevel` = 80, `AIName` ='', `faction_A`= 14, `faction_H` = 14, `ScriptName`='mob_rotface_ooze_dummy', `AIName`='', unit_flags = 524288, flags_extra = flags_extra | 2 WHERE `entry` IN (37013, 37986, 38548);
 UPDATE `creature_template` SET `minlevel` = 80, `maxlevel` = 80, `AIName` ='', `faction_A`= 2212, `faction_H` = 2212, `ScriptName`='mob_sticky_ooze', `AIName`='' WHERE `entry`= 37006;
