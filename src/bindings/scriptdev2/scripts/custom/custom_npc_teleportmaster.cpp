@@ -320,11 +320,12 @@ bool GossipHello_custom_npc_teleportmaster(Player *player, Creature *Creature)
 		return false;
 	}
 	// Make sure player is not in combat
-	if(!player->IsInCombat()){
-		player->CLOSE_GOSSIP_MENU();
-		Creature->MonsterWhisper("You are in combat!", player, false);
-		return false;
-	}
+    if (player->IsInCombat())
+    {
+        player->CLOSE_GOSSIP_MENU();
+        Creature->MonsterSay("You are in combat!", LANG_UNIVERSAL);
+        return true;
+    }
 
 	ProcessMenu_custom_npc_teleportmaster(player, Creature,0,0,0);
 	return true;
