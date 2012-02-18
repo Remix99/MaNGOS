@@ -111,7 +111,6 @@ struct MANGOS_DLL_DECL boss_rotfaceAI : public base_icc_bossAI
         Reset();
     }
 
-    uint32 m_uiBerserkTimer;
     uint32 m_uiSlimeSprayTimer;
     uint32 m_uiMutatedInfectionTimer;
     uint32 m_uiMutatedInfectionBeforeTimer;
@@ -121,7 +120,6 @@ struct MANGOS_DLL_DECL boss_rotfaceAI : public base_icc_bossAI
 
     void Reset()
     {
-        m_uiBerserkTimer = 5 * MINUTE * IN_MILLISECONDS;
         m_uiSlimeSprayTimer = urand(17000, 23000);
         m_uiVileGasTimer = 20000;
         m_uiMutatedInfectionTimer = m_uiMutatedInfectionBeforeTimer = 60000;

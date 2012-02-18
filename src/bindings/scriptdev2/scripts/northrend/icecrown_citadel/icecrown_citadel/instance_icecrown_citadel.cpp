@@ -1,26 +1,26 @@
 /* Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+*/
 
 /* ScriptData
 SDName: instance_icecrown_spire
 SD%Complete: 90%
-SDComment:  by michalpolko with special thanks to:
-            mangosR2 team and all who are supporting us with feedback, testing and fixes
-            TrinityCore for some info about spells IDs
-            everybody whom I forgot to mention here ;)
+SDComment: by michalpolko with special thanks to:
+mangosR2 team and all who are supporting us with feedback, testing and fixes
+TrinityCore for some info about spells IDs
+everybody whom I forgot to mention here ;)
 
 SDCategory: Icecrown Citadel
 EndScriptData */
@@ -31,8 +31,8 @@ EndScriptData */
 
 static Locations SpawnLoc[]=
 {
-    {-446.788971f, 2003.362915f, 191.233948f},  // 0 Horde ship enter
-    {-428.140503f, 2421.336914f, 191.233078f},  // 1 Alliance ship enter
+    {-446.788971f, 2003.362915f, 191.233948f}, // 0 Horde ship enter
+    {-428.140503f, 2421.336914f, 191.233078f}, // 1 Alliance ship enter
 };
 
 instance_icecrown_spire::instance_icecrown_spire(Map* pMap) : ScriptedInstance(pMap)
@@ -334,8 +334,6 @@ void instance_icecrown_spire::SetData(uint32 uiType, uint32 uiData)
          case TYPE_PUTRICIDE:
             m_auiEncounter[TYPE_PUTRICIDE] = uiData;
 
-            DoUseDoorOrButton(GO_SCIENTIST_DOOR);
-
             if (uiData == DONE)
             {
                 if (m_auiEncounter[TYPE_SINDRAGOSA] == DONE &&
@@ -344,6 +342,36 @@ void instance_icecrown_spire::SetData(uint32 uiType, uint32 uiData)
                     m_auiEncounter[TYPE_KINGS_OF_ICC] = DONE;
                 }
             }
+
+            {
+                // Proff sometimes does't trigger door, so let's check it explicitly
+                GameObject* pDoor = GetSingleGameObjectFromStorage(GO_SCIENTIST_DOOR);
+                if (pDoor)
+                {
+                    switch (uiData)
+                    {
+                        case IN_PROGRESS:
+                        case SPECIAL:
+                        {
+                            // Close door if it's open
+                            if (pDoor->getLootState() != GO_ACTIVATED)
+                                DoUseDoorOrButton(GO_SCIENTIST_DOOR);
+                            break;
+                        }
+                        case NOT_STARTED:
+                        case FAIL:
+                        case DONE:
+                        {
+                            // Open door if it's closed
+                            if (pDoor->getLootState() != GO_READY)
+                                DoUseDoorOrButton(GO_SCIENTIST_DOOR);
+                            break;
+                        }
+                        default: break;
+                    }
+                }
+            }
+
             break;
          case TYPE_BLOOD_COUNCIL:
             m_auiEncounter[TYPE_BLOOD_COUNCIL] = uiData;
