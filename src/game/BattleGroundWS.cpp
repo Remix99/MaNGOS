@@ -277,6 +277,9 @@ void BattleGroundWS::EventPlayerCapturedFlag(Player *Source)
     if (GetTeamScore(HORDE) == BG_WS_MAX_TEAM_SCORE)
         winner = HORDE;
 
+    // Award a mark to the capturer
+    Source->StoreNewItemInBestSlots(20558, 1);
+
     if (winner)
     {
         UpdateWorldState(BG_WS_FLAG_UNK_ALLIANCE, 0);
@@ -556,6 +559,20 @@ void BattleGroundWS::EndBattleGround(Team winner)
     //complete map_end rewards (even if no team wins)
     RewardHonorToTeam(GetBonusHonorFromKill(m_HonorEndKills), ALLIANCE);
     RewardHonorToTeam(GetBonusHonorFromKill(m_HonorEndKills), HORDE);
+
+    for(BattleGroundPlayerMap::iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+    {
+        uint32 team = itr->second.PlayerTeam;
+
+        Player *plr = sObjectMgr.GetPlayer(itr->first);
+        if (!plr)
+           continue;
+
+        if(team == winner)
+            plr->StoreNewItemInBestSlots(20558, 3);
+        else
+            plr->StoreNewItemInBestSlots(20558, 1);
+    }
 
     BattleGround::EndBattleGround(winner);
 }
