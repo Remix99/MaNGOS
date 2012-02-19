@@ -1,26 +1,26 @@
 /* Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-*/
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 /* ScriptData
 SDName: boss_lord_marrowgar
 SD%Complete: 99%
-SDComment: by michalpolko with special thanks to:
-mangosR2 team and all who are supporting us with feedback, testing and fixes
-TrinityCore for some info about spells IDs
-everybody whom I forgot to mention here ;)
+SDComment:  by michalpolko with special thanks to:
+            mangosR2 team and all who are supporting us with feedback, testing and fixes
+            TrinityCore for some info about spells IDs
+            everybody whom I forgot to mention here ;)
 
 SDCategory: Icecrown Citadel
 EndScriptData */
@@ -31,62 +31,62 @@ EndScriptData */
 // talks
 enum
 {
-    SAY_INTRO = -1631001,
-    SAY_AGGRO = -1631002,
-    SAY_BONE_STORM = -1631003,
-    SAY_BONE_SPIKE_1 = -1631004,
-    SAY_BONE_SPIKE_2 = -1631005,
-    SAY_BONE_SPIKE_3 = -1631006,
-    SAY_SLAY_1 = -1631007,
-    SAY_SLAY_2 = -1631008,
-    SAY_DEATH = -1631009,
-    SAY_BERSERK = -1631010,
+    SAY_INTRO                   = -1631001,
+    SAY_AGGRO                   = -1631002,
+    SAY_BONE_STORM              = -1631003,
+    SAY_BONE_SPIKE_1            = -1631004,
+    SAY_BONE_SPIKE_2            = -1631005,
+    SAY_BONE_SPIKE_3            = -1631006,
+    SAY_SLAY_1                  = -1631007,
+    SAY_SLAY_2                  = -1631008,
+    SAY_DEATH                   = -1631009,
+    SAY_BERSERK                 = -1631010,
 };
 
 // spells
 enum
 {
     //common
-    SPELL_BERSERK = 47008,
+    SPELL_BERSERK                           = 47008,
 
     //summons
-    NPC_BONE_SPIKE = 38711,
-    NPC_COLDFLAME = 36672,
+    NPC_BONE_SPIKE                          = 38711,
+    NPC_COLDFLAME                           = 36672,
 
     // Bone Slice
-    SPELL_BONE_SLICE_10 = 69055,
-    SPELL_BONE_SLICE_25 = 70814,
+    SPELL_BONE_SLICE_10                     = 69055,
+    SPELL_BONE_SLICE_25                     = 70814,
 
     // Bone Storm
-    SPELL_BONE_STORM = 69076,
+    SPELL_BONE_STORM                        = 69076,
 
     // Coldflame
-    SPELL_COLDFLAME = 69140, // not used, hacked with custom code
-    SPELL_COLDFLAME_AURA = 69145,
-    SPELL_COLDFLAME_X = 72705,
+    SPELL_COLDFLAME                         = 69140, // not used, hacked with custom code
+    SPELL_COLDFLAME_AURA                    = 69145,
+    SPELL_COLDFLAME_X                       = 72705,
 
     // Bone Spike
-    SPELL_BONE_SPIKE_10 = 69057,
-    SPELL_BONE_SPIKE_10_H = 72088,
-    SPELL_BONE_SPIKE_STORM_10 = 73144,
-    SPELL_BONE_SPIKE_25 = 70826,
-    SPELL_BONE_SPIKE_25_H = 72089,
-    SPELL_BONE_SPIKE_STORM_25 = 73145,
+    SPELL_BONE_SPIKE_10                     = 69057,
+    SPELL_BONE_SPIKE_10_H                   = 72088,
+    SPELL_BONE_SPIKE_STORM_10               = 73144,
+    SPELL_BONE_SPIKE_25                     = 70826,
+    SPELL_BONE_SPIKE_25_H                   = 72089,
+    SPELL_BONE_SPIKE_STORM_25               = 73145,
 
-    SPELL_IMPALED = 69065,
-    SPELL_VEHICLE_HARDCODED = 46598,
+    SPELL_IMPALED                           = 69065,
+    SPELL_VEHICLE_HARDCODED                 = 46598,
 
     // phases
-    PHASE_NORMAL = 1,
-    PHASE_BONE_STORM_CHARGE = 2,
-    PHASE_BONE_STORM_CHARGING = 3,
-    PHASE_BONE_STORM_COLDFLAME = 4,
+    PHASE_NORMAL                            = 1,
+    PHASE_BONE_STORM_CHARGE                 = 2,
+    PHASE_BONE_STORM_CHARGING               = 3,
+    PHASE_BONE_STORM_COLDFLAME              = 4,
 
     // others
-    POINT_CHARGE = 1,
+    POINT_CHARGE                            = 1,
 
-    MAX_CHARGES_NORMAL = 4,
-    MAX_CHARGES_HEROIC = 5,
+    MAX_CHARGES_NORMAL                      = 4,
+    MAX_CHARGES_HEROIC                      = 5,
 };
 
 /*####
@@ -120,17 +120,17 @@ struct MANGOS_DLL_DECL boss_lord_marrowgarAI : public base_icc_bossAI
     {
         SetCombatMovement(true);
 
-        m_uiPhase = PHASE_NORMAL;
+        m_uiPhase                   = PHASE_NORMAL;
 
-        m_uiBerserkTimer = 10 * MINUTE * IN_MILLISECONDS;
-        m_uiBoneSliceTimer = 10000;
-        m_uiColdflameTimer = 5000;
-        m_uiBoneSpikeTimer = 12000;
-        m_uiBoneStormTimer = 45000;
-        m_uiBoneStormChargeTimer = 3000;
+        m_uiBerserkTimer            = 10 * MINUTE * IN_MILLISECONDS;
+        m_uiBoneSliceTimer          = 10000;
+        m_uiColdflameTimer          = 5000;
+        m_uiBoneSpikeTimer          = 12000;
+        m_uiBoneStormTimer          = 45000;
+        m_uiBoneStormChargeTimer    = 3000;
         m_uiBoneStormColdflameTimer = 1000;
 
-        m_uiChargesCount = 0;
+        m_uiChargesCount            = 0;
 
         m_creature->SetSpeedRate(MOVE_RUN, 1.0f);
     }
@@ -195,7 +195,7 @@ struct MANGOS_DLL_DECL boss_lord_marrowgarAI : public base_icc_bossAI
         {
             float summon_x, summon_y, summon_z, ang;
             ang = m_creature->GetAngle(pTarget);
-            m_creature->GetNearPoint(m_creature, summon_x, summon_y, summon_z, m_creature->GetObjectBoundingRadius(), 5.0f, ang);
+            m_creature->GetNearPoint(m_creature, summon_x, summon_y, summon_z, m_creature->GetObjectBoundingRadius(), 10.0f, ang);
 
             m_creature->SummonCreature(NPC_COLDFLAME, summon_x, summon_y, summon_z, ang, TEMPSUMMON_TIMED_DESPAWN, 12000);
         }
