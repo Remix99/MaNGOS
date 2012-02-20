@@ -1,18 +1,18 @@
 /* Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-*/
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 /* ScriptData
 SDName: Boss_Darkweaver_Syth
@@ -25,41 +25,41 @@ EndScriptData */
 
 enum
 {
-    SAY_SUMMON = -1556000,
-    SAY_AGGRO_1 = -1556001,
-    SAY_AGGRO_2 = -1556002,
-    SAY_AGGRO_3 = -1556003,
-    SAY_SLAY_1 = -1556004,
-    SAY_SLAY_2 = -1556005,
-    SAY_DEATH = -1556006,
+    SAY_SUMMON                  = -1556000,
+    SAY_AGGRO_1                 = -1556001,
+    SAY_AGGRO_2                 = -1556002,
+    SAY_AGGRO_3                 = -1556003,
+    SAY_SLAY_1                  = -1556004,
+    SAY_SLAY_2                  = -1556005,
+    SAY_DEATH                   = -1556006,
 
     // TODO Heroic spells (shock, chain lightning) missing, unknown if IDs are correct
-    SPELL_FROST_SHOCK = 37865,
-    SPELL_FLAME_SHOCK = 34354,
-    SPELL_SHADOW_SHOCK = 30138,
-    SPELL_ARCANE_SHOCK = 37132,
+    SPELL_FROST_SHOCK           = 37865,
+    SPELL_FLAME_SHOCK           = 34354,
+    SPELL_SHADOW_SHOCK          = 30138,
+    SPELL_ARCANE_SHOCK          = 37132,
 
-    SPELL_CHAIN_LIGHTNING = 39945,
+    SPELL_CHAIN_LIGHTNING       = 39945,
 
-    SPELL_SUMMON_SYTH_FIRE = 33537, // Spawns 19203
-    SPELL_SUMMON_SYTH_ARCANE = 33538, // Spawns 19205
-    SPELL_SUMMON_SYTH_FROST = 33539, // Spawns 19204
-    SPELL_SUMMON_SYTH_SHADOW = 33540, // Spawns 19206
+    SPELL_SUMMON_SYTH_FIRE      = 33537,                    // Spawns 19203
+    SPELL_SUMMON_SYTH_ARCANE    = 33538,                    // Spawns 19205
+    SPELL_SUMMON_SYTH_FROST     = 33539,                    // Spawns 19204
+    SPELL_SUMMON_SYTH_SHADOW    = 33540,                    // Spawns 19206
 
     // Npc entries
-    NPC_FIRE_ELEMENTAL = 19203,
-    NPC_FROST_ELEMENTAL = 19204,
-    NPC_ARCANE_ELEMENTAL = 19205,
-    NPC_SHADOW_ELEMENTAL = 19206,
+    NPC_FIRE_ELEMENTAL          = 19203,
+    NPC_FROST_ELEMENTAL         = 19204,
+    NPC_ARCANE_ELEMENTAL        = 19205,
+    NPC_SHADOW_ELEMENTAL        = 19206,
 
-    SPELL_FLAME_BUFFET = 33526,
-    SPELL_FLAME_BUFFET_H = 38141,
-    SPELL_ARCANE_BUFFET = 33527,
-    SPELL_ARCANE_BUFFET_H = 38138,
-    SPELL_FROST_BUFFET = 33528,
-    SPELL_FROST_BUFFET_H = 38142,
-    SPELL_SHADOW_BUFFET = 33529,
-    SPELL_SHADOW_BUFFET_H = 38143,
+    SPELL_FLAME_BUFFET          = 33526,
+    SPELL_FLAME_BUFFET_H        = 38141,
+    SPELL_ARCANE_BUFFET         = 33527,
+    SPELL_ARCANE_BUFFET_H       = 38138,
+    SPELL_FROST_BUFFET          = 33528,
+    SPELL_FROST_BUFFET_H        = 38142,
+    SPELL_SHADOW_BUFFET         = 33529,
+    SPELL_SHADOW_BUFFET_H       = 38143,
 };
 
 struct MANGOS_DLL_DECL boss_darkweaver_sythAI : public ScriptedAI
@@ -77,21 +77,17 @@ struct MANGOS_DLL_DECL boss_darkweaver_sythAI : public ScriptedAI
     uint32 m_uiShadowshockTimer;
     uint32 m_uiChainlightningTimer;
 
-    bool m_bCanSummon90;
-    bool m_bCanSummon50;
-    bool m_bCanSummon10;
+    float m_fHpCheck;
 
     void Reset()
     {
-        m_uiFlameshockTimer = 2000;
-        m_uiArcaneshockTimer = 4000;
-        m_uiFrostshockTimer = 6000;
-        m_uiShadowshockTimer = 8000;
+        m_uiFlameshockTimer     = 2000;
+        m_uiArcaneshockTimer    = 4000;
+        m_uiFrostshockTimer     = 6000;
+        m_uiShadowshockTimer    = 8000;
         m_uiChainlightningTimer = 15000;
 
-        m_bCanSummon90 = false;
-        m_bCanSummon50 = false;
-        m_bCanSummon10 = false;
+        m_fHpCheck              = 90.0f;
     }
 
     void Aggro(Unit* pWho)
@@ -148,8 +144,8 @@ struct MANGOS_DLL_DECL boss_darkweaver_sythAI : public ScriptedAI
             m_creature->InterruptNonMeleeSpells(false);
 
         DoCastSpellIfCan(m_creature, SPELL_SUMMON_SYTH_ARCANE, CAST_TRIGGERED); //front
-        DoCastSpellIfCan(m_creature, SPELL_SUMMON_SYTH_FIRE, CAST_TRIGGERED); //back
-        DoCastSpellIfCan(m_creature, SPELL_SUMMON_SYTH_FROST, CAST_TRIGGERED); //left
+        DoCastSpellIfCan(m_creature, SPELL_SUMMON_SYTH_FIRE,   CAST_TRIGGERED); //back
+        DoCastSpellIfCan(m_creature, SPELL_SUMMON_SYTH_FROST,  CAST_TRIGGERED); //left
         DoCastSpellIfCan(m_creature, SPELL_SUMMON_SYTH_SHADOW, CAST_TRIGGERED); //right
     }
 
@@ -158,22 +154,11 @@ struct MANGOS_DLL_DECL boss_darkweaver_sythAI : public ScriptedAI
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        if (m_creature->GetHealthPercent() < 90.0f && !m_bCanSummon90)
+        // Summon elementals at 90%, 50% and 10% health
+        if (m_creature->GetHealthPercent() < m_fHpCheck)
         {
             SythSummoning();
-            m_bCanSummon90 = true;
-        }
-
-        if (m_creature->GetHealthPercent() < 50.0f && !m_bCanSummon50)
-        {
-            SythSummoning();
-            m_bCanSummon50 = true;
-        }
-
-        if (m_creature->GetHealthPercent() < 10.0f && !m_bCanSummon10)
-        {
-            SythSummoning();
-            m_bCanSummon10 = true;
+            m_fHpCheck -= 40.0f;
         }
 
         if (m_uiFlameshockTimer < uiDiff)
