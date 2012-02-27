@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="base">
@@ -459,7 +459,6 @@
     <ClCompile Include="..\scripts\eastern_kingdoms\blackwing_lair\instance_blackwing_lair.cpp">
       <Filter>scripts\eastern_kingdoms\blackwing_lair</Filter>
     </ClCompile>
-<<<<<<< HEAD
     <ClCompile Include="..\scripts\eastern_kingdoms\blasted_lands.cpp">
       <Filter>scripts\eastern_kingdoms</Filter>
     </ClCompile>
@@ -468,10 +467,9 @@
     </ClCompile>
     <ClCompile Include="..\scripts\eastern_kingdoms\burning_steppes.cpp">
       <Filter>scripts\eastern_kingdoms</Filter>
-=======
+    </ClCompile>
     <ClCompile Include="..\scripts\eastern_kingdoms\deadmines\boss_mr_smite.cpp">
       <Filter>scripts\eastern_kingdoms\deadmines</Filter>
->>>>>>> ffcf70dd7e44e8566120c51dcf32915a37396e99
     </ClCompile>
     <ClCompile Include="..\scripts\eastern_kingdoms\deadmines\deadmines.cpp">
       <Filter>scripts\eastern_kingdoms\deadmines</Filter>
@@ -1000,13 +998,14 @@
     </ClCompile>
     <ClCompile Include="..\scripts\kalimdor\razorfen_downs\boss_tuten_kash.cpp">
       <Filter>scripts\kalimdor\razorfen_downs</Filter>
+    </ClCompile>
     <ClCompile Include="..\scripts\kalimdor\razorfen_downs\razorfen_downs.cpp">
       <Filter>scripts\kalimdor\razorfen_downs</Filter>
     </ClCompile>
     <ClCompile Include="..\scripts\kalimdor\razorfen_kraul\instance_razorfen_kraul.cpp">
       <Filter>scripts\kalimdor\razorfen_kraul</Filter>
     </ClCompile>
-	<ClCompile Include="..\scripts\kalimdor\razorfen_kraul\razorfen_kraul.cpp">
+    <ClCompile Include="..\scripts\kalimdor\razorfen_kraul\razorfen_kraul.cpp">
       <Filter>scripts\kalimdor\razorfen_kraul</Filter>
     </ClCompile>
     <ClCompile Include="..\scripts\kalimdor\ruins_of_ahnqiraj\boss_ayamiss.cpp">
@@ -1786,7 +1785,7 @@
     <ClCompile Include="..\scripts\outland\tempest_keep\botanica\boss_warp_splinter.cpp">
       <Filter>scripts\outland\tempest_keep\botanica</Filter>
     </ClCompile>
-	<ClCompile Include="..\scripts\outland\tempest_keep\the_eye\boss_alar.cpp">
+    <ClCompile Include="..\scripts\outland\tempest_keep\the_eye\boss_alar.cpp">
       <Filter>scripts\outland\tempest_keep\the_eye</Filter>
     </ClCompile>
     <ClCompile Include="..\scripts\outland\tempest_keep\the_eye\boss_astromancer.cpp">
@@ -1825,7 +1824,7 @@
     <ClCompile Include="..\scripts\world\areatrigger_scripts.cpp">
       <Filter>scripts\world</Filter>
     </ClCompile>
-	<ClCompile Include="..\scripts\world\bosses_emerald_dragons.cpp">
+    <ClCompile Include="..\scripts\world\bosses_emerald_dragons.cpp">
       <Filter>scripts\world</Filter>
     </ClCompile>
     <ClCompile Include="..\scripts\world\go_scripts.cpp">
@@ -1861,7 +1860,12 @@
     <ClCompile Include="..\system\system.cpp">
       <Filter>system</Filter>
     </ClCompile>
-    <ClCompile Include="..\ScriptMgr.cpp" />
+    <ClCompile Include="..\ScriptMgr.cpp">
+      <Filter>system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\scripts\world\pet_scripts.cpp">
+      <Filter>scripts\world</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\base\BSW_ai.h">
@@ -2110,7 +2114,9 @@
     <ClInclude Include="..\config.h" />
     <ClInclude Include="..\sd2_revision_nr.h" />
     <ClInclude Include="..\sd2_revision_sql.h" />
-    <ClInclude Include="..\ScriptMgr.h" />
+    <ClInclude Include="..\ScriptMgr.h">
+      <Filter>system</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\revision.h" />
