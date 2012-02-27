@@ -2864,7 +2864,7 @@ void ObjectMgr::LoadPetScalingData()
         return;
     }
 
-    BarGoLink bar( (int)result->GetRowCount() );
+    BarGoLink bar((int)result->GetRowCount());
 
     m_PetScalingData.clear();
 
@@ -3000,11 +3000,11 @@ void ObjectMgr::LoadAntiCheatConfig()
 
         std::string zonesList = fields[5+ANTICHEAT_CHECK_PARAMETERS*2+ANTICHEAT_ACTIONS*2].GetCppString();
 
-        Tokens _list = StrSplit(zonesList, " ");
+        Tokens _list(zonesList, ' ');
         if (!_list.empty())
         {
             for (Tokens::iterator itr = _list.begin(); itr != _list.end(); ++itr)
-                AntiCheatConfigEntry.disabledZones.insert(atol(itr->c_str()));
+                AntiCheatConfigEntry.disabledZones.insert(atol(*itr));
         }
 
         AntiCheatConfigEntry.description  = fields[6+ANTICHEAT_CHECK_PARAMETERS*2+ANTICHEAT_ACTIONS*2].GetCppString();
@@ -8558,7 +8558,7 @@ GameTele const* ObjectMgr::GetGameTele(const std::string& name) const
     // explicit name case
     std::wstring wname;
     if(!Utf8toWStr(name,wname))
-        return false;
+        return NULL;
 
     // converting string that we try to find to lower case
     wstrToLower( wname );
