@@ -881,7 +881,7 @@ struct MANGOS_DLL_DECL boss_thorimAI : public ScriptedAI
                                     Sif->setFaction(14);
                                     DoScriptText(SAY_SIF_EVENT, Sif);
                                     Sif->SetInCombatWithZone();
-                                    Sif->MonsterMoveJump(2134.719f, -263.148f, 419.846f, 0, 30, 30);
+                                    Sif->MonsterMoveToDestination(2134.719f, -263.148f, 419.846f, 0, 30, 30);
                                     if (m_pInstance)
                                         m_pInstance->SetSpecialAchievementCriteria(TYPE_ACHIEV_SIFFED, true);
                                 }
