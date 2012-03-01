@@ -1,23 +1,23 @@
 /* Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-*/
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 /* ScriptData
 SDName: Boss_Doomlord_Kazzak
-SD%Complete: 80
-SDComment: Timers; Hard enrage NYI
+SD%Complete: 90
+SDComment: Timers
 SDCategory: Hellfire Peninsula
 EndScriptData */
 
@@ -25,28 +25,28 @@ EndScriptData */
 
 enum
 {
-    SAY_INTRO = -1000147,
-    SAY_AGGRO1 = -1000148,
-    SAY_AGGRO2 = -1000149,
-    SAY_SURPREME1 = -1000150,
-    SAY_SURPREME2 = -1000151,
-    SAY_KILL1 = -1000152,
-    SAY_KILL2 = -1000153,
-    SAY_KILL3 = -1000154,
-    SAY_DEATH = -1000155,
-    EMOTE_GENERIC_FRENZY = -1000002,
-    SAY_RAND1 = -1000157,
-    SAY_RAND2 = -1000158,
+    SAY_INTRO                       = -1000147,
+    SAY_AGGRO1                      = -1000148,
+    SAY_AGGRO2                      = -1000149,
+    SAY_SURPREME1                   = -1000150,
+    SAY_SURPREME2                   = -1000151,
+    SAY_KILL1                       = -1000152,
+    SAY_KILL2                       = -1000153,
+    SAY_KILL3                       = -1000154,
+    SAY_DEATH                       = -1000155,
+    EMOTE_GENERIC_FRENZY            = -1000002,
+    SAY_RAND1                       = -1000157,
+    SAY_RAND2                       = -1000158,
 
-    SPELL_SHADOW_VOLLEY = 32963,
-    SPELL_CLEAVE = 31779,
-    SPELL_THUNDERCLAP = 36706,
-    SPELL_VOID_BOLT = 39329,
-    SPELL_MARK_OF_KAZZAK = 32960,
-    SPELL_FRENZY = 32964, // triggers 32963
-    SPELL_CAPTURE_SOUL = 48473, // procs 32966 on player kill
-    SPELL_TWISTED_REFLECTION = 21063,
-    SPELL_BERSERK = 32965, // triggers 32963
+    SPELL_SHADOW_VOLLEY             = 32963,
+    SPELL_CLEAVE                    = 31779,
+    SPELL_THUNDERCLAP               = 36706,
+    SPELL_VOID_BOLT                 = 39329,
+    SPELL_MARK_OF_KAZZAK            = 32960,
+    SPELL_FRENZY                    = 32964,        // triggers 32963
+    SPELL_CAPTURE_SOUL              = 48473,        // procs 32966 on player kill
+    SPELL_TWISTED_REFLECTION        = 21063,
+    SPELL_BERSERK                   = 32965,        // triggers 32963
 };
 
 struct MANGOS_DLL_DECL boss_doomlordkazzakAI : public ScriptedAI
@@ -59,17 +59,19 @@ struct MANGOS_DLL_DECL boss_doomlordkazzakAI : public ScriptedAI
     uint32 m_uiVoidBoltTimer;
     uint32 m_uiMarkOfKazzakTimer;
     uint32 m_uiEnrageTimer;
+    uint32 m_uiGreatEnrageTimer;
     uint32 m_uiTwistedReflectionTimer;
 
     void Reset()
     {
-        m_uiShadowVolleyTimer = urand(6000, 10000);
-        m_uiCleaveTimer = 7000;
-        m_uiThunderClapTimer = urand(14000, 18000);
-        m_uiVoidBoltTimer = 30000;
-        m_uiMarkOfKazzakTimer = 25000;
-        m_uiEnrageTimer = 60000;
-        m_uiTwistedReflectionTimer = 33000; // Timer may be incorrect
+        m_uiShadowVolleyTimer       = urand(6000, 10000);
+        m_uiCleaveTimer             = 7000;
+        m_uiThunderClapTimer        = urand(14000, 18000);
+        m_uiVoidBoltTimer           = 30000;
+        m_uiMarkOfKazzakTimer       = 25000;
+        m_uiEnrageTimer             = 60000;
+        m_uiGreatEnrageTimer        = 3*MINUTE*IN_MILLISECONDS;
+        m_uiTwistedReflectionTimer  = 33000;                   // Timer may be incorrect
     }
 
     void JustRespawned()
@@ -170,6 +172,18 @@ struct MANGOS_DLL_DECL boss_doomlordkazzakAI : public ScriptedAI
         }
         else
             m_uiEnrageTimer -= uiDiff;
+
+        // Great_Enrage_Timer
+        if (m_uiGreatEnrageTimer)
+        {
+            if (m_uiGreatEnrageTimer <= uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_BERSERK) == CAST_OK)
+                    m_uiGreatEnrageTimer = 0;
+            }
+            else
+                m_uiGreatEnrageTimer -= uiDiff;
+        }
 
         // Twisted Reflection
         if (m_uiTwistedReflectionTimer < uiDiff)
