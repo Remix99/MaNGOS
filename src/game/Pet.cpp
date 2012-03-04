@@ -1455,6 +1455,26 @@ void Pet::_SaveAuras()
             }
         }
 
+        if (save)
+        {
+            Unit* owner = GetOwner();
+            if (owner)
+            {
+                for(PetAuraSet::const_iterator itr1 = owner->m_petAuras.begin(); itr1 != owner->m_petAuras.end(); ++itr1)
+                {
+                    uint32 auraId = (*itr1)->GetAura(GetEntry());
+
+                    if(!auraId)
+                        continue;
+                    if (auraId == itr->second->GetId())
+                    {
+                        save = false;
+                        break;
+                    }
+                }
+            }
+        }
+
         //skip all holders from spells that are passive or channeled
         //do not save single target holders (unless they were cast by the player)
         if (save && !itr->second->IsPassive() && !IsChanneledSpell(itr->second->GetSpellProto()) && (itr->second->GetCasterGuid() == GetObjectGuid() || !itr->second->IsSingleTarget()))
