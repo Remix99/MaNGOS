@@ -66,11 +66,17 @@ INSERT INTO `creature` (`guid`,`id`,`map`,`spawnMask`,`phaseMask`,`modelid`,`equ
 UPDATE `creature_template` SET `faction_A` = 16, `faction_H` = 16 WHERE `entry` = 15949;
 
 -- ------------
+-- Quest 13828, 13829, 13835, 13838, 13837, 13839, 13625, 13677
+-- ------------
+UPDATE `creature_template` SET `AIName` = '', `ScriptName` = 'npc_melee_target' WHERE `entry` = 33229;
+UPDATE `creature_template` SET `AIName` = '', `ScriptName` = 'npc_ranged_target' WHERE `entry` = 33243;
+UPDATE `creature_template` SET `AIName` = '', `ScriptName` = 'npc_charge_target' WHERE `entry` = 33272;
+
+-- ------------
 -- Quest 13663
 -- ------------
 UPDATE `creature_template` SET `AIName` = '', `ScriptName` = 'npc_black_knights_gryphon' WHERE `entry` = 33519;
 UPDATE creature_template SET vehicle_id = 402 WHERE entry = 33519; -- vehicle_id can be 88 107 108 112 143 etc.
-UPDATE creature_template SET KillCredit1 = 33341 WHERE entry = 33229;
 UPDATE creature_template SET KillCredit1 = 38595 WHERE entry = 33448;
 
 UPDATE `creature_template` SET `modelid_2` = 28652 WHERE `entry` = 33513;

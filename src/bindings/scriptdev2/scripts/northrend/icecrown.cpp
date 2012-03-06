@@ -35,6 +35,218 @@ EndContentData */
 #include "escort_ai.h"
 #include "TemporarySummon.h"
 
+/*######
+## npc_melee_target  //quests 13828,13829,13625,13677
+######*/
+
+struct MANGOS_DLL_DECL npc_melee_targetAI : public ScriptedAI
+{
+    npc_melee_targetAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+
+    uint32 m_uiEvade_Timer;
+
+    void Reset()
+    {
+        m_uiEvade_Timer = 5000;
+        SetCombatMovement(false);
+    }
+
+    void DamageTaken(Unit* pDoneBy, uint32 &uiDamage)
+    {
+        if (uiDamage > m_creature->GetHealth())
+            uiDamage = 0;
+        m_uiEvade_Timer = 5000;
+    }
+
+    void SpellHit(Unit* pCaster, const SpellEntry* pSpell)
+    {
+        if (pSpell->Id == 62544)
+        {
+            DoCastSpellIfCan(pCaster, 62709);
+            if (Player* pPlayer = pCaster->GetCharmerOrOwnerPlayerOrPlayerItself())
+                pPlayer->KilledMonsterCredit(33341);
+        }
+    }
+
+    void UpdateAI(const uint32 uiDiff)
+    {
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            return;
+
+        if (m_uiEvade_Timer < uiDiff)
+        {
+            m_uiEvade_Timer = 5000;
+            m_creature->DeleteThreatList();
+            m_creature->CombatStop(true);
+        }
+        else
+            m_uiEvade_Timer -= uiDiff;
+    }
+};
+
+CreatureAI* GetAI_npc_melee_target(Creature* pCreature)
+{
+    return new npc_melee_targetAI(pCreature);
+}
+
+/*######
+## npc_ranged_target  //quests 13835,13838,13625,13677
+######*/
+
+struct MANGOS_DLL_DECL npc_ranged_targetAI : public ScriptedAI
+{
+    npc_ranged_targetAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+
+    uint32 m_uiEvade_Timer;
+    uint32 m_uiDefend_Timer;
+
+    void Reset()
+    {
+        m_uiEvade_Timer  = 5000;
+        m_uiDefend_Timer = 5000;
+
+        SetCombatMovement(false);
+    }
+
+    void DamageTaken(Unit* pDoneBy, uint32 &uiDamage)
+    {
+        if (uiDamage > m_creature->GetHealth())
+            uiDamage = 0;
+        m_uiEvade_Timer = 5000;
+    }
+
+    void SpellHit(Unit* pCaster, const SpellEntry* pSpell)
+    {
+        switch(pSpell->Id)
+        {
+            case 64342:
+                if (!m_creature->HasAura(62719))
+                {
+                    if (Player* pPlayer = pCaster->GetCharmerOrOwnerPlayerOrPlayerItself())
+                        pPlayer->KilledMonsterCredit(33339);
+                    return;
+                }
+            case 63010:
+                if (SpellAuraHolderPtr holder = m_creature->GetSpellAuraHolder(62719))
+                {
+                    if (holder->ModStackAmount(-1))
+                        m_creature->RemoveSpellAuraHolder(holder, AURA_REMOVE_BY_SHIELD_BREAK);
+
+                    m_uiDefend_Timer = 5000;
+                }
+        }
+    }
+
+    void UpdateAI(const uint32 uiDiff)
+    {
+        if (m_uiDefend_Timer < uiDiff)
+        {
+            DoCastSpellIfCan(m_creature, 62719);
+            Aura* pAura = m_creature->GetAura(62719, EFFECT_INDEX_0);
+            if (pAura && pAura->GetStackAmount() > 2)
+                m_uiDefend_Timer = 50000;
+            else
+                m_uiDefend_Timer = 5000;
+        }
+        else
+            m_uiDefend_Timer -= uiDiff;
+
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            return;
+
+        if (m_uiEvade_Timer < uiDiff)
+        {
+            m_uiEvade_Timer = 5000;
+            m_creature->DeleteThreatList();
+            m_creature->CombatStop(true);
+        }
+        else
+            m_uiEvade_Timer -= uiDiff;
+    }
+};
+
+CreatureAI* GetAI_npc_ranged_target(Creature* pCreature)
+{
+    return new npc_ranged_targetAI(pCreature);
+}
+
+/*######
+## npc_charge_target  //quests 13837,13839,13625,13677
+######*/
+
+struct MANGOS_DLL_DECL npc_charge_targetAI : public ScriptedAI
+{
+    npc_charge_targetAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+
+    uint32 m_uiEvade_Timer;
+    uint32 m_uiDefend_Timer;
+
+    void Reset()
+    {
+        m_uiEvade_Timer  = 5000;
+        m_uiDefend_Timer = 5000;
+
+        SetCombatMovement(false);
+    }
+
+    void DamageTaken(Unit* pDoneBy, uint32 &uiDamage)
+    {
+        if (uiDamage > m_creature->GetHealth())
+            uiDamage = 0;
+        m_uiEvade_Timer = 5000;
+    }
+
+    void SpellHit(Unit* pCaster, const SpellEntry* pSpell)
+    {
+        switch(pSpell->Id)
+        {
+            case 63010:
+                if (!m_creature->HasAura(64100))
+                {
+                    if (Player* pPlayer = pCaster->GetCharmerOrOwnerPlayerOrPlayerItself())
+                        pPlayer->KilledMonsterCredit(33340);
+                    return;
+                }
+            case 64342:
+                if (m_creature->HasAura(64100))
+                {
+                    m_creature->RemoveAurasDueToSpell(64100);
+                    m_uiDefend_Timer = 5000;
+                }
+
+        }
+    }
+
+    void UpdateAI(const uint32 uiDiff)
+    {
+        if (m_uiDefend_Timer < uiDiff)
+        {
+            if (!m_creature->HasAura(64100))
+                DoCastSpellIfCan(m_creature, 64100);
+            m_uiDefend_Timer = 5000;
+        }
+        else
+            m_uiDefend_Timer -= uiDiff;
+
+        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            return;
+
+        if (m_uiEvade_Timer < uiDiff)
+        {
+            m_uiEvade_Timer = 5000;
+            m_creature->DeleteThreatList();
+            m_creature->CombatStop(true);
+        }
+        else
+            m_uiEvade_Timer -= uiDiff;
+    }
+};
+
+CreatureAI* GetAI_npc_charge_target(Creature* pCreature)
+{
+    return new npc_charge_targetAI(pCreature);
+}
+
 /*#####
 ## npc_black_knights_gryphon
 #####*/
@@ -374,6 +586,21 @@ CreatureAI* GetAI_npc_champions(Creature* pCreature)
 void AddSC_icecrown()
 {
     Script* pNewScript;
+
+    pNewScript = new Script;
+    pNewScript->Name = "npc_melee_target";
+    pNewScript->GetAI = &GetAI_npc_melee_target;
+    pNewScript->RegisterSelf();
+
+    pNewScript = new Script;
+    pNewScript->Name = "npc_ranged_target";
+    pNewScript->GetAI = &GetAI_npc_ranged_target;
+    pNewScript->RegisterSelf();
+
+    pNewScript = new Script;
+    pNewScript->Name = "npc_charge_target";
+    pNewScript->GetAI = &GetAI_npc_charge_target;
+    pNewScript->RegisterSelf();
 
     pNewScript = new Script;
     pNewScript->Name = "npc_black_knights_gryphon";
