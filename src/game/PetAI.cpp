@@ -1,20 +1,20 @@
 /*
-* Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-*/
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 #include "PetAI.h"
 #include "Errors.h"
@@ -123,7 +123,6 @@ void PetAI::_stopAttack()
     }
     else
     {
-        m_creature->GetMotionMaster()->Clear(false);
         m_creature->GetMotionMaster()->MoveIdle();
     }
     m_creature->AttackStop();
@@ -156,7 +155,7 @@ void PetAI::UpdateAI(const uint32 diff)
             _stopAttack();
             return;
         }
-        else if (!m_creature->getVictim()->isAlive()) // Stop attack if target dead
+        else if (!m_creature->getVictim()->isAlive())        // Stop attack if target dead
         {
             m_creature->InterruptNonMeleeSpells(false);
             _stopAttack();
@@ -279,8 +278,8 @@ void PetAI::UpdateAI(const uint32 diff)
         {
             uint32 index = urand(0, targetSpellStore.size() - 1);
 
-            uint32 spellId = targetSpellStore[index].second;
-            ObjectGuid targetGuid = targetSpellStore[index].first;
+            uint32 spellId         = targetSpellStore[index].second;
+            ObjectGuid  targetGuid = targetSpellStore[index].first;
             if (Unit* target = m_creature->GetMap()->GetUnit(targetGuid))
             {
                 m_creature->DoPetCastSpell(target, spellId);
@@ -304,7 +303,7 @@ void PetAI::UpdateAllies()
     Unit* owner = m_creature->GetCharmerOrOwner();
     Group *pGroup = NULL;
 
-    m_updateAlliesTimer = 10*IN_MILLISECONDS; //update friendly targets every 10 seconds, lesser checks increase performance
+    m_updateAlliesTimer = 10*IN_MILLISECONDS;                //update friendly targets every 10 seconds, lesser checks increase performance
 
     if (!owner)
         return;
@@ -320,7 +319,7 @@ void PetAI::UpdateAllies()
 
     m_AllySet.clear();
     m_AllySet.insert(m_creature->GetObjectGuid());
-    if (pGroup) //add group
+    if (pGroup)                                             //add group
     {
         for (GroupReference *itr = pGroup->GetFirstMember(); itr != NULL; itr = itr->next())
         {
@@ -334,7 +333,7 @@ void PetAI::UpdateAllies()
             m_AllySet.insert(target->GetObjectGuid());
         }
     }
-    else //remove group
+    else                                                    //remove group
         m_AllySet.insert(owner->GetObjectGuid());
 }
 
