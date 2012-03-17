@@ -2325,6 +2325,132 @@ CreatureAI* GetAI_npc_shade_of_horseman(Creature* pCreature)
     return new npc_shade_of_horsemanAI (pCreature);
 };
 
+/*########
+npc_wild_turkey
+#########*/
+enum
+{
+    EMOTE_TURKEY_HUNTER              = -1730001,
+    EMOTE_TURKEY_DOMINATION          = -1730002,
+    EMOTE_TURKEY_SLAUGHTER           = -1730003,
+    EMOTE_TURKEY_TRIUMPH             = -1730004,
+
+    SPELL_TURKEY_TRACKER             = 62014,
+    SPELL_PH_KILL_COUNTER_VISUAL_MAX = 62021
+};
+struct MANGOS_DLL_DECL npc_wild_turkeyAI : public ScriptedAI
+{
+    npc_wild_turkeyAI(Creature* pCreature) : ScriptedAI(pCreature)
+    {
+        m_creature->RemoveAllAuras();
+    }
+
+    void Reset(){}
+
+    void UpdateAI(const uint32 uiDiff)
+    {
+        DoMeleeAttackIfReady();
+    }
+    
+    void JustDied(Unit* pKiller)
+    {
+        if (pKiller && pKiller->GetTypeId() == TYPEID_PLAYER)
+        {
+            pKiller->CastSpell(pKiller, SPELL_TURKEY_TRACKER, true);
+            Aura * pAura = pKiller->GetAura(SPELL_TURKEY_TRACKER, EFFECT_INDEX_0);
+            if (pAura)
+            {
+                uint32 stacks = pAura->GetStackAmount();
+                switch (stacks)
+                {
+                    case 10:
+                    {
+                        DoScriptText(EMOTE_TURKEY_HUNTER, m_creature, pKiller);
+                        break;
+                    }
+                    case 20:
+                    {
+                        DoScriptText(EMOTE_TURKEY_DOMINATION, m_creature, pKiller);
+                        break;
+                    }
+                    case 30:
+                    {
+                        DoScriptText(EMOTE_TURKEY_SLAUGHTER, m_creature, pKiller);
+                        break;
+                    }
+                    case 40:
+                    {
+                        DoScriptText(EMOTE_TURKEY_TRIUMPH, m_creature, pKiller);
+                        pKiller->CastSpell(pKiller, SPELL_PH_KILL_COUNTER_VISUAL_MAX, true);
+                        break;
+                    }
+                    default: break;
+                }
+            }
+        }
+    }
+};
+
+CreatureAI* GetAI_npc_wild_turkey(Creature* pCreature)
+{
+    return new npc_wild_turkeyAI (pCreature);
+};
+
+/*###### 
+## npc_experience 
+######*/ 
+
+#define EXP_COST                100000//10 00 00 copper (10golds)
+#define GOSSIP_TEXT_EXP         14736
+#define GOSSIP_XP_OFF           "I no longer wish to gain experience."
+#define GOSSIP_XP_ON            "I wish to start gaining experience again."
+
+bool GossipHello_npc_experience(Player* pPlayer, Creature* pCreature)
+{
+    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_XP_OFF, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
+    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_XP_ON, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
+    pPlayer->PlayerTalkClass->SendGossipMenu(GOSSIP_TEXT_EXP, pCreature->GetObjectGuid());
+    return true;
+}
+
+bool GossipSelect_npc_experience(Player* pPlayer, Creature* /*pCreature*/, uint32 /*uiSender*/, uint32 uiAction)
+{
+    bool noXPGain = pPlayer->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_XP_USER_DISABLED);
+    bool doSwitch = false;
+
+    switch(uiAction)
+    {
+        case GOSSIP_ACTION_INFO_DEF + 1://xp off
+            {
+                if (!noXPGain)//does gain xp
+                    doSwitch = true;//switch to don't gain xp
+            }
+            break;
+        case GOSSIP_ACTION_INFO_DEF + 2://xp on
+            {
+                if (noXPGain)//doesn't gain xp
+                    doSwitch = true;//switch to gain xp
+            }
+            break;
+    }
+    if (doSwitch)
+    {
+        if (pPlayer->GetMoney() < EXP_COST)
+            pPlayer->SendBuyError(BUY_ERR_NOT_ENOUGHT_MONEY, 0, 0, 0);
+        else if (noXPGain)
+        {
+            pPlayer->ModifyMoney(-EXP_COST);
+            pPlayer->RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_XP_USER_DISABLED);
+        }
+        else if (!noXPGain)
+        {
+            pPlayer->ModifyMoney(-EXP_COST);
+            pPlayer->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_XP_USER_DISABLED);
+        }
+    }
+    pPlayer->PlayerTalkClass->CloseGossip();
+    return true;
+}
 
 void AddSC_npcs_special()
 {
@@ -2435,5 +2561,16 @@ void AddSC_npcs_special()
     pNewScript = new Script;
     pNewScript->Name = "npc_shade_of_horseman";
     pNewScript->GetAI = &GetAI_npc_shade_of_horseman;
+    pNewScript->RegisterSelf();
+
+    pNewScript = new Script;
+    pNewScript->Name = "npc_wild_turkey";
+    pNewScript->GetAI = &GetAI_npc_wild_turkey;
+    pNewScript->RegisterSelf();
+    
+    pNewScript = new Script;
+    pNewScript->Name = "npc_experience";
+    pNewScript->pGossipHello =  &GossipHello_npc_experience;
+    pNewScript->pGossipSelect = &GossipSelect_npc_experience;
     pNewScript->RegisterSelf();
 }

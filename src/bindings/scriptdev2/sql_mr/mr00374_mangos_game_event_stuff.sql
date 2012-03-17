@@ -118,3 +118,8 @@ INSERT INTO `creature` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `modelid`
 
 DELETE FROM game_event_creature WHERE guid IN (SELECT guid FROM creature WHERE id IN (23543,23686));
 INSERT INTO game_event_creature (guid,EVENT) SELECT guid, 101 FROM creature WHERE id IN (23543,23686);
+
+-- --------------------------------
+-- Pilgrim's bounty event scripts -
+-- --------------------------------
+UPDATE `creature_template` SET `ScriptName` = 'npc_wild_turkey' WHERE `entry` = 32820;

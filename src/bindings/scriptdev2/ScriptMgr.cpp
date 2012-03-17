@@ -63,7 +63,7 @@ void LoadDatabase()
     // Initialize connection to DB
     if (SD2Database.Initialize(strSD2DBinfo.c_str()))
     {
-        outstring_log("SD2: ScriptDev2 database at %s initialized.", strSD2DBinfo.c_str());
+        outstring_log("SD2: ScriptDev2 database initialized."/*, strSD2DBinfo.c_str()*/);
         outstring_log("");
 
         pSystemMgr.LoadVersion();
