@@ -148,7 +148,7 @@ UPDATE creature_template SET ScriptName='spell_dummy_npc' WHERE entry IN (
 -- outland
 16880,16518,16847,17157,17326,17654,18879,22105,24918,25084,25085,
 -- northrend
-23678,25752,25753,25758,25792,25793,26268,26270,26421,26616,26643,26841,27122,27808,28053,28054,28068,28093,28465,28600,29319,29327,29329,29330,29338,30146,32149);
+23678,25752,25753,25758,25792,25793,26268,26270,26421,26616,26643,26841,27122,27263,27264,27265,27808,28053,28054,28068,28093,28465,28600,29319,29327,29329,29330,29338,30146,32149);
 
 UPDATE gameobject_template SET ScriptName='spell_dummy_go' WHERE entry IN (181616,186949);
 
@@ -243,7 +243,6 @@ UPDATE creature_template SET ScriptName='npc_draenei_survivor' WHERE entry=16483
 UPDATE creature_template SET ScriptName='npc_engineer_spark_overgrind' WHERE entry=17243;
 UPDATE creature_template SET ScriptName='npc_injured_draenei' WHERE entry=16971;
 UPDATE creature_template SET ScriptName='npc_magwin' WHERE entry=17312;
-UPDATE creature_template SET ScriptName='npc_susurrus' WHERE entry=17435;
 
 /* BADLANDS */
 
@@ -365,7 +364,6 @@ UPDATE creature_template SET ScriptName='npc_fallen_hero_of_horde' WHERE entry=7
 
 /* BLOODMYST ISLE */
 UPDATE creature_template SET ScriptName='mob_webbed_creature' WHERE entry=17680;
-UPDATE creature_template SET ScriptName='npc_captured_sunhawk_agent' WHERE entry=17824;
 
 /* BOREAN TUNDRA */
 UPDATE creature_template SET ScriptName='npc_nesingwary_trapper' WHERE entry=25835;
@@ -527,6 +525,7 @@ UPDATE creature_template SET ScriptName='npc_narm_faulk' WHERE entry=6177;
 
 
 /* DUROTAR */
+UPDATE creature_template SET ScriptName='npc_lazy_peon' WHERE entry=10556;
 
 
 /* DUSKWOOD */
@@ -1297,7 +1296,6 @@ UPDATE creature_template SET ScriptName='npc_mikhail' WHERE entry=4963;
 /* WINTERSPRING */
 UPDATE creature_template SET ScriptName='npc_lorax' WHERE entry=10918;
 UPDATE creature_template SET ScriptName='npc_rivern_frostwind' WHERE entry=10618;
-UPDATE creature_template SET ScriptName='npc_witch_doctor_mauari' WHERE entry=10307;
 UPDATE creature_template SET ScriptName='npc_ranshalla' WHERE entry=10300;
 UPDATE gameobject_template SET ScriptName='go_elune_fire' WHERE entry IN (177417, 177404);
 
