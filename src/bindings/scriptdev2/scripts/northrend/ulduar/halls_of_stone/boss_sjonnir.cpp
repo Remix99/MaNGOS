@@ -16,8 +16,8 @@
 
 /* ScriptData
 SDName: Boss_Sjonnir
-SD%Complete: 20%
-SDComment:
+SD%Complete: 60%
+SDComment: Brann Event missing, no proper source for timers
 SDCategory: Halls of Stone
 EndScriptData */
 
@@ -26,41 +26,50 @@ EndScriptData */
 
 enum
 {
-    SAY_AGGRO                   = -1599000,
-    SAY_SLAY_1                  = -1599001,
-    SAY_SLAY_2                  = -1599002,
-    SAY_SLAY_3                  = -1599003,
-    SAY_DEATH                   = -1599004,
-    EMOTE_GENERIC_FRENZY        = -1000002,
+    SAY_AGGRO                       = -1599000,
+    SAY_SLAY_1                      = -1599001,
+    SAY_SLAY_2                      = -1599002,
+    SAY_SLAY_3                      = -1599003,
+    SAY_DEATH                       = -1599004,
+    EMOTE_GENERIC_FRENZY            = -1000002,
 
-    SPELL_CHAIN_LIGHTING        = 50830,
-    SPELL_CHAIN_LIGHTING_H      = 59844,
-    SPELL_FRENZY                = 28747,
-    SPELL_LIGHTING_SHIELD       = 50831,
-    SPELL_LIGHTING_SHIELD_H     = 59845,
-    SPELL_STATIC_CHARGE         = 50834, //Periodic Trigger 2s interval, spell =50835
-    SPELL_STATIC_CHARGE_H       = 59846, //Periodic Trigger 2s interval, spell =50847
+    SPELL_FRENZY                    = 28747,
 
-    SPELL_LIGHTING_RING         = 51849,
-    SPELL_LIGHTING_RING_H       = 59861,
-    SPELL_LIGHTING_RING1        = 50840,
-    SPELL_LIGHTING_RING1_H      = 59848,
+    SPELL_CHAIN_LIGHTNING           = 50830,
+    SPELL_CHAIN_LIGHTNING_H         = 59844,
 
-    NPC_FORGED_IRON_TROGG       = 27979,
-    NPC_MALFORMED_OOZE          = 27981,
-    NPC_FORGED_IRON_DWARF       = 27982,
-};
+    SPELL_STATIC_CHARGE             = 50834,
+    SPELL_STATIC_CHARGE_H           = 59846,
 
-struct Locations
-{
-    float x, y, z;
-    uint32 id;
-};
+    SPELL_LIGHTNING_SHIELD          = 50831,
+    SPELL_LIGHTNING_SHIELD_H        = 59845,
 
-static Locations PipeLoc[]=
-{
-    {1295.44f, 734.07f, 200.3f}, // left
-    {1297.7f,  595.6f,  199.9f}, // right
+    SPELL_LIGHTNING_RING            = 50840,
+    SPELL_LIGHTNING_RING_H          = 59848,
+
+    // Cast on aggro
+    SPELL_SUMMON_IRON_DWARF         = 50789,                // periodic dummy aura, tick each 30sec or each 20sec in heroic
+    SPELL_SUMMON_IRON_DWARF_H       = 59860,                // left/right 50790,50791
+
+    // Cast at 75% hp (also Brann has some yells at that point)
+    SPELL_SUMMON_IRON_TROGG         = 50792,                // periodic dummy aura, tick each 10sec or each 7sec in heroic
+    SPELL_SUMMON_IRON_TROGG_H       = 59859,                // left/right 50793,50794
+
+    // Cast at 50% hp
+    SPELL_SUMMON_MALFORMED_OOZE     = 50801,                // periodic dummy aura, tick each 5sec or each 3sec in heroic
+    SPELL_SUMMON_MALFORMED_OOZE_H   = 59858,                // left/right 50802,50803
+
+    // Cast at 15% hp when Bran repairs the machine
+    SPELL_SUMMON_EARTHEN_DWARF      = 50824,                // left/right 50825, 50826
+
+    SPELL_SUMMON_IRON_SLUDGE        = 50747,                // instakill TARGET_SCRIPT
+    SPELL_IRON_SLUDGE_SPAWN_VISUAL  = 50777,
+
+    NPC_IRON_TROGG                  = 27979,
+    NPC_IRON_DWARF                  = 27982,
+    NPC_MALFORMED_OOZE              = 27981,
+    NPC_IRON_SLUDGE                 = 28165,
+    NPC_EARTHEN_DWARF               = 27980,
 };
 
 /*######
@@ -78,51 +87,35 @@ struct MANGOS_DLL_DECL boss_sjonnirAI : public ScriptedAI
 
     ScriptedInstance* m_pInstance;
     bool m_bIsRegularMode;
-    bool m_bIsFrenzy;
 
-    std::list<ObjectGuid> m_lDwarfGUIDList;
-    uint32 m_uiChainLightning_Timer;
-    uint32 m_uiLightningShield_Timer;
-    uint32 m_uiStaticCharge_Timer;
-    uint32 m_uiLightningRing_Timer;
-    uint32 m_uiSummon_Timer;
-    uint32 m_uiFrenzy_Timer;
+    uint32 m_uiChainLightningTimer;
+    uint32 m_uiLightningShieldTimer;
+    uint32 m_uiStaticChargeTimer;
+    uint32 m_uiLightningRingTimer;
+    uint32 m_uiFrenzyTimer;
+
+    uint8 m_uiHpCheck;
 
     void Reset()
     {
-        m_bIsFrenzy = false;
+        m_uiChainLightningTimer     = urand(3000, 8000);        // TODO timers weak
+        m_uiLightningShieldTimer    = urand(20000, 25000);
+        m_uiStaticChargeTimer       = urand(20000, 25000);
+        m_uiLightningRingTimer      = urand(30000, 35000);
+        m_uiFrenzyTimer             = 4*MINUTE*IN_MILLISECONDS; // TODO no proper source for this "long"
 
-        m_uiChainLightning_Timer = 3000 + rand()%5000;
-        m_uiLightningShield_Timer = 20000 + rand()%5000;
-        m_uiStaticCharge_Timer = 20000 + rand()%5000;
-        m_uiLightningRing_Timer = 30000 + rand()%5000;
-        m_uiSummon_Timer = 5000;
-        m_uiFrenzy_Timer = 300000;
-
-        DespawnDwarf();
-
-        if(m_pInstance)
-            m_pInstance->SetData(TYPE_GRIEF, NOT_STARTED);
+        m_uiHpCheck                 = 75;
     }
 
     void Aggro(Unit* pWho)
     {
         DoScriptText(SAY_AGGRO, m_creature);
 
-        if(m_pInstance)
-            m_pInstance->SetData(TYPE_GRIEF, IN_PROGRESS);
-//            pSummoned->SetWalk(false);
-//            pSummoned->GetMotionMaster()->MovePoint(0, fX, fY, fZ);
-    }
+        DoCastSpellIfCan(m_creature, m_bIsRegularMode ? SPELL_LIGHTNING_SHIELD : SPELL_LIGHTNING_SHIELD_H, CAST_TRIGGERED);
+        DoCastSpellIfCan(m_creature, m_bIsRegularMode ? SPELL_SUMMON_IRON_DWARF : SPELL_SUMMON_IRON_DWARF_H, CAST_TRIGGERED);
 
-    void KilledUnit(Unit* pVictim)
-    {
-        switch(rand()%3)
-        {
-            case 0: DoScriptText(SAY_SLAY_1, m_creature); break;
-            case 1: DoScriptText(SAY_SLAY_2, m_creature); break;
-            case 2: DoScriptText(SAY_SLAY_3, m_creature); break;
-        }
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_SJONNIR, IN_PROGRESS);
     }
 
     void JustDied(Unit* pKiller)
@@ -130,35 +123,53 @@ struct MANGOS_DLL_DECL boss_sjonnirAI : public ScriptedAI
         DoScriptText(SAY_DEATH, m_creature);
 
         if (m_pInstance)
-            m_pInstance->SetData(TYPE_GRIEF, DONE);
+            m_pInstance->SetData(TYPE_SJONNIR, DONE);
     }
 
-    void DespawnDwarf()
+    void JustReachedHome()
     {
-        if (m_lDwarfGUIDList.empty())
-            return;
-
-        for(std::list<ObjectGuid>::iterator itr = m_lDwarfGUIDList.begin(); itr != m_lDwarfGUIDList.end(); ++itr)
-        {
-            if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
-            {
-                if (pTemp->isAlive())
-                    pTemp->ForcedDespawn();
-            }
-        }
-
-        m_lDwarfGUIDList.clear();
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_SJONNIR, FAIL);
     }
 
     void JustSummoned(Creature* pSummoned)
     {
-        m_lDwarfGUIDList.push_back(pSummoned->GetObjectGuid());
-
-        if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+        if (pSummoned->GetEntry() == NPC_IRON_TROGG || pSummoned->GetEntry() == NPC_IRON_DWARF || pSummoned->GetEntry() == NPC_MALFORMED_OOZE)
         {
-            pSummoned->AddThreat(pTarget, 0.0f);
-            pSummoned->AI()->AttackStart(pTarget);
+            float fX, fY, fZ;
+            pSummoned->GetRandomPoint(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), 10.0f, fX, fY, fZ);
+
+            pSummoned->SetWalk(false);
+            pSummoned->GetMotionMaster()->MovePoint(0, fX, fY, fZ);
         }
+        else if (pSummoned->GetEntry() == NPC_EARTHEN_DWARF)
+            pSummoned->AI()->AttackStart(m_creature);
+    }
+
+    void KilledUnit(Unit* pVictim)
+    {
+        switch(urand(0, 2))
+        {
+            case 0: DoScriptText(SAY_SLAY_1, m_creature); break;
+            case 1: DoScriptText(SAY_SLAY_2, m_creature); break;
+            case 2: DoScriptText(SAY_SLAY_3, m_creature); break;
+        }
+    }
+
+    bool DoFrenzyIfCan()
+    {
+        if (!m_uiFrenzyTimer)
+            return true;
+
+        if (DoCastSpellIfCan(m_creature, SPELL_FRENZY) == CAST_OK)
+        {
+            DoCastSpellIfCan(m_creature, SPELL_SUMMON_EARTHEN_DWARF, CAST_TRIGGERED);
+            m_uiFrenzyTimer = 0;
+
+            return true;
+        }
+
+        return false;
     }
 
     void UpdateAI(const uint32 uiDiff)
@@ -166,65 +177,64 @@ struct MANGOS_DLL_DECL boss_sjonnirAI : public ScriptedAI
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        if (m_uiChainLightning_Timer < uiDiff)
+        if (m_creature->GetHealthPercent() <= (float)m_uiHpCheck)
+        {
+            switch(m_uiHpCheck)
+            {
+                case 75:
+                    if (DoCastSpellIfCan(m_creature, m_bIsRegularMode ? SPELL_SUMMON_IRON_TROGG : SPELL_SUMMON_IRON_TROGG_H, CAST_TRIGGERED) == CAST_OK)
+                        m_uiHpCheck = 50;
+                    break;
+                case 50:
+                    if (DoCastSpellIfCan(m_creature, m_bIsRegularMode ? SPELL_SUMMON_MALFORMED_OOZE : SPELL_SUMMON_MALFORMED_OOZE_H, CAST_TRIGGERED) == CAST_OK)
+                        m_uiHpCheck = 15;
+                case 15:
+                    if (DoFrenzyIfCan())
+                        m_uiHpCheck = 0;
+
+                    break;
+            }
+        }
+
+        if (m_uiChainLightningTimer < uiDiff)
         {
             if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-                DoCast(pTarget, m_bIsRegularMode ? SPELL_CHAIN_LIGHTING_H : SPELL_CHAIN_LIGHTING);
-            m_uiChainLightning_Timer = 10000 + rand()%5000;
-        }
-        else
-            m_uiChainLightning_Timer -= uiDiff;
-
-        if (m_uiLightningShield_Timer < uiDiff)
-        {
-            DoCast(m_creature, m_bIsRegularMode ? SPELL_LIGHTING_SHIELD_H : SPELL_LIGHTING_SHIELD);
-            m_uiLightningShield_Timer = 20000 + rand()%5000;
-        }
-        else
-            m_uiLightningShield_Timer -= uiDiff;
-
-        if (m_uiStaticCharge_Timer < uiDiff)
-        {
-            DoCast(m_creature->getVictim(), m_bIsRegularMode ? SPELL_STATIC_CHARGE_H : SPELL_STATIC_CHARGE);
-            m_uiStaticCharge_Timer = 20000 + rand()%5000;
-        }
-        else
-            m_uiStaticCharge_Timer -= uiDiff;
-
-        if (m_uiLightningRing_Timer < uiDiff)
-        {
-            if (m_creature->IsNonMeleeSpellCasted(false))
-                m_creature->InterruptNonMeleeSpells(false);
-            DoCast(m_creature, m_bIsRegularMode ? SPELL_LIGHTING_RING_H : SPELL_LIGHTING_RING);
-            m_uiLightningRing_Timer = 30000 + rand()%5000;
-        }
-        else
-            m_uiLightningRing_Timer -= uiDiff;
-
-        if (m_uiSummon_Timer < uiDiff)
-        {
-            uint32 SummonPipe = rand()%2;
-            uint32 SummonEntry = 0;
-            switch(rand()%3)
             {
-                case 0: SummonEntry = NPC_FORGED_IRON_TROGG; break;
-                case 1: SummonEntry = NPC_MALFORMED_OOZE;    break;
-                case 2: SummonEntry = NPC_FORGED_IRON_DWARF; break;
+                if (DoCastSpellIfCan(pTarget, m_bIsRegularMode ? SPELL_CHAIN_LIGHTNING : SPELL_CHAIN_LIGHTNING_H) == CAST_OK)
+                    m_uiChainLightningTimer = urand(10000, 15000);
             }
-            m_creature->SummonCreature(SummonEntry, PipeLoc[SummonPipe].x, PipeLoc[SummonPipe].y, PipeLoc[SummonPipe].z, 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 30000);
-            m_uiSummon_Timer = 20000;
         }
         else
-            m_uiSummon_Timer -= uiDiff;
+            m_uiChainLightningTimer -= uiDiff;
 
-        if (!m_bIsFrenzy && m_uiFrenzy_Timer < uiDiff)
+        if (m_uiLightningShieldTimer < uiDiff)
         {
-            DoCast(m_creature, SPELL_FRENZY);
-            m_bIsFrenzy = true;
-            m_uiFrenzy_Timer = 0;
+            if (DoCastSpellIfCan(m_creature, m_bIsRegularMode ? SPELL_LIGHTNING_SHIELD : SPELL_LIGHTNING_SHIELD_H) == CAST_OK)
+                m_uiLightningShieldTimer = urand(20000, 25000);
         }
         else
-            m_uiFrenzy_Timer -= uiDiff;
+            m_uiLightningShieldTimer -= uiDiff;
+
+        if (m_uiStaticChargeTimer < uiDiff)
+        {
+            if (DoCastSpellIfCan(m_creature->getVictim(), m_bIsRegularMode ? SPELL_STATIC_CHARGE : SPELL_STATIC_CHARGE_H) == CAST_OK)
+                m_uiStaticChargeTimer = urand(20000, 25000);
+        }
+        else
+            m_uiStaticChargeTimer -= uiDiff;
+
+        if (m_uiLightningRingTimer < uiDiff)
+        {
+            if (DoCastSpellIfCan(m_creature, m_bIsRegularMode ? SPELL_LIGHTNING_RING : SPELL_LIGHTNING_RING_H) == CAST_OK)
+                m_uiLightningRingTimer = urand(30000, 35000);
+        }
+        else
+            m_uiLightningRingTimer -= uiDiff;
+
+        if (m_uiFrenzyTimer <= uiDiff)
+            DoFrenzyIfCan();
+        else
+            m_uiFrenzyTimer -= uiDiff;
 
         DoMeleeAttackIfReady();
     }
@@ -237,10 +247,10 @@ CreatureAI* GetAI_boss_sjonnir(Creature* pCreature)
 
 void AddSC_boss_sjonnir()
 {
-    Script *newscript;
+    Script* pNewScript;
 
-    newscript = new Script;
-    newscript->Name = "boss_sjonnir";
-    newscript->GetAI = &GetAI_boss_sjonnir;
-    newscript->RegisterSelf();
+    pNewScript = new Script;
+    pNewScript->Name = "boss_sjonnir";
+    pNewScript->GetAI = &GetAI_boss_sjonnir;
+    pNewScript->RegisterSelf();
 }
