@@ -16,7 +16,7 @@
 
 /* ScriptData
 SDName: Boss_Maiden_of_Grief
-SD%Complete: 20%
+SD%Complete: 60%
 SDComment:
 SDCategory: Halls of Stone
 EndScriptData */
@@ -34,13 +34,16 @@ enum
     SAY_STUN                    = -1599010,
     SAY_DEATH                   = -1599011,
 
-    SPELL_PARTING_SORROW        = 59723,
-    SPELL_PILLAR_OF_WOE         = 50761,
-    SPELL_PILLAR_OF_WOE_H       = 59727,
-    SPELL_SHOCK_OF_SORROW       = 50760,
-    SPELL_SHOCK_OF_SORROW_H     = 59726,
     SPELL_STORM_OF_GRIEF        = 50752,
     SPELL_STORM_OF_GRIEF_H      = 59772,
+
+    SPELL_SHOCK_OF_SORROW       = 50760,
+    SPELL_SHOCK_OF_SORROW_H     = 59726,
+
+    SPELL_PILLAR_OF_WOE         = 50761,
+    SPELL_PILLAR_OF_WOE_H       = 59727,
+
+    SPELL_PARTING_SORROW        = 59723
 };
 
 /*######
@@ -51,28 +54,25 @@ struct MANGOS_DLL_DECL boss_maiden_of_griefAI : public ScriptedAI
 {
     boss_maiden_of_griefAI(Creature* pCreature) : ScriptedAI(pCreature)
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+        m_pInstance = (instance_halls_of_stone*)pCreature->GetInstanceData();
         m_bIsRegularMode = pCreature->GetMap()->IsRegularDifficulty();
         Reset();
     }
 
-    ScriptedInstance* m_pInstance;
+    instance_halls_of_stone* m_pInstance;
     bool m_bIsRegularMode;
 
-    uint32 m_uiPartingSorrow_Timer;
-    uint32 m_uiPillarWoe_Timer;
-    uint32 m_uiShockSorrow_Timer;
-    uint32 m_uiStorm_Timer;
+    uint32 m_uiStormTimer;
+    uint32 m_uiShockTimer;
+    uint32 m_uiPillarTimer;
+    uint32 m_uiPartingSorrowTimer;
 
     void Reset()
     {
-        m_uiPartingSorrow_Timer = 9000 + rand()%5000;
-        m_uiPillarWoe_Timer = 3000 + rand()%4000;
-        m_uiStorm_Timer = 10000 + rand()%5000;
-        m_uiShockSorrow_Timer = 20000 + rand()%5000;
-
-        if(m_pInstance)
-            m_pInstance->SetData(TYPE_GRIEF, NOT_STARTED);
+        m_uiStormTimer = 5000;
+        m_uiShockTimer = 10000;
+        m_uiPillarTimer = 15000;
+        m_uiPartingSorrowTimer = 12000;
     }
 
     void Aggro(Unit* pWho)
@@ -80,12 +80,18 @@ struct MANGOS_DLL_DECL boss_maiden_of_griefAI : public ScriptedAI
         DoScriptText(SAY_AGGRO, m_creature);
 
         if(m_pInstance)
-            m_pInstance->SetData(TYPE_GRIEF, IN_PROGRESS);
+            m_pInstance->SetData(TYPE_MAIDEN, IN_PROGRESS);
+    }
+
+    void JustReachedHome()
+    {
+        if(m_pInstance)
+            m_pInstance->SetData(TYPE_MAIDEN, FAIL);
     }
 
     void KilledUnit(Unit* pVictim)
     {
-        switch(rand()%4)
+        switch(urand(0, 3))
         {
             case 0: DoScriptText(SAY_SLAY_1, m_creature); break;
             case 1: DoScriptText(SAY_SLAY_2, m_creature); break;
@@ -99,7 +105,7 @@ struct MANGOS_DLL_DECL boss_maiden_of_griefAI : public ScriptedAI
         DoScriptText(SAY_DEATH, m_creature);
 
         if (m_pInstance)
-            m_pInstance->SetData(TYPE_GRIEF, DONE);
+            m_pInstance->SetData(TYPE_MAIDEN, DONE);
     }
 
     void UpdateAI(const uint32 uiDiff)
@@ -107,40 +113,47 @@ struct MANGOS_DLL_DECL boss_maiden_of_griefAI : public ScriptedAI
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        if (m_uiPartingSorrow_Timer < uiDiff)
+        if (m_uiPartingSorrowTimer < uiDiff)
         {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-                DoCast(pTarget, SPELL_PARTING_SORROW);
-            m_uiPartingSorrow_Timer = 12000 + rand()%5000;
+            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_PARTING_SORROW, SELECT_FLAG_PLAYER | SELECT_FLAG_POWER_MANA))
+            {
+                if (DoCastSpellIfCan(pTarget, SPELL_PARTING_SORROW) == CAST_OK)
+                    m_uiPartingSorrowTimer = 12000 + rand()%5000;
+            }
         }
         else
-            m_uiPartingSorrow_Timer -= uiDiff;
+            m_uiPartingSorrowTimer -= uiDiff;
 
-        if (m_uiPillarWoe_Timer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-                DoCast(pTarget, m_bIsRegularMode ? SPELL_PILLAR_OF_WOE_H : SPELL_PILLAR_OF_WOE);
-            m_uiPillarWoe_Timer = 9000 + rand()%4000;
-        }
-        else
-            m_uiPillarWoe_Timer -= uiDiff;
 
-        if (m_uiStorm_Timer < uiDiff)
+        if (m_uiStormTimer < uiDiff)
         {
-            DoCast(m_creature, m_bIsRegularMode ? SPELL_STORM_OF_GRIEF_H : SPELL_STORM_OF_GRIEF);
-            m_uiStorm_Timer = 20000 + rand()%5000;
+            if (DoCastSpellIfCan(m_creature, m_bIsRegularMode ? SPELL_STORM_OF_GRIEF : SPELL_STORM_OF_GRIEF_H) == CAST_OK)
+                m_uiStormTimer = 20000;
         }
         else
-            m_uiStorm_Timer -= uiDiff;
+            m_uiStormTimer -= uiDiff;
 
-        if (m_uiShockSorrow_Timer < uiDiff)
+        if (m_uiPillarTimer < uiDiff)
         {
-            DoScriptText(SAY_STUN, m_creature);
-            DoCast(m_creature->getVictim(), m_bIsRegularMode ? SPELL_SHOCK_OF_SORROW_H : SPELL_SHOCK_OF_SORROW);
-            m_uiShockSorrow_Timer = 20000 + rand()%5000;
+            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, m_bIsRegularMode ? SPELL_PILLAR_OF_WOE_H : SPELL_PILLAR_OF_WOE, SELECT_FLAG_PLAYER))
+            {
+                if (DoCastSpellIfCan(pTarget, m_bIsRegularMode ? SPELL_PILLAR_OF_WOE : SPELL_PILLAR_OF_WOE_H) == CAST_OK)
+                    m_uiPillarTimer = 10000;
+            }
         }
         else
-            m_uiShockSorrow_Timer -= uiDiff;
+            m_uiPillarTimer -= uiDiff;
+
+        if (m_uiShockTimer < uiDiff)
+        {
+            if (DoCastSpellIfCan(m_creature, m_bIsRegularMode ? SPELL_SHOCK_OF_SORROW : SPELL_SHOCK_OF_SORROW_H) == CAST_OK)
+            {
+                DoScriptText(SAY_STUN, m_creature);
+                m_uiShockTimer = 35000;
+            }
+        }
+        else
+            m_uiShockTimer -= uiDiff;
 
         DoMeleeAttackIfReady();
     }
