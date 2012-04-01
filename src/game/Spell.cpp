@@ -46,8 +46,6 @@
 #include "Vehicle.h"
 #include "Chat.h"
 
-#define SPELL_CHANNEL_UPDATE_INTERVAL (1 * IN_MILLISECONDS)
-
 extern pEffect SpellEffects[TOTAL_SPELL_EFFECTS];
 
 class PrioritizeManaUnitWraper
@@ -1813,6 +1811,9 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 case 61916:                                 // Lightning Whirl (Stormcaller Brundir - Ulduar)
                     unMaxTargets = urand(2, 3);
                     break;
+                case 46771:                                 // Flame Sear (Grand Warlock Alythess - SWP)
+                    unMaxTargets = urand(3, 5);
+                    break;
                 case 63482:                                 // Lightning Whirl (h) (Stormcaller Brundir - Ulduar)
                     unMaxTargets = urand(3, 6);
                     break;
@@ -1823,6 +1824,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                     break;
                 case 30843:                                 // Enfeeble TODO: exclude top threat target from target selection
                 case 42005:                                 // Bloodboil
+                case 45641:                                 // Fire Bloom (Kil'jaeden - SWP)
                 case 55665:                                 // Life Drain (h)
                 case 58917:                                 // Consume Minions
                 case 64604:                                 // Nature Bomb Freya
@@ -5631,9 +5633,13 @@ SpellCastResult Spell::CheckCast(bool strict)
     bool castOnVehicleAllowed = false;
 
     if (m_caster->GetVehicle())
+    {
+        if (m_spellInfo->AttributesEx6 & SPELL_ATTR_EX6_CASTABLE_ON_VEHICLE)
+            castOnVehicleAllowed = true;
         if ( VehicleSeatEntry const* seatInfo = m_caster->GetVehicle()->GetSeatInfo(m_caster))
             if (seatInfo->m_flags & SEAT_FLAG_CAN_CAST || seatInfo->m_flags & SEAT_FLAG_CAN_ATTACK)
                 castOnVehicleAllowed = true;
+    }
 
 
     // not let players cast spells at mount (and let do it to creatures)
@@ -6481,6 +6487,10 @@ SpellCastResult Spell::CheckCast(bool strict)
             case SPELL_AURA_CONTROL_VEHICLE:
             {
                 Unit* pTarget = m_targets.getUnitTarget();
+
+                // In case of TARGET_SCRIPT, we have already added a target. Use it here (and find a better solution)
+                if (m_UniqueTargetInfo.size() == 1)
+                    pTarget = m_caster->GetMap()->GetAnyTypeCreature(m_UniqueTargetInfo.front().targetGUID);
 
                 if (!pTarget || !pTarget->GetVehicleKit())
                     return SPELL_FAILED_BAD_TARGETS;
