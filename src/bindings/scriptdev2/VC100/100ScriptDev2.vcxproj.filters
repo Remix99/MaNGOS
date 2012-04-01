@@ -951,6 +951,9 @@
     <ClCompile Include="..\scripts\kalimdor\desolace.cpp">
       <Filter>scripts\kalimdor</Filter>
     </ClCompile>
+    <ClCompile Include="..\scripts\kalimdor\durotar.cpp">
+      <Filter>scripts\kalimdor</Filter>
+    </ClCompile>
     <ClCompile Include="..\scripts\kalimdor\dire_maul\dire_maul.cpp">
       <Filter>scripts\kalimdor\dire_maul</Filter>
     </ClCompile>

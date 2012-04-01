@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -426,6 +426,7 @@
     <ClCompile Include="..\scripts\kalimdor\caverns_of_time\old_hillsbrad\old_hillsbrad.cpp" />
     <ClCompile Include="..\scripts\kalimdor\darkshore.cpp" />
     <ClCompile Include="..\scripts\kalimdor\desolace.cpp" />
+    <ClCompile Include="..\scripts\kalimdor\durotar.cpp" />
     <ClCompile Include="..\scripts\kalimdor\dire_maul\dire_maul.cpp" />
     <ClCompile Include="..\scripts\kalimdor\dire_maul\instance_dire_maul.cpp" />
     <ClCompile Include="..\scripts\kalimdor\dustwallow_marsh.cpp" />
