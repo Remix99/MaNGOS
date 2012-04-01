@@ -394,9 +394,12 @@ struct MANGOS_DLL_DECL boss_felmystAI : public ScriptedAI
             {
                 if (m_uiDemonicVaporTimer < uiDiff)
                 {
-                    DoCast(m_creature, SPELL_SUMMON_VAPOR);
-                    ++m_uiVaporCount;
-                    m_uiDemonicVaporTimer = 10000;
+                    if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_PLAYER))
+                    {
+                        m_creature->SummonCreature(NPC_DEMONIC_VAPOR, pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), 0, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 10000);
+                        ++m_uiVaporCount;
+                        m_uiDemonicVaporTimer = 10000;
+                    }
                 }
                 else
                     m_uiDemonicVaporTimer -= uiDiff;
