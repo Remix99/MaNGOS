@@ -132,7 +132,10 @@ struct MANGOS_DLL_DECL boss_blood_queen_lanathelAI : public base_icc_bossAI
     void JustReachedHome()
     {
         if(m_pInstance)
+        {
             m_pInstance->SetData(TYPE_LANATHEL, FAIL);
+            RemoveAurasFromAllPlayers();
+        }
     }
 
     void KilledUnit(Unit* pVictim)
@@ -155,7 +158,10 @@ struct MANGOS_DLL_DECL boss_blood_queen_lanathelAI : public base_icc_bossAI
     void JustDied(Unit *pKiller)
     {
         if(m_pInstance)
+	{
             m_pInstance->SetData(TYPE_LANATHEL, DONE);
+	    RemoveAurasFromAllPlayers();
+	}
 
         DoScriptText(SAY_DEATH, m_creature);
     }
@@ -256,6 +262,36 @@ struct MANGOS_DLL_DECL boss_blood_queen_lanathelAI : public base_icc_bossAI
         }
 
         return NULL;
+    }
+
+    void RemoveAurasFromAllPlayers()
+    {
+         Map* pMap = m_creature->GetMap();
+         Map::PlayerList const &PlayerList = pMap->GetPlayers();
+
+         if (PlayerList.isEmpty())
+            return;
+
+         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
+            if (Player* pPlayer = i->getSource())
+                if (pPlayer->isAlive())
+                {
+                    // Additional checking for achiev
+                    pPlayer->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_KILL_CREATURE, NPC_LANATHEL, 0);
+
+                    // Uncontrollable Frenzy
+                    pPlayer->RemoveAurasDueToSpell(70923);
+                    pPlayer->RemoveAurasDueToSpell(70924);
+
+                    // Frenzied Bloodthirst
+                    pPlayer->RemoveAurasDueToSpell(70877);
+                    pPlayer->RemoveAurasDueToSpell(71474);
+
+                    // Essence of The Blood Queen
+                    pPlayer->RemoveAurasDueToSpell(70867);
+                    pPlayer->RemoveAurasDueToSpell(70871);
+
+                }
     }
 
     void UpdateAI(const uint32 uiDiff)
