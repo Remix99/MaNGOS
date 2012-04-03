@@ -764,6 +764,8 @@ struct MANGOS_DLL_DECL boss_the_lich_king_iccAI : public base_icc_bossAI
 
         DoRespawnPlatform();
         SetCombatMovement(true);
+
+	m_bPlatformDestroyed = false;
     }
 
     void Aggro(Unit *pWho)
@@ -924,6 +926,9 @@ struct MANGOS_DLL_DECL boss_the_lich_king_iccAI : public base_icc_bossAI
     void DoRespawnPlatform()
     {
         if (!m_pInstance)
+            return;
+
+        if (!m_bPlatformDestroyed)
             return;
 
         if (GameObject* pGoFloor = m_pInstance->GetSingleGameObjectFromStorage(GO_ARTHAS_PLATFORM))
