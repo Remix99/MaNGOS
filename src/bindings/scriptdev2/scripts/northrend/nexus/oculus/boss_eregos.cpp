@@ -180,10 +180,10 @@ struct MANGOS_DLL_DECL boss_eregosAI : public ScriptedAI
 
     void SummonAnomalies()
     {
-        std::list<HostileReference *> t_list = m_creature->getThreatManager().getThreatList();
+        ThreatList t_list = m_creature->getThreatManager().getThreatList();
         if (t_list.size())
         {
-            for (std::list<HostileReference *>::iterator itr = t_list.begin(); itr != t_list.end(); ++itr)
+            for (ThreatList::iterator itr = t_list.begin(); itr != t_list.end(); ++itr)
             {
                 Unit *pTarget = m_creature->GetMap()->GetUnit((*itr)->getUnitGuid());
                 if (pTarget && pTarget->isAlive() && pTarget->GetTypeId() == TYPEID_PLAYER)
