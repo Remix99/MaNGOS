@@ -1,18 +1,18 @@
 /* Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-*/
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 /* ScriptData
 SDName: Boss_Doomwalker
@@ -25,23 +25,23 @@ EndScriptData */
 
 enum
 {
-    SAY_AGGRO = -1000159,
-    SAY_EARTHQUAKE_1 = -1000160,
-    SAY_EARTHQUAKE_2 = -1000161,
-    SAY_OVERRUN_1 = -1000162,
-    SAY_OVERRUN_2 = -1000163,
-    SAY_SLAY_1 = -1000164,
-    SAY_SLAY_2 = -1000165,
-    SAY_SLAY_3 = -1000166,
-    SAY_DEATH = -1000167,
+    SAY_AGGRO                   = -1000159,
+    SAY_EARTHQUAKE_1            = -1000160,
+    SAY_EARTHQUAKE_2            = -1000161,
+    SAY_OVERRUN_1               = -1000162,
+    SAY_OVERRUN_2               = -1000163,
+    SAY_SLAY_1                  = -1000164,
+    SAY_SLAY_2                  = -1000165,
+    SAY_SLAY_3                  = -1000166,
+    SAY_DEATH                   = -1000167,
 
-    SPELL_EARTHQUAKE = 32686,
-    SPELL_CRUSH_ARMOR = 33661,
-    SPELL_LIGHTNING_WRATH = 33665,
-    SPELL_OVERRUN = 32636,
-    SPELL_ENRAGE = 33653,
-    SPELL_MARK_OF_DEATH_PLAYER = 37128,
-    SPELL_MARK_OF_DEATH_AURA = 37125, // triggers 37131 on target if it has aura 37128
+    SPELL_EARTHQUAKE            = 32686,
+    SPELL_CRUSH_ARMOR           = 33661,
+    SPELL_LIGHTNING_WRATH       = 33665,
+    SPELL_OVERRUN               = 32636,
+    SPELL_ENRAGE                = 33653,
+    SPELL_MARK_OF_DEATH_PLAYER  = 37128,
+    SPELL_MARK_OF_DEATH_AURA    = 37125,        // triggers 37131 on target if it has aura 37128
 };
 
 struct MANGOS_DLL_DECL boss_doomwalkerAI : public ScriptedAI
@@ -57,12 +57,12 @@ struct MANGOS_DLL_DECL boss_doomwalkerAI : public ScriptedAI
 
     void Reset()
     {
-        m_uiArmorTimer = urand(5000, 13000);
-        m_uiChainTimer = urand(10000, 30000);
-        m_uiQuakeTimer = urand(25000, 35000);
-        m_uiOverrunTimer = urand(30000, 45000);
+        m_uiArmorTimer     = urand(5000, 13000);
+        m_uiChainTimer     = urand(10000, 30000);
+        m_uiQuakeTimer     = urand(25000, 35000);
+        m_uiOverrunTimer   = urand(30000, 45000);
 
-        m_bHasEnrage = false;
+        m_bHasEnrage       = false;
     }
 
     void KilledUnit(Unit* pVictim)

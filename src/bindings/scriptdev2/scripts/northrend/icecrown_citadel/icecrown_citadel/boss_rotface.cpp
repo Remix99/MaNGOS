@@ -1,26 +1,26 @@
 /* Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-*/
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 /* ScriptData
 SDName: boss_rotface
 SD%Complete: 99%
-SDComment: by michalpolko with special thanks to:
-mangosR2 team and all who are supporting us with feedback, testing and fixes
-TrinityCore for some info about spells IDs
-everybody whom I forgot to mention here ;)
+SDComment:  by michalpolko with special thanks to:
+            mangosR2 team and all who are supporting us with feedback, testing and fixes
+            TrinityCore for some info about spells IDs
+            everybody whom I forgot to mention here ;)
 
 SDCategory: Icecrown Citadel
 EndScriptData */
@@ -30,46 +30,46 @@ EndScriptData */
 
 enum BossSpells
 {
-    SPELL_BERSERK = 47008,
+    SPELL_BERSERK               = 47008,
 
     // Mutated Infection
-    SPELL_MUTATED_INFECTION_1 = 70090, // periodic trigger auras
-    SPELL_MUTATED_INFECTION_2 = 70003,
-    SPELL_MUTATED_INFECTION_3 = 70004,
-    SPELL_MUTATED_INFECTION_4 = 70005,
-    SPELL_MUTATED_INFECTION_5 = 70006,
+    SPELL_MUTATED_INFECTION_1   = 70090, // periodic trigger auras
+    SPELL_MUTATED_INFECTION_2   = 70003,
+    SPELL_MUTATED_INFECTION_3   = 70004,
+    SPELL_MUTATED_INFECTION_4   = 70005,
+    SPELL_MUTATED_INFECTION_5   = 70006,
 
     // Slime Spray
-    SPELL_SLIME_SPRAY_SUMMON = 70882,
-    SPELL_SLIME_SPRAY = 69508,
+    SPELL_SLIME_SPRAY_SUMMON    = 70882,
+    SPELL_SLIME_SPRAY           = 69508,
 
     // Ooze Flood
-    SPELL_OOZE_FLOOD_PERIODIC = 70069, // periodically trigger ooze flood
-    SPELL_OOZE_FLOOD_REMOVE = 70079,
+    SPELL_OOZE_FLOOD_PERIODIC   = 70069, // periodically trigger ooze flood
+    SPELL_OOZE_FLOOD_REMOVE     = 70079,
 
     // Little Ooze
-    SPELL_STICKY_OOZE = 69774,
-    SPELL_STICKY_AURA = 69776,
-    SPELL_WEAK_RADIATING_OOZE = 69750,
-    SPELL_LITTLE_OOZE_COMBINE = 69537, // periodic check
-    SPELL_MERGE = 69889,
+    SPELL_STICKY_OOZE           = 69774,
+    SPELL_STICKY_AURA           = 69776,
+    SPELL_WEAK_RADIATING_OOZE   = 69750,
+    SPELL_LITTLE_OOZE_COMBINE   = 69537, // periodic check
+    SPELL_MERGE                 = 69889,
 
     // Big Ooze
-    SPELL_UNSTABLE_OOZE = 69558, // stacking buff
-    SPELL_RADIATING_OOZE = 69760,
-    SPELL_BIG_OOZE_COMBINE = 69552, // periodic check
-    SPELL_BIG_OOZE_BUFF_COMB = 69611, // periodic check
+    SPELL_UNSTABLE_OOZE         = 69558, // stacking buff
+    SPELL_RADIATING_OOZE        = 69760,
+    SPELL_BIG_OOZE_COMBINE      = 69552, // periodic check
+    SPELL_BIG_OOZE_BUFF_COMB    = 69611, // periodic check
 
     // Vile Gas (heroic)
-    SPELL_VILE_GAS_SUMMON = 72288,
-    SPELL_VILE_GAS_SUMMON_TRIG = 72287,
-    SPELL_VILE_GAS = 71307,
-    SPELL_VILE_GAS_TRIGGERED = 72272,
+    SPELL_VILE_GAS_SUMMON       = 72288,
+    SPELL_VILE_GAS_SUMMON_TRIG  = 72287,
+    SPELL_VILE_GAS              = 71307,
+    SPELL_VILE_GAS_TRIGGERED    = 72272,
 
     // others
-    NPC_PUDDLE_STALKER = 37013,
-    NPC_LITTLE_OOZE = 36897,
-    NPC_BIG_OOZE = 36899,
+    NPC_PUDDLE_STALKER          = 37013,
+    NPC_LITTLE_OOZE             = 36897,
+    NPC_BIG_OOZE                = 36899,
 };
 
 static uint32 uiMutatedInfections[5] =
@@ -84,23 +84,23 @@ static uint32 uiMutatedInfections[5] =
 //talks
 enum
 {
-    SAY_PRECIOUS_DIES = -1631070,
-    SAY_AGGRO = -1631071,
-    SAY_SLIME_SPRAY = -1631072,
-    SAY_OOZE_EXPLODE = -1631073,
-    SAY_SLIME_FLOW_1 = -1631074,
-    SAY_SLIME_FLOW_2 = -1631075,
-    SAY_SLAY_1 = -1631076,
-    SAY_SLAY_2 = -1631077,
-    SAY_BERSERK = -1631078,
-    SAY_DEATH = -1631079,
+    SAY_PRECIOUS_DIES           = -1631070,
+    SAY_AGGRO                   = -1631071,
+    SAY_SLIME_SPRAY             = -1631072,
+    SAY_OOZE_EXPLODE            = -1631073,
+    SAY_SLIME_FLOW_1            = -1631074,
+    SAY_SLIME_FLOW_2            = -1631075,
+    SAY_SLAY_1                  = -1631076,
+    SAY_SLAY_2                  = -1631077,
+    SAY_BERSERK                 = -1631078,
+    SAY_DEATH                   = -1631079,
 };
 
 static Locations SpawnLoc[]=
 {
-    {4322.85f, 3164.17f, 389.40f, 3.76f}, // festergut side
-    {4311.91f, 3157.42f, 389.00f, 3.62f}, // hacky (LoS problems?) festergut side
-    {4391.38f, 3163.71f, 389.40f, 5.8f} // rotface side
+    {4322.85f, 3164.17f, 389.40f, 3.76f},               // festergut side
+    {4311.91f, 3157.42f, 389.00f, 3.62f},               // hacky (LoS problems?) festergut side
+    {4391.38f, 3163.71f, 389.40f, 5.8f}                 // rotface side
 };
 
 // Rotface
@@ -258,7 +258,7 @@ CreatureAI* GetAI_boss_rotface(Creature* pCreature)
 }
 
 // all passive dummy NPCs
-struct MANGOS_DLL_DECL mob_rotface_ooze_dummyAI : public ScriptedAI
+struct MANGOS_DLL_DECL  mob_rotface_ooze_dummyAI : public ScriptedAI
 {
     mob_rotface_ooze_dummyAI(Creature *pCreature) : ScriptedAI(pCreature)
     {

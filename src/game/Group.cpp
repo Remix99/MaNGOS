@@ -35,7 +35,6 @@
 #include "Util.h"
 #include "LootMgr.h"
 #include "LFGMgr.h"
-#include "Chat.h"
 
 // Playerbot  	
 #include "playerbot/PlayerbotMgr.h"
@@ -643,7 +642,7 @@ void Group::GroupLoot(WorldObject* pSource, Loot* loot)
 
         //roll for over-threshold item if it's one-player loot
         if (itemProto->Quality >= uint32(m_lootThreshold) && !lootItem.freeforall)
-            StartLootRool(pSource, GROUP_LOOT, loot, itemSlot, maxEnchantingSkill);
+            StartLootRoll(pSource, GROUP_LOOT, loot, itemSlot, maxEnchantingSkill);
         else
             lootItem.is_underthreshold = 1;
     }
@@ -665,7 +664,7 @@ void Group::NeedBeforeGreed(WorldObject* pSource, Loot* loot)
 
         //only roll for one-player items, not for ones everyone can get
         if (itemProto->Quality >= uint32(m_lootThreshold) && !lootItem.freeforall)
-            StartLootRool(pSource, NEED_BEFORE_GREED, loot, itemSlot, maxEnchantingSkill);
+            StartLootRoll(pSource, NEED_BEFORE_GREED, loot, itemSlot, maxEnchantingSkill);
         else
             lootItem.is_underthreshold = 1;
     }
@@ -785,25 +784,25 @@ bool Group::CountRollVote(ObjectGuid const& playerGUID, Rolls::iterator& rollI, 
     return false;
 }
 
-void Group::StartLootRool(WorldObject* lootTarget, LootMethod method, Loot* loot, uint8 itemSlot, uint32 maxEnchantingSkill)
+void Group::StartLootRoll(WorldObject* lootTarget, LootMethod method, Loot* loot, uint8 itemSlot, uint32 maxEnchantingSkill)
 {
     if (itemSlot >= loot->items.size())
         return;
 
-    LootItem const& lootItem =  loot->items[itemSlot];
+    LootItem const& lootItem = loot->items[itemSlot];
 
     Roll* r = new Roll(lootTarget->GetObjectGuid(), method, lootItem);
 
     //a vector is filled with only near party members
-    for(GroupReference *itr = GetFirstMember(); itr != NULL; itr = itr->next())
+    for (GroupReference* itr = GetFirstMember(); itr != NULL; itr = itr->next())
     {
-        Player *playerToRoll = itr->getSource();
-        if(!playerToRoll || !playerToRoll->GetSession())
+        Player* playerToRoll = itr->getSource();
+        if (!playerToRoll || !playerToRoll->GetSession())
             continue;
 
         if (lootItem.AllowedForPlayer(playerToRoll))
         {
-            if (playerToRoll->IsWithinDist(lootTarget, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
+            if (playerToRoll->IsWithinDistInMap(lootTarget, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
             {
                 r->playerVote[playerToRoll->GetObjectGuid()] = ROLL_NOT_EMITED_YET;
                 ++r->totalPlayersRolling;
@@ -1759,7 +1758,7 @@ bool Group::InCombatToInstance(uint32 instanceId)
     return false;
 }
 
-bool Group::SetPlayerMap(const ObjectGuid guid, uint32 mapid)
+bool Group::SetPlayerMap(ObjectGuid guid, uint32 mapid)
 {
     member_witerator slot = _getMemberWSlot(guid);
     if (slot != m_memberSlots.end())
@@ -2043,7 +2042,6 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
     uint32 sum_level = 0;
     Player* member_with_max_level = NULL;
     Player* not_gray_member_with_max_level = NULL;
-    Player* victim = NULL;
 
     GetDataForXPAtKill(pVictim,count,sum_level,member_with_max_level,not_gray_member_with_max_level,player_tap);
 
@@ -2056,9 +2054,6 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
         bool is_raid = PvP ? false : sMapStore.LookupEntry(pVictim->GetMapId())->IsRaid() && isRaidGroup();
         bool is_dungeon = PvP ? false : sMapStore.LookupEntry(pVictim->GetMapId())->IsDungeon();
         float group_rate = MaNGOS::XP::xp_in_group_rate(count,is_raid);
-    
-        if(pVictim->GetTypeId() == TYPEID_PLAYER && PvP)
-            victim = (Player*)pVictim;
 
         for(GroupReference *itr = GetFirstMember(); itr != NULL; itr = itr->next())
         {
@@ -2072,33 +2067,26 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
 
             if(!pGroupGuy->IsAtGroupRewardDistance(pVictim))
                 continue;                               // member (alive or dead) or his corpse at req. distance
+            if (pVictim->GetTypeId()==TYPEID_UNIT)
+                if (CreatureInfo const* normalInfo = ObjectMgr::GetCreatureTemplate(pVictim->GetEntry()))
+                    if(uint32 normalType = normalInfo->type)
+                        pGroupGuy->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_KILL_CREATURE_TYPE, normalType, xp);
 
             RewardGroupAtKill_helper(pGroupGuy, pVictim, count, PvP, group_rate, sum_level, is_dungeon, not_gray_member_with_max_level, member_with_max_level, xp);
-      
-      // Reward group members
-            if(victim && (player_tap->GetSession()->GetRemoteAddress() != victim->GetSession()->GetRemoteAddress()))
-            {
-                ChatHandler(pGroupGuy).PSendSysMessage(PVP_CHAT_COLOR"Group member %s killed %s, you have been awarded a Badge of Justice", player_tap->GetName(), victim->GetName());
-                pGroupGuy->StoreNewItemInBestSlots(29434, 1);
-            }
-    }
+        }
 
         if(player_tap)
         {
             // member (alive or dead) or his corpse at req. distance
             if(player_tap->IsAtGroupRewardDistance(pVictim))
                 RewardGroupAtKill_helper(player_tap, pVictim, count, PvP, group_rate, sum_level, is_dungeon, not_gray_member_with_max_level, member_with_max_level, xp);
-        
-      // Handle victims death for PvP mod
-            if(victim && (player_tap->GetSession()->GetRemoteAddress() != victim->GetSession()->GetRemoteAddress()))
-            {
-                victim->HandlePvPDeath(player_tap);
-                ChatHandler(player_tap).PSendSysMessage(PVP_CHAT_COLOR"Group member %s killed %s, you have been awarded a Badge of Justice", player_tap->GetName(), victim->GetName());
-                player_tap->StoreNewItemInBestSlots(29434, 1);
-                player_tap->PvP_CurrentDeaths = 0;
-                player_tap->CastSpell(player_tap, 47883, true);
-            }
-    }
+
+            if (pVictim->GetTypeId()==TYPEID_UNIT)
+                if (CreatureInfo const* normalInfo = ObjectMgr::GetCreatureTemplate(pVictim->GetEntry()))
+                    if(uint32 normalType = normalInfo->type)
+                        player_tap->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_KILL_CREATURE_TYPE, normalType, xp);
+            player_tap->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_GET_KILLING_BLOWS, 1, 0, pVictim);
+        }
     }
 }
 

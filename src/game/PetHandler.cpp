@@ -1,20 +1,20 @@
 /*
-* Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-*/
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 #include "Common.h"
 #include "WorldPacket.h"
@@ -39,7 +39,7 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
     recv_data >> targetGuid;
 
     uint32 spellid = UNIT_ACTION_BUTTON_ACTION(data);
-    uint8 flag = UNIT_ACTION_BUTTON_TYPE(data); // delete = 0x07 CastSpell = C1
+    uint8 flag = UNIT_ACTION_BUTTON_TYPE(data);             // delete = 0x07 CastSpell = C1
 
     DETAIL_LOG("HandlePetAction: %s flag is %u, spellid is %u, target %s.", petGuid.GetString().c_str(), uint32(flag), spellid, targetGuid.GetString().c_str());
 
@@ -91,7 +91,7 @@ void WorldSession::HandlePetStopAttack(WorldPacket& recv_data)
     ObjectGuid petGuid;
     recv_data >> petGuid;
 
-    Unit* pet = GetPlayer()->GetMap()->GetUnit(petGuid); // pet or controlled creature/player
+    Unit* pet = GetPlayer()->GetMap()->GetUnit(petGuid);    // pet or controlled creature/player
     if (!pet)
     {
         sLog.outError("%s doesn't exist.", petGuid.GetString().c_str());
@@ -176,7 +176,7 @@ void WorldSession::HandlePetSetAction(WorldPacket& recv_data)
     DETAIL_LOG("HandlePetSetAction. CMSG_PET_SET_ACTION");
 
     ObjectGuid petGuid;
-    uint8 count;
+    uint8  count;
 
     recv_data >> petGuid;
 
@@ -380,7 +380,7 @@ void WorldSession::HandlePetRename(WorldPacket& recv_data)
 void WorldSession::HandlePetAbandon(WorldPacket& recv_data)
 {
     ObjectGuid guid;
-    recv_data >> guid; // pet guid
+    recv_data >> guid;                                      // pet guid
 
     DETAIL_LOG("HandlePetAbandon. CMSG_PET_ABANDON pet guid is %s", guid.GetString().c_str());
 
@@ -411,7 +411,7 @@ void WorldSession::HandlePetSpellAutocastOpcode(WorldPacket& recvPacket)
 
     ObjectGuid guid;
     uint32 spellid;
-    uint8 state; // 1 for on, 0 for off
+    uint8  state;                                           // 1 for on, 0 for off
     recvPacket >> guid >> spellid >> state;
 
     Creature* pet = _player->GetMap()->GetAnyTypeCreature(guid);
@@ -458,8 +458,8 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
 
     ObjectGuid guid;
     uint32 spellid;
-    uint8 cast_count;
-    uint8 unk_flags; // flags (if 0x02 - some additional data are received)
+    uint8  cast_count;
+    uint8  unk_flags;                                       // flags (if 0x02 - some additional data are received)
 
     recvPacket >> guid >> cast_count >> spellid >> unk_flags;
 

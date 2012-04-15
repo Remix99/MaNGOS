@@ -186,7 +186,7 @@ void PlayerTaxi::InitTaxiNodesForLevel(uint32 race, uint32 chrClass, uint32 leve
 
 void PlayerTaxi::LoadTaxiMask(const char* data)
 {
-    Tokens tokens(data, ' ');;
+    Tokens tokens(data, ' ');
 
     int index;
     Tokens::iterator iter;
@@ -511,19 +511,6 @@ Player::Player (WorldSession *session): Unit(), m_mover(this), m_camera(this), m
         m_forced_speed_changes[i] = 0;
 
     m_stableSlots = 0;
-  
-  /////////////////// PvP System /////////////////////
-    PvP_TotalKills = 0;
-    PvP_CurrentKills = 0;
-
-    PvP_TotalDeaths = 0;
-    PvP_CurrentDeaths = 0;
-
-    PvP_KillStreak = 0;
-    PvP_GroupKills = 0;
-
-    PvP_LastKillGuid = 0;
-    PvP_LastKillCount = 0;
 
     /////////////////// Instance System /////////////////////
 
@@ -2746,6 +2733,12 @@ void Player::GiveLevel(uint32 level)
 
     GetLFGState()->Update();
 
+    // resend quests status directly
+    if (GetSession())
+    {
+        WorldPacket packet = WorldPacket();
+        GetSession()->HandleQuestgiverStatusMultipleQuery(packet);
+    }
 }
 
 void Player::UpdateFreeTalentPoints(bool resetIfNeed)
@@ -3758,7 +3751,7 @@ void Player::RemoveSpellCooldown( uint32 spell_id, bool update /* = false */ )
 
 void Player::RemoveSpellCategoryCooldown(uint32 cat, bool update /* = false */)
 {
-	if (m_spellCooldowns.empty())
+    if (m_spellCooldowns.empty())
         return;
 
     SpellCategoryStore::const_iterator ct = sSpellCategoryStore.find(cat);
@@ -3823,35 +3816,6 @@ void Player::RemoveAllSpellCooldown()
         MAPLOCK_WRITE(this, MAP_LOCK_TYPE_DEFAULT);
         m_spellCooldowns.clear();
     }
-}
-
-void Player::_LoadPvPData(QueryResult* result)
-{
-    ////                                                     0           1             2            3              4           5           6             7
-    //QueryResult *result = CharacterDatabase.PQuery("SELECT totalkills, currentkills, totaldeaths, currentdeaths, groupkills, killstreak, lastkillguid, lastkillcount FROM character_pvp WHERE guid %u", GetGUIDLow());
-
-    if(result)
-    {
-        do
-        {
-            Field *fields = result->Fetch();
-
-            PvP_TotalKills    = fields[0].GetUInt32();
-            PvP_CurrentKills  = fields[1].GetUInt32();
-
-            PvP_TotalDeaths   = fields[2].GetUInt32();
-            PvP_CurrentDeaths = fields[3].GetUInt32();
-
-            PvP_GroupKills    = fields[4].GetUInt32();
-            PvP_KillStreak    = fields[5].GetUInt32();
-
-            PvP_LastKillGuid  = fields[6].GetUInt32();
-            PvP_LastKillCount = fields[7].GetUInt32();
-
-        } while( result->NextRow() );
-    }
-
-    delete result;
 }
 
 void Player::_LoadSpellCooldowns(QueryResult *result)
@@ -4559,7 +4523,6 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
             CharacterDatabase.PExecute("DELETE FROM character_equipmentsets WHERE guid = '%u'", lowguid);
             CharacterDatabase.PExecute("DELETE FROM guild_eventlog WHERE PlayerGuid1 = '%u' OR PlayerGuid2 = '%u'", lowguid, lowguid);
             CharacterDatabase.PExecute("DELETE FROM guild_bank_eventlog WHERE PlayerGuid = '%u'", lowguid);
-            CharacterDatabase.PExecute("DELETE FROM character_pvp WHERE guid = '%u'", lowguid);
             CharacterDatabase.CommitTransaction();
             break;
         }
@@ -6820,38 +6783,40 @@ void Player::UpdateHonorFields()
         uint32 HonorKills = GetUInt32Value(PLAYER_FIELD_LIFETIME_HONORBALE_KILLS);
         uint32 victim_rank = 0;
 
-        // lets check if player fits to title brackets (none of players reached by now 50k HK. this is bad condition in aspect
-        // of making code generic, but allows to save some CPU and avoid fourther steps execution
-        if (HonorKills < 100 || HonorKills > 50000)
+        //this may consume a lot of cpu cycles.
+        //You can use this sql query: "SELECT max( totalKills ) FROM characters" to get the max totalKills 
+        //of yours players and edit this condition to:  "if (HonorKills < 15 || HonorKills > max(totalKills)+1)) return;"
+        //don't forget to replace max(totalKills) with the result of query
+        if (HonorKills < 15)
             return;
 
-        if (HonorKills >= 100 && HonorKills < 200)
+        if (HonorKills >= 15 && HonorKills < 2000)
             victim_rank = 1;
-        else if (HonorKills >= 200 && HonorKills < 500)
+        else if (HonorKills >= 2000 && HonorKills < 5000)
             victim_rank = 2;
-        else if (HonorKills >= 500 && HonorKills < 1000)
+        else if (HonorKills >= 5000 && HonorKills < 10000)
             victim_rank = 3;
-        else if (HonorKills >= 1000 && HonorKills < 2100)
+        else if (HonorKills >= 10000 && HonorKills < 15000)
             victim_rank = 4;
-        else if (HonorKills >= 2100 && HonorKills < 3200)
+        else if (HonorKills >= 15000 && HonorKills < 20000)
             victim_rank = 5;
-        else if (HonorKills >= 3200 && HonorKills < 4300)
+        else if (HonorKills >= 20000 && HonorKills < 25000)
             victim_rank = 6;
-        else if (HonorKills >= 4300 && HonorKills < 5400)
+        else if (HonorKills >= 25000 && HonorKills < 30000)
             victim_rank = 7;
-        else if (HonorKills >= 5400 && HonorKills < 6500)
+        else if (HonorKills >= 30000 && HonorKills < 35000)
             victim_rank = 8;
-        else if (HonorKills >= 6500 && HonorKills < 7600)
+        else if (HonorKills >= 35000 && HonorKills < 40000)
             victim_rank = 9;
-        else if (HonorKills >= 7600 && HonorKills < 9000)
+        else if (HonorKills >= 40000 && HonorKills < 45000)
             victim_rank = 10;
-        else if (HonorKills >= 9000 && HonorKills < 15000)
+        else if (HonorKills >= 45000 && HonorKills < 50000)
             victim_rank = 11;
-        else if (HonorKills >= 15000 && HonorKills < 30000)
+        else if (HonorKills >= 50000 && HonorKills < 55000)
             victim_rank = 12;
-        else if (HonorKills >= 30000 && HonorKills < 50000)
+        else if (HonorKills >= 55000 && HonorKills < 60000)
             victim_rank = 13;
-        else if (HonorKills == 50000)
+        else if (HonorKills >= 60000)
             victim_rank = 14;
 
         // horde titles starting from 15+
@@ -6967,6 +6932,7 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, float honor)
             // and those in a lifetime
             ApplyModUInt32Value(PLAYER_FIELD_LIFETIME_HONORBALE_KILLS, 1, true);
             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
+            UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL, 1);
             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_CLASS, pVictim->getClass());
             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HK_RACE, pVictim->getRace());
         }
@@ -11839,6 +11805,7 @@ Item* Player::StoreNewItem(ItemPosCountVec const& dest, uint32 item, bool update
         ResetCachedGearScore();
         ItemAddedQuestCheck( item, count );
         GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_RECEIVE_EPIC_ITEM, item, count);
+        GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_OWN_ITEM, item, count);
         pItem = StoreItem( dest, pItem, update );
 
         if (allowedLooters && pItem->GetProto()->GetMaxStackSize() == 1 && pItem->IsSoulBound())
@@ -11883,7 +11850,6 @@ Item* Player::StoreItem( ItemPosCountVec const& dest, Item* pItem, bool update )
 
         lastItem = _StoreItem(pos,pItem,count,true,update);
     }
-    GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_OWN_ITEM, entry);
     return lastItem;
 }
 
@@ -16470,37 +16436,39 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder *holder )
 
         player_at_bg = currentBg && currentBg->IsPlayerInBattleGround(GetObjectGuid());
 
-        if (player_at_bg && currentBg->GetStatus() != STATUS_WAIT_LEAVE)
+        if (player_at_bg)
         {
-            BattleGroundQueueTypeId bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(currentBg->GetTypeID(), currentBg->GetArenaType());
-            AddBattleGroundQueueId(bgQueueTypeId);
+            if (currentBg->GetStatus() != STATUS_WAIT_LEAVE)
+            {
+                BattleGroundQueueTypeId bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(currentBg->GetTypeID(), currentBg->GetArenaType());
+                AddBattleGroundQueueId(bgQueueTypeId);
 
-            m_bgData.bgTypeID = currentBg->GetTypeID();     // bg data not marked as modified
+                m_bgData.bgTypeID = currentBg->GetTypeID();     // bg data not marked as modified
 
-            //join player to battleground group
-            currentBg->EventPlayerLoggedIn(this, GetObjectGuid());
-            currentBg->AddOrSetPlayerToCorrectBgGroup(this, GetObjectGuid(), m_bgData.bgTeam);
+                //join player to battleground group
+                currentBg->EventPlayerLoggedIn(this, GetObjectGuid());
+                currentBg->AddOrSetPlayerToCorrectBgGroup(this, GetObjectGuid(), m_bgData.bgTeam);
 
-            SetInviteForBattleGroundQueueType(bgQueueTypeId,currentBg->GetInstanceID());
-        }
-        else
-        {
-            // leave bg
-            if (player_at_bg)
+                SetInviteForBattleGroundQueueType(bgQueueTypeId,currentBg->GetInstanceID());
+
+                SetLocationMapId(savedLocation.mapid);
+                Relocate(savedLocation.coord_x, savedLocation.coord_y, savedLocation.coord_z, savedLocation.orientation);
+            }
+            else
             {
                 currentBg->RemovePlayerAtLeave(GetObjectGuid(), false, true);
                 player_at_bg = false;
+
+                // move to bg enter point
+                const WorldLocation& _loc = GetBattleGroundEntryPoint();
+                SetLocationMapId(_loc.mapid);
+                Relocate(_loc.coord_x, _loc.coord_y, _loc.coord_z, _loc.orientation);
+
+                // We are not in BG anymore
+                SetBattleGroundId(0, BATTLEGROUND_TYPE_NONE);
+                // remove outdated DB data in DB
+                _SaveBGData(true);
             }
-
-            // move to bg enter point
-            const WorldLocation& _loc = GetBattleGroundEntryPoint();
-            SetLocationMapId(_loc.mapid);
-            Relocate(_loc.coord_x, _loc.coord_y, _loc.coord_z, _loc.orientation);
-
-            // We are not in BG anymore
-            SetBattleGroundId(0, BATTLEGROUND_TYPE_NONE);
-            // remove outdated DB data in DB
-            _SaveBGData(true);
         }
     }
     else
@@ -16825,8 +16793,11 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder *holder )
     if (m_bgData.HasTaxiPath())
     {
         m_taxi.ClearTaxiDestinations();
-        for (int i = 0; i < 2; ++i)
-            m_taxi.AddTaxiDestination(m_bgData.taxiPath[i]);
+        if (!player_at_bg)
+        {
+            for (int i = 0; i < 2; ++i)
+                m_taxi.AddTaxiDestination(m_bgData.taxiPath[i]);
+        }
     }
     else if (!m_taxi.LoadTaxiDestinationsFromString(taxi_nodes, GetTeam()))
     {
@@ -16965,7 +16936,6 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder *holder )
     m_achievementMgr.CheckAllAchievementCriteria();
 
     _LoadEquipmentSets(holder->GetResult(PLAYER_LOGIN_QUERY_LOADEQUIPMENTSETS));
-    _LoadPvPData(holder->GetResult(PLAYER_LOGIN_QUERY_LOADPVP));
 
     if (!GetGroup() || !GetGroup()->isLFDGroup())
     {
@@ -18490,7 +18460,6 @@ void Player::SaveToDB()
     GetSession()->SaveTutorialsData();                      // changed only while character in game
     _SaveGlyphs();
     _SaveTalents();
-    _SavePvPData();
 
     CharacterDatabase.CommitTransaction();
 
@@ -19096,13 +19065,6 @@ void Player::_SaveTalents()
             }
         }
     }
-}
-
-void Player::_SavePvPData()
-{
-    CharacterDatabase.PExecute("DELETE FROM character_pvp WHERE guid='%u'", GetGUIDLow());
-    CharacterDatabase.PExecute("INSERT INTO character_pvp (guid, totalkills, currentkills, totaldeaths, currentdeaths, groupkills, killstreak, lastkillguid, lastkillcount) VALUES (%u, %u, %u, %u, %u, %u, %u, %u, %u)",
-        GetGUIDLow(), PvP_TotalKills, PvP_CurrentKills, PvP_TotalDeaths, PvP_CurrentDeaths, PvP_GroupKills, PvP_KillStreak, PvP_LastKillGuid, PvP_LastKillCount);
 }
 
 // save player stats -- only for external usage
@@ -21718,7 +21680,8 @@ void Player::SendAurasForTarget(Unit *target)
 
 void Player::SetDailyQuestStatus( uint32 quest_id )
 {
-    for(uint32 quest_daily_idx = 0; quest_daily_idx < PLAYER_MAX_DAILY_QUESTS; ++quest_daily_idx)
+    uint32 quest_daily_idx;
+    for(quest_daily_idx = 0; quest_daily_idx < PLAYER_MAX_DAILY_QUESTS; ++quest_daily_idx)
     {
         if(!GetUInt32Value(PLAYER_FIELD_DAILY_QUESTS_1+quest_daily_idx))
         {
@@ -21727,6 +21690,9 @@ void Player::SetDailyQuestStatus( uint32 quest_id )
             break;
         }
     }
+    // if first daily quest at curent day
+    if (!quest_daily_idx)
+        GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_DAILY_QUEST_DAILY, 1);
 }
 
 void Player::SetWeeklyQuestStatus( uint32 quest_id )
@@ -21743,8 +21709,17 @@ void Player::SetMonthlyQuestStatus(uint32 quest_id)
 
 void Player::ResetDailyQuestStatus()
 {
-    for(uint32 quest_daily_idx = 0; quest_daily_idx < PLAYER_MAX_DAILY_QUESTS; ++quest_daily_idx)
+    uint32 dailyQuestCount = 0;
+    for(uint32 quest_daily_idx = 0; quest_daily_idx < PLAYER_MAX_DAILY_QUESTS; ++quest_daily_idx)   
+    {
+        if(GetUInt32Value(PLAYER_FIELD_DAILY_QUESTS_1+quest_daily_idx))
+            ++dailyQuestCount;
         SetUInt32Value(PLAYER_FIELD_DAILY_QUESTS_1+quest_daily_idx,0);
+    }
+
+    // Reset daily_quest_daily if there are no daily quest last day
+    if(!dailyQuestCount)
+        GetAchievementMgr().ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_DAILY_QUEST_DAILY,ACHIEVEMENT_CRITERIA_CONDITION_DAILY);
 
     // DB data deleted in caller
     m_DailyQuestChanged = false;
@@ -22210,6 +22185,8 @@ void Player::RewardSinglePlayerAtKill(Unit* pVictim)
     // honor can be in PvP and !PvP (racial leader) cases
     RewardHonor(pVictim,1);
 
+    GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_GET_KILLING_BLOWS, 1, 0, pVictim);
+
     // xp and reputation only in !PvP case
     if(!PvP)
     {
@@ -22222,104 +22199,12 @@ void Player::RewardSinglePlayerAtKill(Unit* pVictim)
         // normal creature (not pet/etc) can be only in !PvP case
         if (pVictim->GetTypeId()==TYPEID_UNIT)
             if (CreatureInfo const* normalInfo = ObjectMgr::GetCreatureTemplate(pVictim->GetEntry()))
+            {
                 KilledMonster(normalInfo, pVictim->GetObjectGuid());
+                if(uint32 normalType = normalInfo->type)
+                    GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_KILL_CREATURE_TYPE, normalType, xp);
+            }
     }
-  
-    /*********************************************************/
-    /***                  CUSTOM PVP SYSTEM                ***/
-    /*********************************************************/
-
-    // Stop here if:
-    // - The victim isn't a player
-    // - The player killed himself
-    // - The player and the victim aren't in the same zone
-    // - The victim is 10 levels lower than the player
-    if( pVictim->GetTypeId() != TYPEID_PLAYER
-        || GetGUIDLow() == pVictim->GetGUIDLow ()
-        || GetZoneId() != pVictim->GetZoneId()
-        || getLevel() > pVictim->getLevel() + 10 )
-        return;
-
-    Player* victim = (Player*)pVictim;
-
-    // Stop here if:
-    // - The player killed someone on the same IP address
-    // - The player is in a raid group
-    if ( GetSession()->GetRemoteAddress() == victim->GetSession()->GetRemoteAddress()
-        || ( GetGroup() && GetGroup()->isRaidGroup() ) )
-        return;
-
-    ChatHandler pChat = ChatHandler(this);
-    ChatHandler vChat = ChatHandler(victim);
-    uint32 victimOldSpree = 0;
-    uint32 rewardCount = 0;
-
-    // If player has more than 10 kills assign to old spree variable
-    if(victim->PvP_CurrentKills >= 10)
-        victimOldSpree = victim->PvP_CurrentKills;
-
-    victim->HandlePvPDeath(this);
-
-    // Stop if the victim has been killed more than 2 times in a row
-    if (victim->GetGUIDLow() == PvP_LastKillGuid && PvP_LastKillCount > 2)
-    {
-        pChat.PSendSysMessage(PVP_CHAT_COLOR"You already killed this person twice in a row, so you will not be rewarded this time.");
-        return;
-    }
-
-    /* KILLER STATS */
-    ++PvP_CurrentKills;
-    ++PvP_TotalKills;
-    PvP_CurrentDeaths = 0;
-
-    if (PvP_CurrentKills > PvP_KillStreak)
-        PvP_KillStreak = PvP_CurrentKills;
-
-    if(PvP_LastKillGuid == victim->GetGUIDLow())
-    {
-        ++PvP_LastKillCount;
-    }
-    else
-    {
-        PvP_LastKillGuid = victim->GetGUIDLow();
-        PvP_LastKillCount = 1;
-    }
-
-    if(PvP_CurrentKills < 10)
-        rewardCount = 1;
-    else if(PvP_CurrentKills < 20)
-        rewardCount = 2;
-    else
-        rewardCount = 5;
-
-    pChat.PSendSysMessage(PVP_CHAT_COLOR"You killed %s. Your Consecutive Kills: %u, Total Kills: %u. You received your reward, [%s]x%u!", victim->GetName(), PvP_CurrentKills, PvP_TotalKills, "Badge of Justice", rewardCount);
-
-    if(PvP_CurrentKills % 10 == 0)
-    {
-        rewardCount += 5;
-        pChat.PSendGlobalSysMessage(PVP_CHAT_GLOBAL_COLOR"%s is on a %u kill, killing spree! Extra [%s]x5 is rewarded!", GetName(), PvP_CurrentKills, "Badge of Justice");
-    }
-
-    if(victimOldSpree >= 10)
-        rewardCount += 5;
-
-    // Give reward to killer
-    StoreNewItemInBestSlots(29434, rewardCount);
-    CastSpell(this, 47883, true);
-}
-
-void Player::HandlePvPDeath(Player* pKiller)
-{
-    ++PvP_CurrentDeaths;
-    ++PvP_TotalDeaths;
-
-    if(PvP_CurrentKills >= 10)
-        ChatHandler(this).PSendGlobalSysMessage(PVP_CHAT_GLOBAL_COLOR"%s lost a %u kill, killing spree to %s! Extra [%s]x5 is rewarded!", GetName(), PvP_CurrentKills, pKiller->GetName(), "Badge of Justice");
-
-    ChatHandler(this).PSendSysMessage(PVP_CHAT_COLOR"You were killed by %s. Your Consecutive Deaths: %u, Total Deaths: %u.", pKiller->GetName(), PvP_CurrentDeaths, PvP_TotalDeaths);
-
-    // Reset players kills after death
-    PvP_CurrentKills = 0;
 }
 
 void Player::RewardPlayerAndGroupAtEvent(uint32 creature_id, WorldObject* pRewardSource)
@@ -25326,7 +25211,7 @@ void Player::InterruptTaxiFlying()
     {
         GetUnitStateMgr().DropAction(UNIT_ACTION_TAXI);
         m_taxi.ClearTaxiDestinations();
-        GetUnitStateMgr().InitDefaults();
+        GetUnitStateMgr().InitDefaults(false);
     }
     // save only in non-flight case
     else

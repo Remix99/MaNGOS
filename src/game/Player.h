@@ -69,9 +69,6 @@ typedef std::deque<Mail*> PlayerMails;
 #define PLAYER_MAX_DAILY_QUESTS     25
 #define PLAYER_EXPLORED_ZONES_SIZE  128
 
-#define PVP_CHAT_COLOR "|c000000ff[PvP]|r|cFFDAA520" //(Blue)[PvP](Goldenrod)Message
-#define PVP_CHAT_GLOBAL_COLOR "|c00ff0000[PvP]|r|cFF32CD32" //(Red)[PvP](Lime Green)Message
-
 // Note: SPELLMOD_* values is aura types in fact
 enum SpellModType
 {
@@ -572,7 +569,8 @@ enum AtLoginFlags
     AT_LOGIN_RESET_PET_TALENTS = 0x10,
     AT_LOGIN_FIRST             = 0x20,
     AT_LOGIN_CHANGE_FACTION    = 0x40,
-    AT_LOGIN_CHANGE_RACE       = 0x80
+    AT_LOGIN_CHANGE_RACE       = 0x80,
+    AT_LOGIN_CHECK_TITLES      = 0x100
 };
 
 typedef std::map<uint32, QuestStatusData> QuestStatusMap;
@@ -881,7 +879,6 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOADWEEKLYQUESTSTATUS,
     PLAYER_LOGIN_QUERY_LOADMONTHLYQUESTSTATUS,
     PLAYER_LOGIN_QUERY_LOADRANDOMBG,
-    PLAYER_LOGIN_QUERY_LOADPVP,
 
     MAX_PLAYER_LOGIN_QUERY
 };
@@ -1141,8 +1138,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SetGMVisible(bool on);
         void SetPvPDeath(bool on) { if (on) m_ExtraFlags |= PLAYER_EXTRA_PVP_DEATH; else m_ExtraFlags &= ~PLAYER_EXTRA_PVP_DEATH; }
 
-        void HandlePvPDeath(Player* pKiller);
-
         // 0 = own auction, -1 = enemy auction, 1 = goblin auction
         int GetAuctionAccessMode() const { return m_ExtraFlags & PLAYER_EXTRA_AUCTION_ENEMY ? -1 : (m_ExtraFlags & PLAYER_EXTRA_AUCTION_NEUTRAL ? 1 : 0); }
         void SetAuctionAccessMode(int state)
@@ -1323,6 +1318,10 @@ class MANGOS_DLL_SPEC Player : public Unit
             Item* offItem = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
             Item* mainItem = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
             return offItem && ((mainItem && mainItem->GetProto()->InventoryType == INVTYPE_2HWEAPON) || offItem->GetProto()->InventoryType == INVTYPE_2HWEAPON);
+        }
+        bool IsUsingEquippedWeapon(bool mainhand) const
+        {
+            return !IsInFeralForm() && (!mainhand || !HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISARMED));
         }
         void SendNewItem( Item *item, uint32 count, bool received, bool created, bool broadcast = false );
         bool BuyItemFromVendorSlot(ObjectGuid vendorGuid, uint32 vendorslot, uint32 item, uint8 count, uint8 bag, uint8 slot);
@@ -2017,24 +2016,6 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         //End of PvP System
 
-        /*********************************************************/
-        /***               CUSTOM PVP SYSTEM START             ***/
-        /*********************************************************/
-        uint32 PvP_TotalKills;
-        uint32 PvP_CurrentKills;
-
-        uint32 PvP_TotalDeaths;
-        uint32 PvP_CurrentDeaths;
-
-        uint32 PvP_KillStreak;
-        uint32 PvP_GroupKills;
-
-        uint32 PvP_LastKillGuid;
-        uint32 PvP_LastKillCount;
-
-        // End of custom PvP System
-    
-    
         void SetDrunkValue(uint16 newDrunkValue, uint32 itemid=0);
         uint16 GetDrunkValue() const { return m_drunk; }
         static DrunkenState GetDrunkenstateByValue(uint16 value);
@@ -2341,7 +2322,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         // Temporarily removed pet cache
         uint8 GetTemporaryUnsummonedPetCount() const { return m_temporaryUnsummonedPetNumber.size(); }
-        void SetTemporaryUnsummonedPetNumber(uint32 petnumber, uint8 count = 0) { m_temporaryUnsummonedPetNumber.insert(std::make_pair<uint8, uint32>(count,petnumber)); }
+        void SetTemporaryUnsummonedPetNumber(uint32 petnumber, uint8 count = 0) { m_temporaryUnsummonedPetNumber.insert(PetNumberList::value_type(count,petnumber)); }
         uint32 GetTemporaryUnsummonedPetNumber(uint8 count = 0);
         void ClearTemporaryUnsummonedPetStorage() { m_temporaryUnsummonedPetNumber.clear(); }
         void UnsummonPetTemporaryIfAny(bool full = true);
@@ -2539,7 +2520,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _LoadBGData(QueryResult* result);
         void _LoadGlyphs(QueryResult *result);
         void _LoadIntoDataField(const char* data, uint32 startOffset, uint32 count);
-        void _LoadPvPData(QueryResult* result);
 
         /*********************************************************/
         /***                   SAVE SYSTEM                     ***/
@@ -2560,7 +2540,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _SaveGlyphs();
         void _SaveTalents();
         void _SaveStats();
-        void _SavePvPData();
 
         void _SetCreateBits(UpdateMask *updateMask, Player *target) const;
         void _SetUpdateBits(UpdateMask *updateMask, Player *target) const;
