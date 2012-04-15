@@ -47,22 +47,19 @@ enum
 struct MANGOS_DLL_DECL boss_falricAI : public BSWScriptedAI
 {
     boss_falricAI(Creature *pCreature) : BSWScriptedAI(pCreature)
-   {
+    {
         m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         Reset();
-   }
+    }
 
-   ScriptedInstance* m_pInstance;
-   bool m_bIsCall;
+    ScriptedInstance* m_pInstance;
+    bool m_bIsCall;
 
-   uint32 m_uiSummonTimer;
-   uint32 m_uiLocNo;
-   ObjectGuid m_uiSummonGUID[16];
-   uint32 m_uiCheckSummon;
-
-   uint8 SummonCount;
-
-   uint32 pSummon;
+    uint32 m_uiSummonTimer;
+    uint32 m_uiLocNo;
+    GUIDVector m_uiSummonGUID;
+    uint8 SummonCount;
+    uint32 pSummon;
 
     void Reset()
     {
@@ -91,9 +88,10 @@ struct MANGOS_DLL_DECL boss_falricAI : public BSWScriptedAI
 
     void JustDied(Unit* pKiller)
     {
-      if(!m_pInstance) return;
-      m_pInstance->SetData(TYPE_MARWYN, SPECIAL);
-      DoScriptText(SAY_FALRIC_DEATH, m_creature);
+        if(!m_pInstance)
+            return;
+        m_pInstance->SetData(TYPE_MARWYN, SPECIAL);
+        DoScriptText(SAY_FALRIC_DEATH, m_creature);
     }
 
     void AttackStart(Unit* who)
@@ -110,7 +108,7 @@ struct MANGOS_DLL_DECL boss_falricAI : public BSWScriptedAI
     {
          m_uiLocNo = 0;
 
-         for(uint8 i = 0; i < 14; i++)
+         for(uint8 i = 0; i < 16; i++)
          {
             switch(urand(0,3))
             {
@@ -148,11 +146,9 @@ struct MANGOS_DLL_DECL boss_falricAI : public BSWScriptedAI
                    break;
              }
 
-             m_uiCheckSummon = 0;
-
              if(Creature* Summon = m_creature->SummonCreature(pSummon, SpawnLoc[m_uiLocNo].x, SpawnLoc[m_uiLocNo].y, SpawnLoc[m_uiLocNo].z, SpawnLoc[m_uiLocNo].o, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 30000))
              {
-                m_uiSummonGUID[i] = Summon->GetObjectGuid();
+                m_uiSummonGUID.push_back(Summon->GetObjectGuid());
                 Summon->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                 Summon->setFaction(974);
              }
@@ -162,16 +158,16 @@ struct MANGOS_DLL_DECL boss_falricAI : public BSWScriptedAI
 
     void CallFallSoldier()
     {
-         for(uint8 i = 0; i < 4; i++)
-         {
-            if(Creature* Summon = m_pInstance->instance->GetCreature(m_uiSummonGUID[m_uiCheckSummon]))
+        for (uint8 i = 0; i < 4 && m_uiSummonGUID.size(); i++)
+        {
+            if(Creature* Summon = m_pInstance->instance->GetCreature(m_uiSummonGUID.back()))
             {
                Summon->setFaction(14);
                Summon->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                Summon->SetInCombatWithZone();
             }
-            m_uiCheckSummon++;
-         }
+            m_uiSummonGUID.pop_back();
+        }
     }
 
     void UpdateAI(const uint32 uiDiff)

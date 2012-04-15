@@ -207,6 +207,9 @@ struct MANGOS_DLL_DECL boss_alythessAI : public ScriptedAI
 
     void HandleTouchedSpells(Unit* pTarget, uint32 TouchedType)
     {
+        if (pTarget != m_creature->getVictim())
+            return;
+
          switch(TouchedType)
          {
             case SPELL_FLAME_TOUCHED:
@@ -454,6 +457,9 @@ struct MANGOS_DLL_DECL boss_sacrolashAI : public ScriptedAI
 
     void HandleTouchedSpells(Unit* pTarget, uint32 TouchedType)
     {
+        if (pTarget != m_creature->getVictim())
+            return;
+
         switch(TouchedType)
         {
             case SPELL_FLAME_TOUCHED:

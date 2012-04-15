@@ -17,12 +17,11 @@
 /* ScriptData
 SDName: Stormwind_City
 SD%Complete: 100
-SDComment: Quest support: 1640, 1447, 4185, 11223 (DB support required for spell 42711)
+SDComment: Quest support: 1640, 1447, 4185
 SDCategory: Stormwind City
 EndScriptData */
 
 /* ContentData
-npc_archmage_malin
 npc_bartleby
 npc_dashel_stonefist
 npc_lady_katrana_prestor
@@ -30,36 +29,6 @@ King Varian
 EndContentData */
 
 #include "precompiled.h"
-
-/*######
-## npc_archmage_malin
-######*/
-
-#define GOSSIP_ITEM_MALIN "Can you send me to Theramore? I have an urgent message for Lady Jaina from Highlord Bolvar."
-
-bool GossipHello_npc_archmage_malin(Player* pPlayer, Creature* pCreature)
-{
-    if (pCreature->isQuestGiver())
-        pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
-
-    if (pPlayer->GetQuestStatus(11223) == QUEST_STATUS_COMPLETE && !pPlayer->GetQuestRewardStatus(11223))
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_MALIN, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
-
-    pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
-
-    return true;
-}
-
-bool GossipSelect_npc_archmage_malin(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction)
-{
-    if (uiAction == GOSSIP_ACTION_INFO_DEF)
-    {
-        pPlayer->CLOSE_GOSSIP_MENU();
-        pCreature->CastSpell(pPlayer, 42711, true);
-    }
-
-    return true;
-}
 
 /*######
 ## npc_bartleby
@@ -298,12 +267,6 @@ CreatureAI* GetAI_boss_king_varian_wrynn(Creature* pCreature)
 void AddSC_stormwind_city()
 {
     Script* pNewScript;
-
-    pNewScript = new Script;
-    pNewScript->Name = "npc_archmage_malin";
-    pNewScript->pGossipHello = &GossipHello_npc_archmage_malin;
-    pNewScript->pGossipSelect = &GossipSelect_npc_archmage_malin;
-    pNewScript->RegisterSelf();
 
     pNewScript = new Script;
     pNewScript->Name = "npc_bartleby";

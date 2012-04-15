@@ -36,6 +36,22 @@ void BSWScriptedInstance::DoCompleteAchievement(uint32 uiAchievmentId)
         debug_log("BSW: DoCompleteAchievement attempt set data, but no players in map.");
 }
 
+void BSWScriptedInstance::DoUpdateAchievementCriteria(AchievementCriteriaTypes type, uint32 miscvalue1 /*=0*/, uint32 miscvalue2 /*=0*/)
+{
+    Map::PlayerList const& lPlayers = instance->GetPlayers();
+
+    if (!lPlayers.isEmpty())
+    {
+        for(Map::PlayerList::const_iterator itr = lPlayers.begin(); itr != lPlayers.end(); ++itr)
+        {
+            if (Player* pPlayer = itr->getSource())
+                pPlayer->UpdateAchievementCriteria(type, miscvalue1, miscvalue2);
+        }
+    }
+    else
+        debug_log("SD2: DoUpdateAchievementCriteria attempt set data but no players in map.");
+}
+
 void BSWScriptedInstance::DoOpenDoor(ObjectGuid guid)
 {
     if (guid.IsEmpty())

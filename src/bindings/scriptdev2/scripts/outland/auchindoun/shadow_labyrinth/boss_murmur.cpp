@@ -79,9 +79,9 @@ struct MANGOS_DLL_DECL boss_murmurAI : public ScriptedAI
 
     void SonicBoomEffect()
     {
-        std::vector<ObjectGuid> vGuids;
-        m_creature->FillGuidsListFromThreatList(vGuids);
-        for (std::vector<ObjectGuid>::const_iterator itr = vGuids.begin();itr != vGuids.end(); ++itr)
+        GUIDVector vGuids;
+        m_creature->FillGuidsListFromThreatList(vGuids.getSource());
+        for (GUIDVector::const_iterator itr = vGuids.begin();itr != vGuids.end(); ++itr)
         {
            Unit* target = m_creature->GetMap()->GetUnit(*itr);
 

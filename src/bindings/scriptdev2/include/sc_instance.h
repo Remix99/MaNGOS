@@ -47,6 +47,9 @@ class MANGOS_DLL_DECL ScriptedInstance : public InstanceData
         //sends completed achievments to all players in instance
         void DoCompleteAchievement(uint32 uiAchievmentId);
 
+        //sends achievment criteria update to all players in instance
+        void DoUpdateAchievementCriteria(AchievementCriteriaTypes type, uint32 miscvalue1 = 0, uint32 miscvalue2 = 0);
+
         // Get a Player from map
         Player* GetPlayerInMap(bool bOnlyAlive = false, bool bCanBeGamemaster = true);
 

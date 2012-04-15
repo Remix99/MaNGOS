@@ -16,6 +16,9 @@ class MANGOS_DLL_DECL BSWScriptedInstance : public ScriptedInstance
 
         //sends completed achievments to all players in instance
         void DoCompleteAchievement(uint32 uiAchievmentId);
+        //sends achievment criteria update to all players in instance
+        void DoUpdateAchievementCriteria(AchievementCriteriaTypes type, uint32 miscvalue1 = 0, uint32 miscvalue2 = 0);
+
         void DoOpenDoor(ObjectGuid guid);
         void DoCloseDoor(ObjectGuid guid);
 

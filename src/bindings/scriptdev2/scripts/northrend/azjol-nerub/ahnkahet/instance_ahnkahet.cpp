@@ -144,7 +144,7 @@ ObjectGuid instance_ahnkahet::SelectRandomGuardianEggGuid()
     if (m_GuardianEggList.empty())
         return ObjectGuid();
 
-    std::list<ObjectGuid>::iterator iter = m_GuardianEggList.begin();
+    GUIDList::iterator iter = m_GuardianEggList.begin();
     advance(iter, urand(0, m_GuardianEggList.size()-1));
 
     return *iter;
@@ -155,7 +155,7 @@ ObjectGuid instance_ahnkahet::SelectRandomSwarmerEggGuid()
     if (m_SwarmerEggList.empty())
         return ObjectGuid();
 
-    std::list<ObjectGuid>::iterator iter = m_SwarmerEggList.begin();
+    GUIDList::iterator iter = m_SwarmerEggList.begin();
     advance(iter, urand(0, m_SwarmerEggList.size()-1));
 
     return *iter;
