@@ -22257,7 +22257,6 @@ void Player::RewardSinglePlayerAtKill(Unit* pVictim)
                     GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_KILL_CREATURE_TYPE, normalType, xp);
             }
     }
-}
 
     /*********************************************************/
     /***                  CUSTOM PVP SYSTEM                ***/
