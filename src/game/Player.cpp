@@ -518,6 +518,19 @@ Player::Player (WorldSession *session): Unit(), m_mover(this), m_camera(this), m
 
     m_stableSlots = 0;
 
+    /////////////////// PvP System /////////////////////
+    PvP_TotalKills = 0;
+    PvP_CurrentKills = 0;
+
+    PvP_TotalDeaths = 0;
+    PvP_CurrentDeaths = 0;
+
+    PvP_KillStreak = 0;
+    PvP_GroupKills = 0;
+
+    PvP_LastKillGuid = 0;
+    PvP_LastKillCount = 0;
+
     /////////////////// Instance System /////////////////////
 
     m_HomebindTimer = 0;
@@ -3837,6 +3850,35 @@ void Player::RemoveAllSpellCooldown()
     }
 }
 
+void Player::_LoadPvPData(QueryResult* result)
+{
+    ////                                                     0           1             2            3              4           5           6             7
+    //QueryResult *result = CharacterDatabase.PQuery("SELECT totalkills, currentkills, totaldeaths, currentdeaths, groupkills, killstreak, lastkillguid, lastkillcount FROM character_pvp WHERE guid %u", GetGUIDLow());
+
+    if(result)
+    {
+        do
+        {
+            Field *fields = result->Fetch();
+
+            PvP_TotalKills    = fields[0].GetUInt32();
+            PvP_CurrentKills  = fields[1].GetUInt32();
+
+            PvP_TotalDeaths   = fields[2].GetUInt32();
+            PvP_CurrentDeaths = fields[3].GetUInt32();
+
+            PvP_GroupKills    = fields[4].GetUInt32();
+            PvP_KillStreak    = fields[5].GetUInt32();
+
+            PvP_LastKillGuid  = fields[6].GetUInt32();
+            PvP_LastKillCount = fields[7].GetUInt32();
+
+        } while( result->NextRow() );
+    }
+
+    delete result;
+}
+
 void Player::_LoadSpellCooldowns(QueryResult *result)
 {
     // some cooldowns can be already set at aura loading...
@@ -4543,7 +4585,8 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
             CharacterDatabase.PExecute("DELETE FROM character_achievement_progress WHERE guid = '%u'", lowguid);
             CharacterDatabase.PExecute("DELETE FROM character_equipmentsets WHERE guid = '%u'", lowguid);
             CharacterDatabase.PExecute("DELETE FROM guild_eventlog WHERE PlayerGuid1 = '%u' OR PlayerGuid2 = '%u'", lowguid, lowguid);
-            CharacterDatabase.PExecute("DELETE FROM guild_bank_eventlog WHERE PlayerGuid = '%u'", lowguid);
+             CharacterDatabase.PExecute("DELETE FROM guild_bank_eventlog WHERE PlayerGuid = '%u'", lowguid);
+            CharacterDatabase.PExecute("DELETE FROM character_pvp WHERE guid = '%u'", lowguid);
             CharacterDatabase.CommitTransaction();
             break;
         }
@@ -16516,6 +16559,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder *holder )
     m_achievementMgr.CheckAllAchievementCriteria();
 
     _LoadEquipmentSets(holder->GetResult(PLAYER_LOGIN_QUERY_LOADEQUIPMENTSETS));
+    _LoadPvPData(holder->GetResult(PLAYER_LOGIN_QUERY_LOADPVP));
 
     if (!GetGroup() || !GetGroup()->isLFDGroup())
     {
@@ -18644,6 +18688,13 @@ void Player::_SaveTalents()
             }
         }
     }
+}
+
+void Player::_SavePvPData()
+{
+    CharacterDatabase.PExecute("DELETE FROM character_pvp WHERE guid='%u'", GetGUIDLow());
+    CharacterDatabase.PExecute("INSERT INTO character_pvp (guid, totalkills, currentkills, totaldeaths, currentdeaths, groupkills, killstreak, lastkillguid, lastkillcount) VALUES (%u, %u, %u, %u, %u, %u, %u, %u, %u)",
+        GetGUIDLow(), PvP_TotalKills, PvP_CurrentKills, PvP_TotalDeaths, PvP_CurrentDeaths, PvP_GroupKills, PvP_KillStreak, PvP_LastKillGuid, PvP_LastKillCount);
 }
 
 // save player stats -- only for external usage
@@ -21769,6 +21820,100 @@ void Player::RewardSinglePlayerAtKill(Unit* pVictim)
             }
         }
     }
+}
+    /*********************************************************/
+    /***                  CUSTOM PVP SYSTEM                ***/
+    /*********************************************************/
+    // Stop here if:
+    // - The victim isn't a player
+    // - The player killed himself
+    // - The player and the victim aren't in the same zone
+    // - The victim is 10 levels lower than the player
+    if( pVictim->GetTypeId() != TYPEID_PLAYER
+        || GetGUIDLow() == pVictim->GetGUIDLow ()
+        || GetZoneId() != pVictim->GetZoneId()
+        || getLevel() > pVictim->getLevel() + 10 )
+        return;
+
+    Player* victim = (Player*)pVictim;
+
+    // Stop here if:
+    // - The player killed someone on the same IP address    // - The player is in a raid group
+    if ( GetSession()->GetRemoteAddress() == victim->GetSession()->GetRemoteAddress()
+        || ( GetGroup() && GetGroup()->isRaidGroup() ) )
+        return;
+
+    ChatHandler pChat = ChatHandler(this);
+    ChatHandler vChat = ChatHandler(victim);
+    uint32 victimOldSpree = 0;
+    uint32 rewardCount = 0;
+
+    // If player has more than 10 kills assign to old spree variable
+    if(victim->PvP_CurrentKills >= 10)
+        victimOldSpree = victim->PvP_CurrentKills;
+
+    victim->HandlePvPDeath(this);
+
+    // Stop if the victim has been killed more than 2 times in a row
+    if (victim->GetGUIDLow() == PvP_LastKillGuid && PvP_LastKillCount > 2)
+    {
+        pChat.PSendSysMessage(PVP_CHAT_COLOR"You already killed this person twice in a row, so you will not be rewarded this time.");
+        return;
+    }
+
+    /* KILLER STATS */
+    ++PvP_CurrentKills;
+    ++PvP_TotalKills;
+    PvP_CurrentDeaths = 0;
+
+    if (PvP_CurrentKills > PvP_KillStreak)
+        PvP_KillStreak = PvP_CurrentKills;
+
+    if(PvP_LastKillGuid == victim->GetGUIDLow())
+    {
+        ++PvP_LastKillCount;
+    }
+    else
+    {
+        PvP_LastKillGuid = victim->GetGUIDLow();
+        PvP_LastKillCount = 1;
+    }
+
+    if(PvP_CurrentKills < 10)
+        rewardCount = 1;
+    else if(PvP_CurrentKills < 20)
+        rewardCount = 2;
+    else
+        rewardCount = 5;
+
+    pChat.PSendSysMessage(PVP_CHAT_COLOR"You killed %s. Your Consecutive Kills: %u, Total Kills: %u. You received your reward, [%s]x%u!", victim->GetName(), PvP_CurrentKills, PvP_TotalKills, "Badge of Justice", rewardCount);
+
+    if(PvP_CurrentKills % 10 == 0)
+    {
+        rewardCount += 5;
+        pChat.PSendGlobalSysMessage(PVP_CHAT_GLOBAL_COLOR"%s is on a %u kill, killing spree! Extra [%s]x5 is rewarded!", GetName(), PvP_CurrentKills, "Badge of Justice");
+    }
+
+    if(victimOldSpree >= 10)
+        rewardCount += 5;
+
+    // Give reward to killer
+    StoreNewItemInBestSlots(29434, rewardCount);
+    CastSpell(this, 47883, true);
+}
+
+void Player::HandlePvPDeath(Player* pKiller)
+{
+    ++PvP_CurrentDeaths;
+    ++PvP_TotalDeaths;
+
+    if(PvP_CurrentKills >= 10)
+        ChatHandler(this).PSendGlobalSysMessage(PVP_CHAT_GLOBAL_COLOR"%s lost a %u kill, killing spree to %s! Extra [%s]x5 is rewarded!", GetName(), PvP_CurrentKills, pKiller->GetName(), "Badge of Justice");
+
+    ChatHandler(this).PSendSysMessage(PVP_CHAT_COLOR"You were killed by %s. Your Consecutive Deaths: %u, Total Deaths: %u.", pKiller->GetName(), PvP_CurrentDeaths, PvP_TotalDeaths);
+
+    // Reset players kills after death
+    PvP_CurrentKills = 0;
 }
 
 void Player::RewardPlayerAndGroupAtEvent(uint32 creature_id, WorldObject* pRewardSource)
