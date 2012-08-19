@@ -228,7 +228,7 @@ struct MANGOS_DLL_DECL boss_entropiusAI : public ScriptedAI
     uint32 m_uiBlackHoleTimer;
     uint32 m_uiDarknessTimer;
 
-    GUIDList m_lSummonedCreaturesList;
+    GuidList m_lSummonedCreaturesList;
 
     void Reset()
     {
@@ -259,7 +259,7 @@ struct MANGOS_DLL_DECL boss_entropiusAI : public ScriptedAI
     // Wrapper to despawn the Singularities and Darkness on death or on evade
     void DespawnSummonedCreatures()
     {
-        for (GUIDList::const_iterator itr = m_lSummonedCreaturesList.begin(); itr != m_lSummonedCreaturesList.end(); ++itr)
+        for (GuidList::const_iterator itr = m_lSummonedCreaturesList.begin(); itr != m_lSummonedCreaturesList.end(); ++itr)
         {
             if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
                 pTemp->ForcedDespawn();

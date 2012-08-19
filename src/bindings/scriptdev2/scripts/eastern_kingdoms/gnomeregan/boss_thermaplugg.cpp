@@ -59,8 +59,8 @@ struct MANGOS_DLL_DECL boss_thermapluggAI : public ScriptedAI
     sBombFace* m_asBombFaces;
     float m_afSpawnPos[3];
 
-    GUIDList m_lSummonedBombGUIDs;
-    GUIDList m_lLandedBombGUIDs;
+    GuidList m_lSummonedBombGUIDs;
+    GuidList m_lLandedBombGUIDs;
 
     void Reset()
     {
@@ -119,13 +119,13 @@ struct MANGOS_DLL_DECL boss_thermapluggAI : public ScriptedAI
 
         m_pInstance->SetData(TYPE_THERMAPLUGG,FAIL);
 
-        // Remove remaining bombs
-        for (GUIDList::const_iterator itr = m_lSummonedBombGUIDs.begin(); itr != m_lSummonedBombGUIDs.end(); ++itr)
+        while (!m_lSummonedBombGUIDs.empty())
         {
-            if (Creature* pBomb = m_creature->GetMap()->GetCreature(*itr))
+            ObjectGuid guid = m_lSummonedBombGUIDs.back();
+            m_lSummonedBombGUIDs.pop_back();
+            if (Creature* pBomb = m_creature->GetMap()->GetCreature(guid))
                 pBomb->ForcedDespawn();
         }
-        m_lSummonedBombGUIDs.clear();
     }
 
     void JustSummoned(Creature* pSummoned)
@@ -160,7 +160,7 @@ struct MANGOS_DLL_DECL boss_thermapluggAI : public ScriptedAI
         // Movement of Summoned mobs
         if (!m_lLandedBombGUIDs.empty())
         {
-            for (GUIDList::const_iterator itr = m_lLandedBombGUIDs.begin(); itr != m_lLandedBombGUIDs.end(); ++itr)
+            for (GuidList::const_iterator itr = m_lLandedBombGUIDs.begin(); itr != m_lLandedBombGUIDs.end(); ++itr)
             {
                 if (Creature* pBomb = m_creature->GetMap()->GetCreature(*itr))
                     pBomb->GetMotionMaster()->MoveFollow(m_creature, 0.0f, 0.0f);

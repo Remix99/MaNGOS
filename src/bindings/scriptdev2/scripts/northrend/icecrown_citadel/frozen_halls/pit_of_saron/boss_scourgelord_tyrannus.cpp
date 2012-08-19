@@ -412,7 +412,7 @@ struct MANGOS_DLL_DECL npc_sylvanas_jaina_pos_endAI: public ScriptedAI
     ObjectGuid m_uiGorkunGuid;
     ObjectGuid m_uiTyrannusGuid;
     ObjectGuid m_uiSindragosaGuid;
-    GUIDList m_lGuards;
+    GuidList m_lGuards;
 
     std::list<Creature*> lSlavesList;
 
@@ -675,7 +675,7 @@ struct MANGOS_DLL_DECL npc_sylvanas_jaina_pos_endAI: public ScriptedAI
                     m_uiSpeech_Timer = 5000;
                     break;
                 case 4:
-                    for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                    for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                     {
                         if (Creature *pTemp = m_creature->GetMap()->GetCreature(*i))
                         {

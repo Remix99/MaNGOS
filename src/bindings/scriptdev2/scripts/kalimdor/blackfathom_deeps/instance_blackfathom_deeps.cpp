@@ -37,10 +37,14 @@ instance_blackfathom_deeps::instance_blackfathom_deeps(Map* pMap) : ScriptedInst
 
 void instance_blackfathom_deeps::Initialize()
 {
-    memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
-    memset(&m_uiSpawnMobsTimer, 0, sizeof(m_uiSpawnMobsTimer));
+    for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
+        m_auiEncounter[i] = 0;;
+
     for (uint8 i = 0; i < MAX_FIRES; ++i)
+    {
+        m_uiSpawnMobsTimer[i] = 0;
         m_lWaveMobsGuids[i].clear();
+    }
 }
 
 void instance_blackfathom_deeps::OnCreatureCreate(Creature* pCreature)
@@ -79,7 +83,7 @@ void instance_blackfathom_deeps::DoSpawnMobs(uint8 uiWaveIndex)
 
     pKelris->GetRespawnCoord(fX_resp, fY_resp, fZ_resp);
 
-    for (uint8 i = 0; i < sizeof(aWaveSummonInformation) / sizeof(SummonInformation); ++i)
+    for (uint8 i = 0; i < countof(aWaveSummonInformation); ++i)
     {
         if (aWaveSummonInformation[i].m_uiWaveIndex != uiWaveIndex)
             continue;

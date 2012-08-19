@@ -2,7 +2,8 @@
 
 UPDATE gameobject_template SET `ScriptName` = 'go_gundrak_altar' WHERE `entry` IN (192518,192519,192520);
 
-UPDATE creature_template SET `ScriptName` = 'boss_colossus', unit_flags = unit_flags&~33600 WHERE `entry` IN (29307, 31365);
+UPDATE creature_template SET `ScriptName` = 'boss_colossus' WHERE `entry` = 29307;
+UPDATE creature_template SET unit_flags = unit_flags&~33600 WHERE `entry` IN (29307, 31365);
 UPDATE creature_template SET `ScriptName` = 'boss_drakari_elemental' WHERE `entry` = 29573;
 UPDATE creature_template SET `ScriptName` = 'npc_living_mojo' WHERE `entry` = 29830;
 UPDATE creature_template SET `ScriptName` = 'mob_sladran_constrictor' WHERE `entry` = 29713;

@@ -25,7 +25,6 @@ EndScriptData */
 npc_aeranas
 npc_ancestral_wolf
 npc_demoniac_scryer
-npc_tracy_proudwell
 npc_wounded_blood_elf
 EndContentData */
 
@@ -36,44 +35,48 @@ EndContentData */
 ## npc_aeranas
 ######*/
 
-#define SAY_SUMMON                      -1000138
-#define SAY_FREE                        -1000139
+enum
+{
+    SAY_SUMMON                      = -1000138,
+    SAY_FREE                        = -1000139,
 
-#define FACTION_HOSTILE                 16
-#define FACTION_FRIENDLY                35
+    FACTION_HOSTILE                 = 16,
+    FACTION_FRIENDLY                = 35,
 
-#define SPELL_ENVELOPING_WINDS          15535
-#define SPELL_SHOCK                     12553
+    SPELL_ENVELOPING_WINDS          = 15535,
+    SPELL_SHOCK                     = 12553,
+};
 
 struct MANGOS_DLL_DECL npc_aeranasAI : public ScriptedAI
 {
     npc_aeranasAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
 
-    uint32 Faction_Timer;
-    uint32 EnvelopingWinds_Timer;
-    uint32 Shock_Timer;
+    uint32 m_uiFactionTimer;
+    uint32 m_uiEnvelopingWindsTimer;
+    uint32 m_uiShockTimer;
 
     void Reset()
     {
-        Faction_Timer = 8000;
-        EnvelopingWinds_Timer = 9000;
-        Shock_Timer = 5000;
+        m_uiFactionTimer         = 8000;
+        m_uiEnvelopingWindsTimer = 9000;
+        m_uiShockTimer           = 5000;
 
         m_creature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
-        m_creature->setFaction(FACTION_FRIENDLY);
 
         DoScriptText(SAY_SUMMON, m_creature);
     }
 
-    void UpdateAI(const uint32 diff)
+    void UpdateAI(const uint32 uiDiff)
     {
-        if (Faction_Timer)
+        if (m_uiFactionTimer)
         {
-            if (Faction_Timer <= diff)
+            if (m_uiFactionTimer <= uiDiff)
             {
                 m_creature->setFaction(FACTION_HOSTILE);
-                Faction_Timer = 0;
-            }else Faction_Timer -= diff;
+                m_uiFactionTimer = 0;
+            }
+            else
+                m_uiFactionTimer -= uiDiff;
         }
 
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
@@ -90,17 +93,21 @@ struct MANGOS_DLL_DECL npc_aeranasAI : public ScriptedAI
             return;
         }
 
-        if (Shock_Timer < diff)
+        if (m_uiShockTimer < uiDiff)
         {
-            DoCastSpellIfCan(m_creature->getVictim(),SPELL_SHOCK);
-            Shock_Timer = 10000;
-        }else Shock_Timer -= diff;
+            DoCastSpellIfCan(m_creature->getVictim(), SPELL_SHOCK);
+            m_uiShockTimer = 10000;
+        }
+        else
+            m_uiShockTimer -= uiDiff;
 
-        if (EnvelopingWinds_Timer < diff)
+        if (m_uiEnvelopingWindsTimer < uiDiff)
         {
-            DoCastSpellIfCan(m_creature->getVictim(),SPELL_ENVELOPING_WINDS);
-            EnvelopingWinds_Timer = 25000;
-        }else EnvelopingWinds_Timer -= diff;
+            DoCastSpellIfCan(m_creature->getVictim(), SPELL_ENVELOPING_WINDS);
+            m_uiEnvelopingWindsTimer = 25000;
+        }
+        else
+            m_uiEnvelopingWindsTimer -= uiDiff;
 
         DoMeleeAttackIfReady();
     }
@@ -342,78 +349,36 @@ bool GossipSelect_npc_demoniac_scryer(Player* pPlayer, Creature* pCreature, uint
 }
 
 /*######
-## npc_tracy_proudwell
-######*/
-
-#define GOSSIP_TEXT_REDEEM_MARKS        "I have marks to redeem!"
-#define GOSSIP_TRACY_PROUDWELL_ITEM1    "I heard that your dog Fei Fei took Klatu's prayer beads..."
-#define GOSSIP_TRACY_PROUDWELL_ITEM2    "<back>"
-
-enum
-{
-    GOSSIP_TEXTID_TRACY_PROUDWELL1       = 10689,
-    QUEST_DIGGING_FOR_PRAYER_BEADS       = 10916
-};
-
-bool GossipHello_npc_tracy_proudwell(Player* pPlayer, Creature* pCreature)
-{
-    if (pCreature->isQuestGiver())
-        pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
-
-    if (pCreature->isVendor())
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, GOSSIP_TEXT_REDEEM_MARKS, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_TRADE);
-
-    if (pPlayer->GetQuestStatus(QUEST_DIGGING_FOR_PRAYER_BEADS) == QUEST_STATUS_INCOMPLETE)
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_TRACY_PROUDWELL_ITEM1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
-
-    pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
-    return true;
-}
-
-bool GossipSelect_npc_tracy_proudwell(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction)
-{
-    switch(uiAction)
-    {
-        case GOSSIP_ACTION_INFO_DEF+1:
-            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_TRACY_PROUDWELL_ITEM2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2);
-            pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXTID_TRACY_PROUDWELL1, pCreature->GetObjectGuid());
-            break;
-        case GOSSIP_ACTION_INFO_DEF+2:
-            pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
-            break;
-        case GOSSIP_ACTION_TRADE:
-            pPlayer->SEND_VENDORLIST(pCreature->GetObjectGuid());
-            break;
-    }
-
-    return true;
-}
-
-/*######
 ## npc_wounded_blood_elf
 ######*/
 
-#define SAY_ELF_START               -1000117
-#define SAY_ELF_SUMMON1             -1000118
-#define SAY_ELF_RESTING             -1000119
-#define SAY_ELF_SUMMON2             -1000120
-#define SAY_ELF_COMPLETE            -1000121
-#define SAY_ELF_AGGRO               -1000122
+enum
+{
+    SAY_ELF_START               = -1000117,
+    SAY_ELF_SUMMON1             = -1000118,
+    SAY_ELF_RESTING             = -1000119,
+    SAY_ELF_SUMMON2             = -1000120,
+    SAY_ELF_COMPLETE            = -1000121,
+    SAY_ELF_AGGRO               = -1000122,
 
-#define QUEST_ROAD_TO_FALCON_WATCH  9375
+    NPC_WINDWALKER              = 16966,
+    NPC_TALONGUARD              = 16967,
+
+    QUEST_ROAD_TO_FALCON_WATCH  = 9375,
+};
 
 struct MANGOS_DLL_DECL npc_wounded_blood_elfAI : public npc_escortAI
 {
     npc_wounded_blood_elfAI(Creature* pCreature) : npc_escortAI(pCreature) {Reset();}
 
-    void WaypointReached(uint32 i)
+    void WaypointReached(uint32 uiPointId)
     {
         Player* pPlayer = GetPlayerForEscort();
 
         if (!pPlayer)
             return;
 
-        switch (i)
+        switch (uiPointId)
         {
             case 0:
                 DoScriptText(SAY_ELF_START, m_creature, pPlayer);
@@ -421,8 +386,8 @@ struct MANGOS_DLL_DECL npc_wounded_blood_elfAI : public npc_escortAI
             case 9:
                 DoScriptText(SAY_ELF_SUMMON1, m_creature, pPlayer);
                 // Spawn two Haal'eshi Talonguard
-                DoSpawnCreature(16967, -15, -15, 0, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000);
-                DoSpawnCreature(16967, -17, -17, 0, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000);
+                DoSpawnCreature(NPC_WINDWALKER, -15, -15, 0, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000);
+                DoSpawnCreature(NPC_WINDWALKER, -17, -17, 0, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000);
                 break;
             case 13:
                 DoScriptText(SAY_ELF_RESTING, m_creature, pPlayer);
@@ -430,8 +395,8 @@ struct MANGOS_DLL_DECL npc_wounded_blood_elfAI : public npc_escortAI
             case 14:
                 DoScriptText(SAY_ELF_SUMMON2, m_creature, pPlayer);
                 // Spawn two Haal'eshi Windwalker
-                DoSpawnCreature(16966, -15, -15, 0, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000);
-                DoSpawnCreature(16966, -17, -17, 0, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000);
+                DoSpawnCreature(NPC_WINDWALKER, -15, -15, 0, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000);
+                DoSpawnCreature(NPC_WINDWALKER, -17, -17, 0, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000);
                 break;
             case 27:
                 DoScriptText(SAY_ELF_COMPLETE, m_creature, pPlayer);
@@ -443,15 +408,15 @@ struct MANGOS_DLL_DECL npc_wounded_blood_elfAI : public npc_escortAI
 
     void Reset() { }
 
-    void Aggro(Unit* who)
+    void Aggro(Unit* pWho)
     {
         if (HasEscortState(STATE_ESCORT_ESCORTING))
             DoScriptText(SAY_ELF_AGGRO, m_creature);
     }
 
-    void JustSummoned(Creature* summoned)
+    void JustSummoned(Creature* pSummoned)
     {
-        summoned->AI()->AttackStart(m_creature);
+        pSummoned->AI()->AttackStart(m_creature);
     }
 };
 
@@ -493,12 +458,6 @@ void AddSC_hellfire_peninsula()
     pNewScript->GetAI = &GetAI_npc_demoniac_scryer;
     pNewScript->pGossipHello = &GossipHello_npc_demoniac_scryer;
     pNewScript->pGossipSelect = &GossipSelect_npc_demoniac_scryer;
-    pNewScript->RegisterSelf();
-
-    pNewScript = new Script;
-    pNewScript->Name = "npc_tracy_proudwell";
-    pNewScript->pGossipHello = &GossipHello_npc_tracy_proudwell;
-    pNewScript->pGossipSelect = &GossipSelect_npc_tracy_proudwell;
     pNewScript->RegisterSelf();
 
     pNewScript = new Script;

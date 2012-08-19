@@ -335,7 +335,7 @@ uint32 PlayerbotAI::initSpell(uint32 spellId)
         Spell *spell = new Spell(m_bot, pSpellInfo, false);
         SpellRangeEntry const* srange = sSpellRangeStore.LookupEntry(pSpellInfo->rangeIndex);
         float range = GetSpellMaxRange(srange, IsPositiveSpell(spellId));
-        m_bot->ApplySpellMod(spellId, SPELLMOD_RANGE, range, spell);
+        m_bot->ApplySpellMod(spellId, SPELLMOD_RANGE, range);
         m_spellRangeMap.insert(std::pair<uint32, float>(spellId, range));
         delete spell;
     }
@@ -652,6 +652,7 @@ bool PlayerbotAI::IsItemUseful(uint32 itemid)
                 default:
                     break;
             }
+            break;
         }
         default:
             break;
@@ -957,6 +958,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
                         return;
                 }
             }
+            break;
         }
 
         case SMSG_CAST_FAILED:
@@ -2444,6 +2446,7 @@ void PlayerbotAI::DoLoot()
                                     skillId = SkillByLockType(LockType(lockInfo->Index[i]));
                                     reqSkillValue = lockInfo->Skill[i];
                                 }
+                                break;
                         }
                     }
                 }
@@ -3816,6 +3819,7 @@ bool PlayerbotAI::HasTool(uint32 TC)
             break;
         default:
             out << "|cffffffffI do not know what tool that needs!";
+            break;
     }
     TellMaster(out.str().c_str());
     return false;
@@ -6062,6 +6066,9 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
                     break;
                 case REACT_PASSIVE:
                     SendWhisper("My pet is passive.", fromPlayer);
+                    break;
+                default:
+                    break;
             }
         }
         else if (subcommand == "cast" && argumentFound)
@@ -6141,6 +6148,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
                         break;
                     default:
                         color = "cffffffff";
+                        break;
                 }
 
                 if (IsPositiveSpell(spellId))
@@ -6544,7 +6552,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
             extractSpellIdList(part, m_spellsToLearn);
             for (std::list<uint32>::iterator it = m_spellsToLearn.begin(); it != m_spellsToLearn.end(); ++it)
             {
-                if (sSpellMgr.IsPrimaryProfessionSpell(*it) && subcommand != "learn")
+                if (SpellMgr::IsPrimaryProfessionSpell(*it) && subcommand != "learn")
                 {
                     SpellLearnSkillNode const* spellLearnSkill = sSpellMgr.GetSpellLearnSkill(*it);
 

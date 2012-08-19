@@ -39,6 +39,7 @@
 #include "Util.h"
 #include "ArenaTeam.h"
 #include "Language.h"
+#include "SpellMgr.h"
 
 // Playerbot mod:
 #include "playerbot/PlayerbotMgr.h"
@@ -108,7 +109,6 @@ bool LoginQueryHolder::Initialize()
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADMAILS,           "SELECT id,messageType,sender,receiver,subject,body,expire_time,deliver_time,money,cod,checked,stationery,mailTemplateId,has_items FROM mail WHERE receiver = '%u' ORDER BY id DESC", m_guid.GetCounter());
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADMAILEDITEMS,     "SELECT data, text, mail_id, item_guid, item_template FROM mail_items JOIN item_instance ON item_guid = guid WHERE receiver = '%u'", m_guid.GetCounter());
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADRANDOMBG,        "SELECT guid FROM character_battleground_random WHERE guid = '%u'", m_guid.GetCounter());
-    res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADPVP,             "SELECT totalkills, currentkills, totaldeaths, currentdeaths, groupkills, killstreak, lastkillguid, lastkillcount FROM character_pvp WHERE guid = %u", m_guid.GetCounter());
 
     return res;
 }
@@ -840,7 +840,12 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
         SendNotification(LANG_GM_ON);
 
     if (!pCurrChar->isGMVisible())
+    {
         SendNotification(LANG_INVISIBLE_INVISIBLE);
+        SpellEntry const* invisibleAuraInfo = sSpellStore.LookupEntry(sWorld.getConfig(CONFIG_UINT32_GM_INVISIBLE_AURA));
+        if (invisibleAuraInfo && IsSpellAppliesAura(invisibleAuraInfo))
+            pCurrChar->CastSpell(pCurrChar, invisibleAuraInfo, true);
+    }
 
     std::string IP_str = GetRemoteAddress();
     sLog.outChar("Account: %d (IP: %s) Login Character:[%s] (guid: %u)",
@@ -1290,7 +1295,9 @@ void WorldSession::HandleCharFactionOrRaceChangeOpcode(WorldPacket& recv_data)
     {
         uint32 groupId = (*resultGroup)[0].GetUInt32();
         delete resultGroup;
-        if (Group* group = sObjectMgr.GetGroupById(groupId))
+
+        Group* group = sObjectMgr.GetGroupById(groupId);
+        if (group)
             Player::RemoveFromGroup(group, guid);
     }
 
@@ -1309,9 +1316,12 @@ void WorldSession::HandleCharFactionOrRaceChangeOpcode(WorldPacket& recv_data)
         CharacterDatabase.PExecute("DELETE FROM `character_queststatus` WHERE `status` = 3 AND guid ='%u'", guid.GetCounter());
         // Reset guild
         if (uint32 guildId = Player::GetGuildIdFromDB(guid))
-            if (Guild* guild = sGuildMgr.GetGuildById(guildId))
+        {
+            Guild* guild = sGuildMgr.GetGuildById(guildId);
+            if (guild)
                 if (guild->DelMember(guid))
                     deletedGuild = guildId;
+        }
 
         // Delete Friend List
         // Cleanup friends for online players
@@ -1448,7 +1458,8 @@ void WorldSession::HandleCharFactionOrRaceChangeOpcode(WorldPacket& recv_data)
 
     if (deletedGuild)
     {
-        if (Guild* guild = sGuildMgr.GetGuildById(deletedGuild))
+        Guild* guild = sGuildMgr.GetGuildById(deletedGuild);
+        if (guild)
         {
             guild->Disband();
             delete guild;

@@ -87,7 +87,7 @@ struct MANGOS_DLL_DECL npc_sylvanas_jaina_pos_startAI: public ScriptedAI
     uint32 creatureEntry;
 
     ObjectGuid m_uiTyrannusGuid;
-    GUIDList m_lGuards;
+    GuidList m_lGuards;
 
     void Reset()
     {
@@ -226,7 +226,7 @@ struct MANGOS_DLL_DECL npc_sylvanas_jaina_pos_startAI: public ScriptedAI
                             case NPC_JAINA_PART1:
                                 DoScriptText(SAY_SPEECH_JAINA1, m_creature);
                                 m_creature->setFaction(1802);
-                                for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                                for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                                 {
                                     if (Creature *pTemp = m_creature->GetMap()->GetCreature(*i))
                                     {
@@ -238,7 +238,7 @@ struct MANGOS_DLL_DECL npc_sylvanas_jaina_pos_startAI: public ScriptedAI
                             case NPC_SYLVANAS_PART1:
                                 DoScriptText(SAY_SPEECH_SYLVANAS1, m_creature);
                                 m_creature->setFaction(1801);
-                                for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                                for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                                 {
                                     if (Creature *pTemp = m_creature->GetMap()->GetCreature(*i))
                                     {
@@ -255,7 +255,7 @@ struct MANGOS_DLL_DECL npc_sylvanas_jaina_pos_startAI: public ScriptedAI
                         float x, y, z;
                         if (Creature* pTyrannus = m_pInstance->instance->GetCreature(m_uiTyrannusGuid))
                             DoScriptText(SAY_TYRANNUS3, pTyrannus);
-                        for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                        for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                         {
                             if (Creature *pTemp = m_creature->GetMap()->GetCreature(*i))
                             {
@@ -289,7 +289,7 @@ struct MANGOS_DLL_DECL npc_sylvanas_jaina_pos_startAI: public ScriptedAI
                         {
                             pTyrannus->CastSpell(pTyrannus, 69753, false);
                         }
-                        for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                        for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                         {
                             if (Creature *pTemp = m_creature->GetMap()->GetCreature(*i))
                             {
@@ -304,7 +304,7 @@ struct MANGOS_DLL_DECL npc_sylvanas_jaina_pos_startAI: public ScriptedAI
                         if (Creature* pTyrannus = m_pInstance->instance->GetCreature(m_uiTyrannusGuid))
                         {
                             DoScriptText(SAY_TYRANNUS5, pTyrannus);
-                            for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                            for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                             {
                                 if (Creature *pTemp = m_creature->GetMap()->GetCreature(*i))
                                 {
@@ -327,7 +327,7 @@ struct MANGOS_DLL_DECL npc_sylvanas_jaina_pos_startAI: public ScriptedAI
                         {
                             case NPC_JAINA_PART1:
                                 DoScriptText(SAY_SPEECH_JAINA3, m_creature);
-                                for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                                for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                                 {
                                     if (Creature *pTemp = m_creature->GetMap()->GetCreature(*i))
                                     {
@@ -336,7 +336,7 @@ struct MANGOS_DLL_DECL npc_sylvanas_jaina_pos_startAI: public ScriptedAI
                                 }
                                 break;
                             case NPC_SYLVANAS_PART1:
-                                for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                                for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                                 {
                                     if (Creature *pTemp = m_creature->GetMap()->GetCreature(*i))
                                     {

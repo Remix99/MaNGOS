@@ -23,16 +23,12 @@ EndScriptData */
 
 /* ContentData
 mob_unkor_the_ruthless
-mob_infested_root_walker
-mob_rotting_forest_rager
 mob_netherweb_victim
 npc_akuno
-npc_floon
 npc_hungry_nether_ray
 npc_letoll
 npc_mana_bomb_exp_trigger
 go_mana_bomb
-npc_slim
 go_veil_skith_cage
 npc_captive_child
 npc_isla_starmane
@@ -51,12 +47,10 @@ enum
 {
     SAY_SUBMIT                  = -1000194,
 
-    FACTION_HOSTILE             = 45,
     FACTION_FRIENDLY            = 35,
-    QUEST_DONT_KILL_THE_FAT_ONE = 9889,
 
     SPELL_PULVERIZE             = 2676,
-    // SPELL_QUID9889           = 32174,                    // TODO Make use of this quest-credit spell
+    SPELL_QUID9889              = 32174,
 };
 
 struct MANGOS_DLL_DECL mob_unkor_the_ruthlessAI : public ScriptedAI
@@ -66,20 +60,21 @@ struct MANGOS_DLL_DECL mob_unkor_the_ruthlessAI : public ScriptedAI
     bool m_bCanDoQuest;
     uint32 m_uiUnfriendlyTimer;
     uint32 m_uiPulverizeTimer;
+    uint32 m_uiFriendlyTimer;
 
     void Reset()
     {
-        m_bCanDoQuest = false;
+        m_bCanDoQuest       = false;
         m_uiUnfriendlyTimer = 0;
-        m_uiPulverizeTimer = 3000;
+        m_uiFriendlyTimer   = 0;
+        m_uiPulverizeTimer  = 3000;
         m_creature->SetStandState(UNIT_STAND_STATE_STAND);
-        m_creature->setFaction(FACTION_HOSTILE);
     }
 
     void DoNice()
     {
         DoScriptText(SAY_SUBMIT, m_creature);
-        m_creature->setFaction(FACTION_FRIENDLY);
+        m_creature->SetFactionTemporary(FACTION_FRIENDLY, TEMPFACTION_RESTORE_REACH_HOME);
         m_creature->SetStandState(UNIT_STAND_STATE_SIT);
         m_creature->RemoveAllAuras();
         m_creature->DeleteThreatList();
@@ -87,57 +82,39 @@ struct MANGOS_DLL_DECL mob_unkor_the_ruthlessAI : public ScriptedAI
         m_uiUnfriendlyTimer = 60000;
     }
 
-    void DamageTaken(Unit* pDealer, uint32 &uiDamage)
-    {
-        if ((m_creature->GetHealth() - uiDamage)*100 / m_creature->GetMaxHealth() >= 30)
-            return;
-
-        if (Player* pPlayer = pDealer->GetCharmerOrOwnerPlayerOrPlayerItself())
-        {
-            if (Group* pGroup = pPlayer->GetGroup())
-            {
-                for(GroupReference* itr = pGroup->GetFirstMember(); itr != NULL; itr = itr->next())
-                {
-                    Player* pGroupie = itr->getSource();
-                    if (pGroupie &&
-                        pGroupie->GetQuestStatus(QUEST_DONT_KILL_THE_FAT_ONE) == QUEST_STATUS_INCOMPLETE &&
-                        pGroupie->GetReqKillOrCastCurrentCount(QUEST_DONT_KILL_THE_FAT_ONE, 18260) == 10)
-                    {
-                        pGroupie->AreaExploredOrEventHappens(QUEST_DONT_KILL_THE_FAT_ONE);
-                        if (!m_bCanDoQuest)
-                            m_bCanDoQuest = true;
-                    }
-                }
-            }
-            else if (pPlayer->GetQuestStatus(QUEST_DONT_KILL_THE_FAT_ONE) == QUEST_STATUS_INCOMPLETE &&
-                pPlayer->GetReqKillOrCastCurrentCount(QUEST_DONT_KILL_THE_FAT_ONE, 18260) == 10)
-            {
-                pPlayer->AreaExploredOrEventHappens(QUEST_DONT_KILL_THE_FAT_ONE);
-                m_bCanDoQuest = true;
-            }
-        }
-    }
-
     void UpdateAI(const uint32 uiDiff)
     {
-        if (m_bCanDoQuest)
+        // Reset npc on timer
+        if (m_uiUnfriendlyTimer)
         {
-            if (!m_uiUnfriendlyTimer)
-            {
-                //DoCastSpellIfCan(m_creature,SPELL_QUID9889);        //not using spell for now
-                DoNice();
-            }
+            if (m_uiUnfriendlyTimer <= uiDiff)
+                EnterEvadeMode();
             else
-            {
-                if (m_uiUnfriendlyTimer <= uiDiff)
-                    EnterEvadeMode();
-                else
-                    m_uiUnfriendlyTimer -= uiDiff;
-            }
+                m_uiUnfriendlyTimer -= uiDiff;
         }
 
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
+
+        // Do quest kill credit at 30%
+        if (!m_bCanDoQuest && m_creature->GetHealthPercent() < 30.0f)
+        {
+            DoCastSpellIfCan(m_creature, SPELL_QUID9889, CAST_TRIGGERED);
+            m_uiFriendlyTimer = 1000;
+            m_bCanDoQuest = true;
+        }
+
+        // Set faction right after the spell is casted, in order to avoid any issues
+        if (m_uiFriendlyTimer)
+        {
+            if (m_uiFriendlyTimer <= uiDiff)
+            {
+                DoNice();
+                m_uiFriendlyTimer = 0;
+            }
+            else
+                m_uiFriendlyTimer -= uiDiff;
+        }
 
         if (m_uiPulverizeTimer < uiDiff)
         {
@@ -157,65 +134,6 @@ CreatureAI* GetAI_mob_unkor_the_ruthless(Creature* pCreature)
 }
 
 /*######
-## mob_infested_root_walker
-######*/
-
-enum
-{
-    SPELL_SUMMON_WOOD_MITES     = 39130,
-};
-
-struct MANGOS_DLL_DECL mob_infested_root_walkerAI : public ScriptedAI
-{
-    mob_infested_root_walkerAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
-
-    void Reset() { }
-
-    void DamageTaken(Unit* pDealer, uint32 &uiDamage)
-    {
-        if (m_creature->GetHealth() <= uiDamage)
-            if (pDealer->IsControlledByPlayer())
-                if (urand(0, 3))
-                    //Summon Wood Mites
-                    DoCastSpellIfCan(m_creature, SPELL_SUMMON_WOOD_MITES, CAST_TRIGGERED);
-    }
-};
-
-CreatureAI* GetAI_mob_infested_root_walker(Creature* pCreature)
-{
-    return new mob_infested_root_walkerAI(pCreature);
-}
-
-/*######
-## mob_rotting_forest_rager
-######*/
-
-enum
-{
-    SPELL_SUMMON_LOTS_OF_WOOD_MIGHTS    = 39134,
-};
-
-struct MANGOS_DLL_DECL mob_rotting_forest_ragerAI : public ScriptedAI
-{
-    mob_rotting_forest_ragerAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
-
-    void Reset() { }
-
-    void DamageTaken(Unit* pDealer, uint32 &uiDamage)
-    {
-        if (m_creature->GetHealth() <= uiDamage)
-            if (pDealer->IsControlledByPlayer())
-                if (urand(0, 3))
-                    //Summon Lots of Wood Mights
-                    DoCastSpellIfCan(m_creature, SPELL_SUMMON_LOTS_OF_WOOD_MIGHTS, CAST_TRIGGERED);
-    }
-};
-CreatureAI* GetAI_mob_rotting_forest_rager(Creature* pCreature)
-{
-    return new mob_rotting_forest_ragerAI(pCreature);
-}
-
-/*######
 ## mob_netherweb_victim
 ######*/
 
@@ -230,6 +148,7 @@ const uint32 netherwebVictims[6] =
 {
     18470, 16805, 21242, 18452, 22482, 21285
 };
+
 struct MANGOS_DLL_DECL mob_netherweb_victimAI : public ScriptedAI
 {
     mob_netherweb_victimAI(Creature* pCreature) : ScriptedAI(pCreature)
@@ -366,72 +285,6 @@ bool QuestAccept_npc_akuno(Player* pPlayer, Creature* pCreature, const Quest* pQ
 CreatureAI* GetAI_npc_akuno(Creature* pCreature)
 {
     return new npc_akunoAI(pCreature);
-}
-
-/*######
-## npc_floon -- TODO move to EventAI
-######*/
-
-enum
-{
-    SPELL_SILENCE           = 6726,
-    SPELL_FROSTBOLT         = 9672,
-    SPELL_FROST_NOVA        = 11831,
-};
-
-struct MANGOS_DLL_DECL npc_floonAI : public ScriptedAI
-{
-    npc_floonAI(Creature* pCreature) : ScriptedAI(pCreature)
-    {
-        m_uiNormFaction = pCreature->getFaction();
-        Reset();
-    }
-
-    uint32 m_uiNormFaction;
-    uint32 m_uiSilence_Timer;
-    uint32 m_uiFrostbolt_Timer;
-    uint32 m_uiFrostNova_Timer;
-
-    void Reset()
-    {
-        m_uiSilence_Timer = 2000;
-        m_uiFrostbolt_Timer = 4000;
-        m_uiFrostNova_Timer = 9000;
-
-        if (m_creature->getFaction() != m_uiNormFaction)
-            m_creature->setFaction(m_uiNormFaction);
-    }
-
-    void UpdateAI(const uint32 uiDiff)
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-            return;
-
-        if (m_uiSilence_Timer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature->getVictim(),SPELL_SILENCE);
-            m_uiSilence_Timer = 30000;
-        }else m_uiSilence_Timer -= uiDiff;
-
-        if (m_uiFrostNova_Timer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature,SPELL_FROST_NOVA);
-            m_uiFrostNova_Timer = 20000;
-        }else m_uiFrostNova_Timer -= uiDiff;
-
-        if (m_uiFrostbolt_Timer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature->getVictim(),SPELL_FROSTBOLT);
-            m_uiFrostbolt_Timer = 5000;
-        }else m_uiFrostbolt_Timer -= uiDiff;
-
-        DoMeleeAttackIfReady();
-    }
-};
-
-CreatureAI* GetAI_npc_floon(Creature* pCreature)
-{
-    return new npc_floonAI(pCreature);
 }
 
 /*######
@@ -840,36 +693,6 @@ bool GOUse_go_mana_bomb(Player* pPlayer, GameObject* pGo)
 }
 
 /*######
-## npc_slim
-######*/
-
-enum
-{
-    FACTION_CONSORTIUM  = 933
-};
-
-bool GossipHello_npc_slim(Player* pPlayer, Creature* pCreature)
-{
-    if (pCreature->isVendor() && pPlayer->GetReputationRank(FACTION_CONSORTIUM) >= REP_FRIENDLY)
-    {
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, GOSSIP_TEXT_BROWSE_GOODS, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_TRADE);
-        pPlayer->SEND_GOSSIP_MENU(9896, pCreature->GetObjectGuid());
-    }
-    else
-        pPlayer->SEND_GOSSIP_MENU(9895, pCreature->GetObjectGuid());
-
-    return true;
-}
-
-bool GossipSelect_npc_slim(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction)
-{
-    if (uiAction == GOSSIP_ACTION_TRADE)
-        pPlayer->SEND_VENDORLIST(pCreature->GetObjectGuid());
-
-    return true;
-}
-
-/*#####
 ## go_veil_skith_cage & npc_captive_child
 #####*/
 
@@ -1173,16 +996,6 @@ void AddSC_terokkar_forest()
     pNewScript->RegisterSelf();
 
     pNewScript = new Script;
-    pNewScript->Name = "mob_infested_root_walker";
-    pNewScript->GetAI = &GetAI_mob_infested_root_walker;
-    pNewScript->RegisterSelf();
-
-    pNewScript = new Script;
-    pNewScript->Name = "mob_rotting_forest_rager";
-    pNewScript->GetAI = &GetAI_mob_rotting_forest_rager;
-    pNewScript->RegisterSelf();
-
-    pNewScript = new Script;
     pNewScript->Name = "mob_netherweb_victim";
     pNewScript->GetAI = &GetAI_mob_netherweb_victim;
     pNewScript->RegisterSelf();
@@ -1191,11 +1004,6 @@ void AddSC_terokkar_forest()
     pNewScript->Name = "npc_akuno";
     pNewScript->GetAI = &GetAI_npc_akuno;
     pNewScript->pQuestAcceptNPC = &QuestAccept_npc_akuno;
-    pNewScript->RegisterSelf();
-
-    pNewScript = new Script;
-    pNewScript->Name = "npc_floon";
-    pNewScript->GetAI = &GetAI_npc_floon;
     pNewScript->RegisterSelf();
 
     pNewScript = new Script;
@@ -1217,12 +1025,6 @@ void AddSC_terokkar_forest()
     pNewScript = new Script;
     pNewScript->Name = "go_mana_bomb";
     pNewScript->pGOUse = &GOUse_go_mana_bomb;
-    pNewScript->RegisterSelf();
-
-    pNewScript = new Script;
-    pNewScript->Name = "npc_slim";
-    pNewScript->pGossipHello =  &GossipHello_npc_slim;
-    pNewScript->pGossipSelect = &GossipSelect_npc_slim;
     pNewScript->RegisterSelf();
 
     pNewScript = new Script;

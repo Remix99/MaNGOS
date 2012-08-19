@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2012 /dev/rsa for MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2011-2012 /dev/rsa for MangosR2 <http://github.com/MangosR2>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define _STATEMGR_H
 
 #include "ObjectHandler.h"
+#include "LockedMap.h"
 #include "Common.h"
 #include "MotionMaster.h"
 #include "StateMgrImpl.h"
@@ -33,16 +34,22 @@
 class Unit;
 class UnitStateMgr;
 
-struct ActionInfo
+class ActionInfo
 {
+public:
     ActionInfo(UnitActionId _Id, UnitActionPtr _action, UnitActionPriority _priority, bool _restoreable)
         : Id(_Id), action(_action), priority(_priority), restoreable(_restoreable), m_flags(0)
-    {
-    }
+    {}
+
     ~ActionInfo() {};
 
-    bool operator < (const ActionInfo& val) const;
+    bool operator == (ActionInfo& val);
+    bool operator == (UnitActionPtr _action);
+    bool operator != (ActionInfo& val);
+    bool operator != (UnitActionPtr _action);
+
     void Delete();
+    void Reset(UnitStateMgr* mgr);
     void Initialize(UnitStateMgr* mgr);
     void Finalize(UnitStateMgr* mgr);
     void Interrupt(UnitStateMgr* mgr);
@@ -50,6 +57,9 @@ struct ActionInfo
     UnitActionPtr Action() { return action; };
 
     const char* TypeName() const;
+
+    UnitActionId GetId() const             { return Id; };
+    UnitActionPriority GetPriority() const { return priority; };
 
     uint32 const&  GetFlags();
     void           SetFlags(uint32 flags);
@@ -61,10 +71,15 @@ struct ActionInfo
     UnitActionPtr      action;
     UnitActionPriority priority;
     uint32             m_flags;
-    bool const         restoreable;
+    bool               restoreable;
+
+    private:
+    // Don't must be created uninitialized
+    ActionInfo() {};
+//    ActionInfo(ActionInfo const& _action) {};
 };
 
-typedef std::map<UnitActionPriority, ActionInfo> UnitActionStorage;
+typedef ACE_Based::LockedMap<UnitActionPriority, ActionInfo> UnitActionStorage;
 
 class UnitStateMgr
 {
@@ -96,12 +111,15 @@ public:
     void PushAction(UnitActionId actionId, UnitActionPtr state, UnitActionPriority priority, eActionType restoreable);
 
     ActionInfo* GetAction(UnitActionPriority priority);
+    ActionInfo* GetAction(UnitActionPtr _action);
+
+    UnitActionStorage const& GetActions() { return m_actions; };
 
     UnitActionPtr CurrentAction();
     ActionInfo*   CurrentState();
 
-    UnitActionId  GetCurrentState() { return CurrentState() ? CurrentState()->Id : UNIT_ACTION_IDLE; };
-    Unit*         GetOwner() const  { return m_owner; };
+    UnitActionId  GetCurrentState()  const { return m_actions.empty() ? UNIT_ACTION_IDLE : m_actions.rbegin()->second.GetId(); };
+    Unit*         GetOwner()         const { return m_owner; };
 
     std::string const GetOwnerStr();
 
@@ -112,7 +130,7 @@ public:
 private:
     UnitActionStorage m_actions;
     Unit*             m_owner;
-    ActionInfo*       m_oldAction;
+    UnitActionPtr     m_oldAction;
     uint32            m_stateCounter[UNIT_ACTION_END];
     bool              m_needReinit;
 

@@ -202,7 +202,7 @@ struct MANGOS_DLL_DECL boss_lord_marrowgarAI : public base_icc_bossAI
         {
             float summon_x, summon_y, summon_z, ang;
             ang = m_creature->GetAngle(pTarget);
-            m_creature->GetNearPoint(m_creature, summon_x, summon_y, summon_z, m_creature->GetObjectBoundingRadius(), 10.0f, ang);
+            m_creature->GetNearPoint(m_creature, summon_x, summon_y, summon_z, m_creature->GetObjectBoundingRadius(), 5.0f, ang);
 
             m_creature->SummonCreature(NPC_COLDFLAME, summon_x, summon_y, summon_z, ang, TEMPSUMMON_TIMED_DESPAWN, 12000);
         }

@@ -36,6 +36,8 @@ uint32 GetTalentSpellCost(uint32 spellId);
 uint32 GetTalentSpellCost(TalentSpellPos const* pos);
 TalentSpellPos const* GetTalentSpellPos(uint32 spellId);
 
+SpellEffectEntry const* GetSpellEffectEntry(uint32 spellId, SpellEffectIndex effect);
+
 int32 GetAreaFlagByAreaID(uint32 area_id);                  // -1 if not found
 uint32 GetAreaFlagByMapId(uint32 mapid);
 
@@ -156,6 +158,7 @@ extern DBCStorage <ItemSetEntry>                 sItemSetStore;
 extern DBCStorage <LFGDungeonEntry>              sLFGDungeonStore;
 extern DBCStorage <LFGDungeonExpansionEntry>     sLFGDungeonExpansionStore;
 extern LFGDungeonExpansionMap                    sLFGDungeonExpansionMap;
+extern DBCStorage <LiquidTypeEntry>              sLiquidTypeStore;
 extern DBCStorage <LockEntry>                    sLockStore;
 extern DBCStorage <MailTemplateEntry>            sMailTemplateStore;
 extern DBCStorage <MapEntry>                     sMapStore;

@@ -72,11 +72,11 @@ class MANGOS_DLL_DECL instance_obsidian_sanctum : public ScriptedInstance
  public:
     instance_obsidian_sanctum(Map* pMap);
 
-    GUIDList m_lTrashMobsGUIDlist;
-    GUIDList m_lEggsGUIDList;
-    GUIDList m_lWhelpsGUIDList;
-    GUIDList m_lBlazesGUIDList;
-    GUIDList m_lHitByVolcanoGUIDList;
+    GuidList m_lTrashMobsGUIDlist;
+    GuidList m_lEggsGuidList;
+    GuidList m_lWhelpsGuidList;
+    GuidList m_lBlazesGuidList;
+    GuidList m_lHitByVolcanoGuidList;
     ObjectGuid m_uiAcolyteShadronGUID;
     ObjectGuid m_uiAcolyteVesperonGUID;
 

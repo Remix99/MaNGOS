@@ -432,7 +432,7 @@ struct CreatureCreatePos
     public:
         Map* GetMap() const { return m_map; }
         uint32 GetPhaseMask() const { return m_phaseMask; }
-        void SelectFinalPoint(Creature* cr);
+        void SelectFinalPoint(Creature* cr, bool checkLOS = false);
         bool Relocate(Creature* cr) const;
 
         // read only after SelectFinalPoint
@@ -495,7 +495,7 @@ class MANGOS_DLL_SPEC Creature : public Unit
         bool IsTemporarySummon() const { return m_subtype == CREATURE_SUBTYPE_TEMPORARY_SUMMON; }
 
         bool IsCorpse() const { return getDeathState() ==  CORPSE; }
-        bool IsDespawned() const { return getDeathState() ==  DEAD; }
+        virtual bool IsDespawned() const { return getDeathState() ==  DEAD; }
         void SetCorpseDelay(uint32 delay) { m_corpseDelay = delay; }
         bool IsRacialLeader() const { return GetCreatureInfo()->RacialLeader; }
         bool IsCivilian() const { return GetCreatureInfo()->flags_extra & CREATURE_FLAG_EXTRA_CIVILIAN; }
@@ -510,7 +510,7 @@ class MANGOS_DLL_SPEC Creature : public Unit
         bool CanTrainAndResetTalentsOf(Player* pPlayer) const;
 
         bool IsOutOfThreatArea(Unit* pVictim) const;
-        void FillGuidsListFromThreatList(std::vector<ObjectGuid>& guids, uint32 maxamount = 0);
+        void FillGuidsListFromThreatList(GuidVector& guids, uint32 maxamount = 0);
 
         bool IsImmuneToSpell(SpellEntry const* spellInfo) const;
                                                             // redefine Unit::IsImmuneToSpell
@@ -534,6 +534,8 @@ class MANGOS_DLL_SPEC Creature : public Unit
         }
 
         uint32 GetLevelForTarget(Unit const* target) const; // overwrite Unit::GetLevelForTarget for boss level support
+
+        uint8 getRace() const;
 
         bool IsInEvadeMode() const;
 
@@ -681,6 +683,8 @@ class MANGOS_DLL_SPEC Creature : public Unit
         Unit* SelectAttackingTarget(AttackingTarget target, uint32 position, uint32 uiSpellEntry, uint32 selectFlags = 0) const;
         Unit* SelectAttackingTarget(AttackingTarget target, uint32 position, SpellEntry const* pSpellInfo = NULL, uint32 selectFlags = 0) const;
 
+        virtual Unit* SelectPreferredTargetForSpell(SpellEntry const* spellInfo);
+
         bool HasQuest(uint32 quest_id) const;
         bool HasInvolvedQuest(uint32 quest_id)  const;
 
@@ -776,9 +780,9 @@ class AssistDelayEvent : public BasicEvent
     private:
         AssistDelayEvent();
 
-        ObjectGuid              m_victimGuid;
-        std::vector<ObjectGuid> m_assistantGuids;
-        Unit&                   m_owner;
+        ObjectGuid m_victimGuid;
+        GuidVector m_assistantGuids;
+        Unit&      m_owner;
 };
 
 class ForcedDespawnDelayEvent : public BasicEvent

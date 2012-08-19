@@ -93,11 +93,11 @@ class MANGOS_DLL_DECL instance_gundrak : public ScriptedInstance
         TypeTimerMap m_mBeamInProgress;
         TypeTimerMap m_mKeyInProgress;
 
-        GUIDList m_luiStalkerGUIDs;
-        GUIDVector m_vStalkerCasterGuids;
-        GUIDVector m_vStalkerTargetGuids;
-        GUIDList m_lEckDwellerGuids;
-        GUIDList m_lLivingMojoGuids;
+        GuidList m_luiStalkerGUIDs;
+        GuidVector m_vStalkerCasterGuids;
+        GuidVector m_vStalkerTargetGuids;
+        GuidList m_lEckDwellerGuids;
+        GuidList m_lLivingMojoGuids;
 };
 
 #endif

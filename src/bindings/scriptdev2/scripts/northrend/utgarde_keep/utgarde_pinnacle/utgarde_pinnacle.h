@@ -20,10 +20,13 @@ enum
 
     NPC_SCOURGE_HULK                = 26555,
 
-    NPC_FURBOLG                     = 26684,
+    NPC_STASIS_CONTROLLER           = 22515,
+
     NPC_WORGEN                      = 26683,
+    NPC_FURBOLG                     = 26684,
     NPC_JORMUNGAR                   = 26685,
     NPC_RHINO                       = 26686,
+    NPC_GORTOK                      = 26687,
 
     NPC_GRAUF                       = 26893,
     NPC_SKADI                       = 26693,
@@ -50,6 +53,17 @@ enum
     ACHIEV_CRIT_MY_GIRL_LOVES_SKADI_ALL_THE_TIME = 7595,
 
     ACHIEV_START_SKADY_ID           = 17726,
+
+    // orb handling
+    SPELL_FREEZE            = 16245,
+
+    SPELL_WAKEUP_GORTOK     = 47670,
+    SPELL_WAKEUP_SUBBOSS    = 47669,
+
+    SPELL_ORB_VISUAL        = 48044,
+
+    SPELL_GORTOK_EVENT      = 48055,
+    SPELL_ORB_CHANNEL       = 48048,
 };
 
 class MANGOS_DLL_DECL instance_pinnacle : public ScriptedInstance
@@ -68,13 +82,18 @@ class MANGOS_DLL_DECL instance_pinnacle : public ScriptedInstance
         void SetSpecialAchievementCriteria(uint32 uiType, bool bIsMet);
         bool CheckAchievementCriteriaMeet(uint32 criteria_id, Player const* source, Unit const* target = NULL, uint32 miscvalue1 = 0);
 
-        void OnCreatureDeath(Creature * creature);
+        void OnCreatureDeath(Creature * pCreature);
+        void OnCreatureEvade(Creature * pCreature);
+        void Update(uint32 uiDiff);
 
         const char* Save() { return m_strInstData.c_str(); }
         void Load(const char* chrIn);
 
         void DoProcessCallFlamesEvent();
         void DoMakeFreezingCloud();
+        void DoOrbAction();
+        bool IsCreatureGortokSubboss(uint32 entry);
+        void InitializeOrb(Creature * pCreature);
 
     protected:
         bool m_abAchievCriteria[MAX_SPECIAL_ACHIEV_CRITS];
@@ -83,10 +102,17 @@ class MANGOS_DLL_DECL instance_pinnacle : public ScriptedInstance
         uint32 m_auiEncounter[MAX_ENCOUNTER];
         std::string m_strInstData;
 
-        GUIDList m_lFlameBraziersList;
+        GuidList m_lFlameBraziersList;
 
-        GUIDList m_lFlameBreathTriggerRight;
-        GUIDList m_lFlameBreathTriggerLeft;
+        GuidList m_lFlameBreathTriggerRight;
+        GuidList m_lFlameBreathTriggerLeft;
+
+        ObjectGuid m_gortokOrb;
+
+        uint32 m_uiMoveTimer;
+        bool m_bNeedMovement;
+        uint8 m_uiStep;
+        uint8 m_uiGordokSubBossCount;
 };
 
 #endif

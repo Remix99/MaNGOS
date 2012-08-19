@@ -116,7 +116,10 @@ enum
     SPELL_FRENZY                            = 72737,
 
     //summons
-    NPC_BLOOD_BEAST                         = 38508
+    NPC_BLOOD_BEAST                         = 38508,
+
+    // Achievements
+    SPELL_ACHIEVEMENT_CREDIT                = 72928,
 };
 
 enum Equipment
@@ -181,7 +184,7 @@ struct MANGOS_DLL_DECL npc_highlord_saurfang_iccAI : public base_icc_bossAI
     uint32 m_uiEventStep;
     bool m_bIsEventStarted;
 
-    GUIDList m_lGuards;
+    GuidList m_lGuards;
 
     void Reset(){}
 
@@ -260,7 +263,7 @@ struct MANGOS_DLL_DECL npc_highlord_saurfang_iccAI : public base_icc_bossAI
 
                     // move guards
                     int8 n = 8;
-                    for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                    for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                     {
                         if (Creature *pTmp = m_creature->GetMap()->GetCreature(*i))
                             pTmp->GetMotionMaster()->MovePoint(0, fPositions[n][0], fPositions[n][1], fPositions[n][2]);
@@ -320,7 +323,7 @@ struct MANGOS_DLL_DECL npc_highlord_saurfang_iccAI : public base_icc_bossAI
                     m_creature->GetMotionMaster()->MovePoint(0, x, y, z);
 
                     // move guards
-                    for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                    for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                     {
                         if (Creature *pTmp = m_creature->GetMap()->GetCreature(*i))
                         {
@@ -348,7 +351,7 @@ struct MANGOS_DLL_DECL npc_highlord_saurfang_iccAI : public base_icc_bossAI
                     m_creature->GetMotionMaster()->MovePoint(0, x, y, z + frand(5.0f, 7.0f));
 
                     // move guards
-                    for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                    for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                     {
                         if (Creature *pTmp = m_creature->GetMap()->GetCreature(*i))
                         {
@@ -394,7 +397,7 @@ struct MANGOS_DLL_DECL npc_highlord_saurfang_iccAI : public base_icc_bossAI
                     m_creature->GetMotionMaster()->MovePoint(0, x, y, z);
 
                     // move guards
-                    for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                    for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                     {
                         if (Creature *pTmp = m_creature->GetMap()->GetCreature(*i))
                         {
@@ -413,7 +416,7 @@ struct MANGOS_DLL_DECL npc_highlord_saurfang_iccAI : public base_icc_bossAI
                     m_creature->SetSpeedRate(MOVE_WALK, 1.0f);
                     m_creature->RemoveAurasDueToSpell(SPELL_GRIP_OF_AGONY);
 
-                    for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                    for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                     {
                         if (Creature *pGuard = m_creature->GetMap()->GetCreature(*i))
                         {
@@ -491,7 +494,7 @@ struct MANGOS_DLL_DECL npc_highlord_saurfang_iccAI : public base_icc_bossAI
                     if (!m_creature->IsWithinDist2d(fPositions[2][0], fPositions[2][1], 3.0f))
                         return;
 
-                    for (GUIDList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
+                    for (GuidList::iterator i = m_lGuards.begin(); i != m_lGuards.end(); ++i)
                     {
                         if (Creature *pGuard = m_creature->GetMap()->GetCreature(*i))
                             pGuard->ForcedDespawn();
@@ -512,6 +515,7 @@ struct MANGOS_DLL_DECL boss_deathbringer_saurfangAI : public base_icc_bossAI
 {
     boss_deathbringer_saurfangAI(Creature* pCreature) : base_icc_bossAI(pCreature)
     {
+        m_pInstance = ((instance_icecrown_spire*)pCreature->GetInstanceData());
         m_powerBloodPower = m_creature->getPowerType(); // don't call this function multiple times in script
         m_bTeleported = false;
         m_bIsIntroStarted = false;
@@ -519,12 +523,14 @@ struct MANGOS_DLL_DECL boss_deathbringer_saurfangAI : public base_icc_bossAI
         Reset();
     }
 
+    instance_icecrown_spire* m_pInstance;
     uint32 m_uiRuneOfBloodTimer;
     uint32 m_uiBoilingBloodTimer;
     uint32 m_uiBloodNovaTimer;
     uint32 m_uiBloodBeastsTimer;
     uint32 m_uiScentOfBloodTimer;
     uint32 m_uiBerserkTimer;
+    uint32 m_uiMarkOfFallenCount;
 
     bool m_bIsFrenzied;
 
@@ -548,6 +554,7 @@ struct MANGOS_DLL_DECL boss_deathbringer_saurfangAI : public base_icc_bossAI
         m_bIsFrenzied = false;
 
         m_creature->SetPower(m_powerBloodPower, 0);
+        m_uiMarkOfFallenCount = 0;
     }
 
     void MoveInLineOfSight(Unit *pWho)
@@ -581,7 +588,11 @@ struct MANGOS_DLL_DECL boss_deathbringer_saurfangAI : public base_icc_bossAI
     void Aggro(Unit *pWho)
     {
         if (m_pInstance)
+        {
             m_pInstance->SetData(TYPE_SAURFANG, IN_PROGRESS);
+            m_pInstance->SetSpecialAchievementCriteria(ACHIEVE_IVE_GONE_AND_MADE_A_MESS, true);
+            m_uiMarkOfFallenCount = 0;
+        }
 
         DoScriptText(SAY_AGGRO, m_creature);
 
@@ -595,7 +606,10 @@ struct MANGOS_DLL_DECL boss_deathbringer_saurfangAI : public base_icc_bossAI
     void JustReachedHome()
     {
         if (m_pInstance)
+        {
             m_pInstance->SetData(TYPE_SAURFANG, FAIL);
+            m_pInstance->SetSpecialAchievementCriteria(ACHIEVE_IVE_GONE_AND_MADE_A_MESS, false);
+        }
 
         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
@@ -607,7 +621,13 @@ struct MANGOS_DLL_DECL boss_deathbringer_saurfangAI : public base_icc_bossAI
     void JustDied(Unit *pKiller)
     {
         if (m_pInstance)
+        {
             m_pInstance->SetData(TYPE_SAURFANG, DONE);
+            if (m_uiMarkOfFallenCount > (m_bIs25Man ? 5: 3))
+                m_pInstance->SetSpecialAchievementCriteria(ACHIEVE_IVE_GONE_AND_MADE_A_MESS, false);
+        }
+
+        m_creature->CastSpell(m_creature, SPELL_ACHIEVEMENT_CREDIT, false);
 
         DoScriptText(SAY_DEATH, m_creature);
         DoCastSpellIfCan(m_creature, SPELL_REMOVE_MARKS, CAST_TRIGGERED);
@@ -638,7 +658,7 @@ struct MANGOS_DLL_DECL boss_deathbringer_saurfangAI : public base_icc_bossAI
     Player* SelectRandomPlayerForMark()
     {
         Player *pResult = NULL;
-        GUIDList lPlayers;
+        GuidList lPlayers;
         ThreatList const &threatlist = m_creature->getThreatManager().getThreatList();
 
         if (!threatlist.empty())
@@ -660,7 +680,7 @@ struct MANGOS_DLL_DECL boss_deathbringer_saurfangAI : public base_icc_bossAI
 
         if (!lPlayers.empty())
         {
-            GUIDList::iterator i = lPlayers.begin();
+            GuidList::iterator i = lPlayers.begin();
             uint32 max = uint32(lPlayers.size() - 1);
 
             if (max > 0)
@@ -694,10 +714,12 @@ struct MANGOS_DLL_DECL boss_deathbringer_saurfangAI : public base_icc_bossAI
                 {
                     m_creature->SetPower(m_powerBloodPower, 0); // reset Blood Power
                     // decrease the buff
-                    m_creature->RemoveAurasDueToSpell(72371);
+                    m_creature->RemoveAurasDueToSpell(SPELL_BLOOD_POWER);
                     int32 power = m_creature->GetPower(m_powerBloodPower);
-                    m_creature->CastCustomSpell(m_creature, 72371, &power, &power, NULL, true);
+                    m_creature->CastCustomSpell(m_creature, SPELL_BLOOD_POWER, &power, &power, NULL, true);
                     DoScriptText(SAY_FALLENCHAMPION, m_creature);
+                    // count mark for achievement
+                    ++m_uiMarkOfFallenCount;
                 }
             }
         }

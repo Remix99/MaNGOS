@@ -22,10 +22,10 @@ SDCategory: Caverns of Time, Old Hillsbrad Foothills
 EndScriptData */
 
 /* ContentData
-npc_brazen
 npc_erozion
 npc_thrall_old_hillsbrad
 npc_taretha
+go_barrel_old_hillsbrad
 EndContentData */
 
 #include "precompiled.h"
@@ -48,43 +48,6 @@ struct MANGOS_DLL_DECL npc_tarethaAI : public npc_escortAI
 };
 
 /*######
-## npc_brazen
-######*/
-
-enum
-{
-    GOSSIP_ID_UNKNOWN_TEXT          = -1000000,
-    GOSSIP_ITEM_READY               = -3560000,
-
-    TEXT_ID_HAS_BOMBS               = 9780,
-    ITEM_ENTRY_BOMBS                = 25853,
-
-    TAXI_PATH_ID                    = 534
-};
-
-bool GossipHello_npc_brazen(Player* pPlayer, Creature* pCreature)
-{
-    pPlayer->ADD_GOSSIP_ITEM_ID(GOSSIP_ICON_CHAT, GOSSIP_ITEM_READY, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
-    pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
-    return true;
-}
-
-bool GossipSelect_npc_brazen(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction)
-{
-    if (uiAction == GOSSIP_ACTION_INFO_DEF+1)
-    {
-        if (!pPlayer->HasItemCount(ITEM_ENTRY_BOMBS, 1))
-            pPlayer->SEND_GOSSIP_MENU(TEXT_ID_HAS_BOMBS, pCreature->GetObjectGuid());
-        else
-        {
-            pPlayer->CLOSE_GOSSIP_MENU();
-            pPlayer->ActivateTaxiPathTo(TAXI_PATH_ID);
-        }
-    }
-    return true;
-}
-
-/*######
 ## npc_erozion
 ######*/
 
@@ -93,6 +56,9 @@ enum
     GOSSIP_ITEM_NEED_BOMBS          = -3560001,
     TEXT_ID_DEFAULT                 = 9778,
     TEXT_ID_GOT_ITEM                = 9515,
+
+    GOSSIP_ID_UNKNOWN_TEXT          = -1000000,
+    ITEM_ENTRY_BOMBS                = 25853,
 };
 
 bool GossipHello_npc_erozion(Player* pPlayer, Creature* pCreature)
@@ -189,6 +155,12 @@ enum
     SAY_TH_EVENT_COMPLETE           = -1560033,
     SAY_TA_FAREWELL                 = -1560053,
 
+    // other texts - ToDo:
+    SAY_SKARLOC_ENTER               = -1560000,
+    SAY_EPOCH_ENTER_1               = -1560013,
+    SAY_EPOCH_ENTER_2               = -1560014,
+    SAY_EPOCH_ENTER_3               = -1560015,
+
     // Misc for Thrall
     SPELL_STRIKE                    = 14516,
     SPELL_SHIELD_BLOCK              = 12169,
@@ -201,7 +173,6 @@ enum
 
     // misc creature entries
     NPC_ARMORER                     = 18764,
-    NPC_SCARLOC                     = 17862,
 
     NPC_RIFLE                       = 17820,
     NPC_WARDEN                      = 17833,
@@ -331,7 +302,7 @@ struct MANGOS_DLL_DECL npc_thrall_old_hillsbradAI : public npc_escortAI
                 break;
             case 29:
                 DoScriptText(SAY_TH_SKARLOC_MEET, m_creature);
-                m_creature->SummonCreature(NPC_SCARLOC, 2036.48f, 271.22f, 63.43f, 5.27f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 30000);
+                m_creature->SummonCreature(NPC_SKARLOC, 2036.48f, 271.22f, 63.43f, 5.27f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 30000);
                 break;
             case 30:
                 SetEscortPaused(true);
@@ -860,18 +831,28 @@ bool GossipSelect_npc_taretha(Player* pPlayer, Creature* pCreature, uint32 uiSen
 }
 
 /*######
+## go_barrel_old_hillsbrad
+######*/
+
+bool GOUse_go_barrel_old_hillsbrad(Player* pPlayer, GameObject* pGo)
+{
+    if (ScriptedInstance* pInstance = (ScriptedInstance*)pGo->GetInstanceData())
+    {
+        if (pInstance->GetData(TYPE_BARREL_DIVERSION) == DONE)
+            return false;
+
+        pInstance->SetData(TYPE_BARREL_DIVERSION, IN_PROGRESS);
+    }
+    return false;
+}
+
+/*######
 ## AddSC
 ######*/
 
 void AddSC_old_hillsbrad()
 {
     Script* pNewScript;
-
-    pNewScript = new Script;
-    pNewScript->Name = "npc_brazen";
-    pNewScript->pGossipHello = &GossipHello_npc_brazen;
-    pNewScript->pGossipSelect = &GossipSelect_npc_brazen;
-    pNewScript->RegisterSelf();
 
     pNewScript = new Script;
     pNewScript->Name = "npc_erozion";
@@ -891,5 +872,10 @@ void AddSC_old_hillsbrad()
     pNewScript->pGossipHello = &GossipHello_npc_taretha;
     pNewScript->pGossipSelect = &GossipSelect_npc_taretha;
     pNewScript->GetAI = &GetAI_npc_taretha;
+    pNewScript->RegisterSelf();
+
+    pNewScript = new Script;
+    pNewScript->Name = "go_barrel_old_hillsbrad";
+    pNewScript->pGOUse = &GOUse_go_barrel_old_hillsbrad;
     pNewScript->RegisterSelf();
 }

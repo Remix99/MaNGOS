@@ -112,6 +112,7 @@ enum EventAI_ActionType
     ACTION_T_FORCE_DESPAWN              = 41,               // Delay (0-instant despawn)
     ACTION_T_SET_INVINCIBILITY_HP_LEVEL = 42,               // MinHpValue, format(0-flat,1-percent from max health)
     ACTION_T_MOUNT_TO_ENTRY_OR_MODEL    = 43,               // Creature_template entry(param1) OR ModelId (param2) (or 0 for both to unmount)
+    ACTION_T_CHANCED_TEXT               = 44,               // Chance to display the text, TextId1, optionally TextId2. If more than just -TextId1 is defined, randomize. Negative values.
     ACTION_T_END,
 };
 
@@ -139,7 +140,22 @@ enum Target
 
     TARGET_T_ACTION_INVOKER_WPET,
 
-    TARGET_T_END
+    TARGET_T_END,
+
+    //Vehicle-based targets (NULL if owner/target vehicle)
+    TARGET_T_VEHICLE_PASSENGER = 50,                        // First current passenger (NULL if not vehicle or not passenger)
+    TARGET_T_VEHICLE_PASSENGER_0,                           // Passenger on seat 0 (NULL if not vehicle or not passenger)
+    TARGET_T_VEHICLE_PASSENGER_1,                           // Passenger on seat 1 (NULL if not vehicle or not passenger)
+    TARGET_T_VEHICLE_PASSENGER_2,                           // Passenger on seat 2 (NULL if not vehicle or not passenger)
+    TARGET_T_VEHICLE_PASSENGER_3,                           // Passenger on seat 3 (NULL if not vehicle or not passenger)
+    TARGET_T_VEHICLE_PASSENGER_4,                           // Passenger on seat 4 (NULL if not vehicle or not passenger)
+    TARGET_T_VEHICLE_PASSENGER_5,                           // Passenger on seat 5 (NULL if not vehicle or not passenger)
+    TARGET_T_VEHICLE_PASSENGER_6,                           // Passenger on seat 6 (NULL if not vehicle or not passenger)
+    TARGET_T_VEHICLE_PASSENGER_7,                           // Passenger on seat 7 (NULL if not vehicle or not passenger)
+
+    TARGET_T_CURRENT_VEHICLE,                               // Current owned vehicle (NULL if m_creature not seat on vehicle)
+
+    TARGET_T_VEHICLE_END
 };
 
 enum EventFlags
@@ -387,6 +403,13 @@ struct CreatureEventAI_Action
             uint32 creatureId;                              // set one from fields (or 0 for both to dismount)
             uint32 modelId;
         } mount;
+
+        // ACTION_T_CHANCED_TEXT                            = 44
+        struct
+        {
+            uint32 chance;
+            int32 TextId[2];
+        } chanced_text;
         // RAW
         struct
         {

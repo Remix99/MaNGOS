@@ -56,7 +56,7 @@ struct MANGOS_DLL_DECL boss_marwynAI : public BSWScriptedAI
     uint32 m_uiSummonTimer;
 
     uint32 m_uiLocNo;
-    GUIDVector m_uiSummonGUID;
+    GuidVector m_uiSummonGUID;
     uint32 m_uiCheckSummon;
 
     uint8 SummonCount;

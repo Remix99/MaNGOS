@@ -13,8 +13,20 @@ enum
     TYPE_ANZU                   = 1,
     TYPE_IKISS                  = 2,
 
+    NPC_ANZU                    = 23035,
+    NPC_RAVEN_GOD_TARGET        = 23057,
+
     GO_IKISS_DOOR               = 177203,
     GO_IKISS_CHEST              = 187372,
+    GO_RAVENS_CLAW              = 185554,
+
+    SAY_ANZU_INTRO_1            = -1556016,
+    SAY_ANZU_INTRO_2            = -1556017,
+
+    // possible spells used for Anzu summoning event
+    SPELL_PORTAL                = 39952,
+    SPELL_SUMMONING_BEAMS       = 39978,
+    SPELL_RED_LIGHTNING         = 39990,
 
     ACHIEV_CRITA_TURKEY_TIME    = 11142,
     ITEM_PILGRIMS_HAT           = 46723,
@@ -30,6 +42,8 @@ class MANGOS_DLL_DECL instance_sethekk_halls : public ScriptedInstance
         ~instance_sethekk_halls() {}
 
         void Initialize();
+
+        void OnCreatureCreate(Creature* pCreature);
         void OnObjectCreate(GameObject* pGo);
 
         void SetData(uint32 uiType, uint32 uiData);

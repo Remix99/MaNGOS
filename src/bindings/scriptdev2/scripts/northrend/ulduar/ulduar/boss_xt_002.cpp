@@ -381,9 +381,9 @@ struct MANGOS_DLL_DECL boss_xt_002AI : public ScriptedAI
     // Summon
     uint32 m_uiSummonTimer;
     bool   m_bSayAdds;
-    GUIDList m_lScrapbotsGUIDList;
-    GUIDList m_lBoombotsGUIDList;
-    GUIDList m_lPummelerGUIDList;
+    GuidList m_lScrapbotsGuidList;
+    GuidList m_lBoombotsGuidList;
+    GuidList m_lPummelerGuidList;
 
     // health timers
     float   m_fHealthPercent;
@@ -410,9 +410,9 @@ struct MANGOS_DLL_DECL boss_xt_002AI : public ScriptedAI
         // Summon
         m_uiSummonTimer         = 5000;
         m_bSayAdds              = false;
-        m_lScrapbotsGUIDList.clear();
-        m_lBoombotsGUIDList.clear();
-        m_lPummelerGUIDList.clear();
+        m_lScrapbotsGuidList.clear();
+        m_lBoombotsGuidList.clear();
+        m_lPummelerGuidList.clear();
 
         // health timers
         m_fHealthPercent       = 75.0f;
@@ -435,21 +435,21 @@ struct MANGOS_DLL_DECL boss_xt_002AI : public ScriptedAI
         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
 
-        if (!m_lScrapbotsGUIDList.empty())
+        if (!m_lScrapbotsGuidList.empty())
         {
-            for(GUIDList::iterator itr = m_lScrapbotsGUIDList.begin(); itr != m_lScrapbotsGUIDList.end(); ++itr)
+            for(GuidList::iterator itr = m_lScrapbotsGuidList.begin(); itr != m_lScrapbotsGuidList.end(); ++itr)
                 if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
                     pTemp->ForcedDespawn();
         }
-        if (!m_lBoombotsGUIDList.empty())
+        if (!m_lBoombotsGuidList.empty())
         {
-            for(GUIDList::iterator itr = m_lBoombotsGUIDList.begin(); itr != m_lBoombotsGUIDList.end(); ++itr)
+            for(GuidList::iterator itr = m_lBoombotsGuidList.begin(); itr != m_lBoombotsGuidList.end(); ++itr)
                 if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
                     pTemp->ForcedDespawn();
         }
-        if (!m_lPummelerGUIDList.empty())
+        if (!m_lPummelerGuidList.empty())
         {
-            for(GUIDList::iterator itr = m_lPummelerGUIDList.begin(); itr != m_lPummelerGUIDList.end(); ++itr)
+            for(GuidList::iterator itr = m_lPummelerGuidList.begin(); itr != m_lPummelerGuidList.end(); ++itr)
                 if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
                     pTemp->ForcedDespawn();
         }
@@ -478,21 +478,21 @@ struct MANGOS_DLL_DECL boss_xt_002AI : public ScriptedAI
         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_NON_ATTACKABLE);
         m_creature->SetStandState(UNIT_STAND_STATE_STAND);
 
-        if (!m_lScrapbotsGUIDList.empty())
+        if (!m_lScrapbotsGuidList.empty())
         {
-            for(GUIDList::iterator itr = m_lScrapbotsGUIDList.begin(); itr != m_lScrapbotsGUIDList.end(); ++itr)
+            for(GuidList::iterator itr = m_lScrapbotsGuidList.begin(); itr != m_lScrapbotsGuidList.end(); ++itr)
                 if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
                     pTemp->ForcedDespawn();
         }
-        if (!m_lBoombotsGUIDList.empty())
+        if (!m_lBoombotsGuidList.empty())
         {
-            for(GUIDList::iterator itr = m_lBoombotsGUIDList.begin(); itr != m_lBoombotsGUIDList.end(); ++itr)
+            for(GuidList::iterator itr = m_lBoombotsGuidList.begin(); itr != m_lBoombotsGuidList.end(); ++itr)
                 if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
                     pTemp->ForcedDespawn();
         }
-        if (!m_lPummelerGUIDList.empty())
+        if (!m_lPummelerGuidList.empty())
         {
-            for(GUIDList::iterator itr = m_lPummelerGUIDList.begin(); itr != m_lPummelerGUIDList.end(); ++itr)
+            for(GuidList::iterator itr = m_lPummelerGuidList.begin(); itr != m_lPummelerGuidList.end(); ++itr)
                 if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
                     pTemp->ForcedDespawn();
         }
@@ -531,14 +531,14 @@ struct MANGOS_DLL_DECL boss_xt_002AI : public ScriptedAI
                 switch (addentry)
                 {
                     case NPC_SCRAPBOT:
-                        m_lScrapbotsGUIDList.push_back(pTemp->GetObjectGuid());
+                        m_lScrapbotsGuidList.push_back(pTemp->GetObjectGuid());
                         pTemp->GetMotionMaster()->MoveChase(m_creature);
                         break;
                     case NPC_BOOMBOT:
-                        m_lBoombotsGUIDList.push_back(pTemp->GetObjectGuid());
+                        m_lBoombotsGuidList.push_back(pTemp->GetObjectGuid());
                         break;
                     case NPC_PUMMELER:
-                        m_lPummelerGUIDList.push_back(pTemp->GetObjectGuid());
+                        m_lPummelerGuidList.push_back(pTemp->GetObjectGuid());
                         break;
                 }
             }
@@ -580,9 +580,9 @@ struct MANGOS_DLL_DECL boss_xt_002AI : public ScriptedAI
         // adds range check
         if (m_uiRangeCheckTimer < uiDiff)
         {
-            if (!m_lScrapbotsGUIDList.empty())
+            if (!m_lScrapbotsGuidList.empty())
             {
-                for(GUIDList::iterator itr = m_lScrapbotsGUIDList.begin(); itr != m_lScrapbotsGUIDList.end(); ++itr)
+                for(GuidList::iterator itr = m_lScrapbotsGuidList.begin(); itr != m_lScrapbotsGuidList.end(); ++itr)
                 {
                     if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
                     {

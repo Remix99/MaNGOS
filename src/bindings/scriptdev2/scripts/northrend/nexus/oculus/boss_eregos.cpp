@@ -58,12 +58,12 @@ struct MANGOS_DLL_DECL boss_eregosAI : public ScriptedAI
 {
     boss_eregosAI(Creature *pCreature) : ScriptedAI(pCreature)
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+        m_pInstance = (instance_oculus*)pCreature->GetInstanceData();
         m_bIsRegularMode = pCreature->GetMap()->IsRegularDifficulty();
         Reset();
     }
 
-    ScriptedInstance* m_pInstance;
+    instance_oculus* m_pInstance;
     bool m_bIsRegularMode;
 
     uint32 uiArcaneBarrageTimer;
@@ -72,6 +72,7 @@ struct MANGOS_DLL_DECL boss_eregosAI : public ScriptedAI
     uint32 uiSummonTimer;
 
     uint8 m_uiSummonCount;
+    std::list<Creature*> DragonsEntryList;
 
     bool m_bIsMove;
 
@@ -100,6 +101,7 @@ struct MANGOS_DLL_DECL boss_eregosAI : public ScriptedAI
         uiSummonTimer = 15000;
         m_uiSummonCount = 0;
         m_bIsMove = true;
+        DragonsEntryList.clear();
     }
 
     void MoveInLineOfSight(Unit* pWho)
@@ -114,6 +116,12 @@ struct MANGOS_DLL_DECL boss_eregosAI : public ScriptedAI
               m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
         }
         ScriptedAI::MoveInLineOfSight(pWho);
+    }
+
+    void JustReachedHome()
+    {
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_EREGOS, FAIL);
     }
 
     void Aggro(Unit* who)
@@ -140,7 +148,26 @@ struct MANGOS_DLL_DECL boss_eregosAI : public ScriptedAI
         m_creature->MonsterMoveWithSpeed(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ()-100.0f, 26);
             DoScriptText(SAY_DEATH, m_creature);
         if (m_pInstance)
+        {
             m_pInstance->SetData(TYPE_EREGOS, DONE);
+
+            DragonsEntryList.clear();
+            GetCreatureListWithEntryInGrid(DragonsEntryList, m_creature, NPC_RED_DRAGON, 500.0f);
+            if (DragonsEntryList.empty())
+                m_pInstance->SetSpecialAchievementCriteria(ACHIEV_RUBY_VOID, true);
+            DragonsEntryList.clear();
+
+            GetCreatureListWithEntryInGrid(DragonsEntryList, m_creature, NPC_GREEN_DRAGON, 500.0f);
+            if (DragonsEntryList.empty())
+                m_pInstance->SetSpecialAchievementCriteria(ACHIEV_EMERALD_VOID, true);
+            DragonsEntryList.clear();
+
+            GetCreatureListWithEntryInGrid(DragonsEntryList, m_creature, NPC_YELLOW_DRAGON, 500.0f);
+            if (DragonsEntryList.empty())
+                m_pInstance->SetSpecialAchievementCriteria(ACHIEV_AMBER_VOID, true);
+            DragonsEntryList.clear();
+        }
+
     }
 
     void DamageTaken(Unit *done_by, uint32 &damage)

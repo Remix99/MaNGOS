@@ -17,7 +17,6 @@
 /* ScriptData
 SDName: Icecrown
 SD%Complete: 100
-SDComment: Vendor support: 34885
 Quest Support: 13663, 13665, 13745, 13750, 13756, 13761, 13767, 13772, 13777, 13782, 13787, 14107
 SDCategory: Icecrown
 EndScriptData */
@@ -295,31 +294,6 @@ struct MANGOS_DLL_DECL npc_black_knights_gryphonAI : public npc_escortAI
 CreatureAI* GetAI_npc_black_knights_gryphon(Creature* pCreature)
 {
     return new npc_black_knights_gryphonAI(pCreature);
-}
-
-/*######
-## npc_dame_evniki_kapsalis
-######*/
-
-enum
-{
-    TITLE_CRUSADER    = 123
-};
-
-bool GossipHello_npc_dame_evniki_kapsalis(Player* pPlayer, Creature* pCreature)
-{
-    if (pPlayer->HasTitle(TITLE_CRUSADER))
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, GOSSIP_TEXT_BROWSE_GOODS, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_TRADE);
-
-    pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
-    return true;
-}
-
-bool GossipSelect_npc_dame_evniki_kapsalis(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction)
-{
-    if (uiAction == GOSSIP_ACTION_TRADE)
-        pPlayer->SEND_VENDORLIST(pCreature->GetObjectGuid());
-    return true;
 }
 
 /*######
@@ -605,12 +579,6 @@ void AddSC_icecrown()
     pNewScript = new Script;
     pNewScript->Name = "npc_black_knights_gryphon";
     pNewScript->GetAI = &GetAI_npc_black_knights_gryphon;
-    pNewScript->RegisterSelf();
-
-    pNewScript = new Script;
-    pNewScript->Name = "npc_dame_evniki_kapsalis";
-    pNewScript->pGossipHello = &GossipHello_npc_dame_evniki_kapsalis;
-    pNewScript->pGossipSelect = &GossipSelect_npc_dame_evniki_kapsalis;
     pNewScript->RegisterSelf();
 
     pNewScript = new Script;

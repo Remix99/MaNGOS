@@ -287,6 +287,7 @@ bool Map::EnsureGridLoaded(const Cell &cell)
 
         // Add resurrectable corpses to world object list in grid
         sObjectAccessor.AddCorpsesToGrid(GridPair(cell.GridX(),cell.GridY()),(*grid)(cell.CellX(), cell.CellY()), this);
+        m_dyn_tree.balance();
         return true;
     }
 
@@ -459,6 +460,8 @@ bool Map::loaded(const GridPair &p) const
 
 void Map::Update(const uint32 &t_diff)
 {
+    m_dyn_tree.update(t_diff);
+
     /// update worldsessions for existing players
     for(m_mapRefIter = m_mapRefManager.begin(); m_mapRefIter != m_mapRefManager.end(); ++m_mapRefIter)
     {
@@ -469,6 +472,8 @@ void Map::Update(const uint32 &t_diff)
             MapSessionFilter updater(pSession);
 
             pSession->Update(updater);
+            // sending WorldState updates
+            plr->SendUpdatedWorldStates(false);
         }
     }
 
@@ -566,6 +571,9 @@ void Map::Update(const uint32 &t_diff)
     // Send world objects and item update field changes
     SendObjectUpdates();
 
+    // Calculate and send map-related WorldState updates
+    sWorldStateMgr.MapUpdate(this);
+
     // Don't unload grids if it's battleground, since we may have manually added GOs,creatures, those doesn't load from DB at grid re-load !
     // This isn't really bother us, since as soon as we have instanced BG-s, the whole map unloads as the BG gets ended
     if (!IsBattleGroundOrArena())
@@ -652,7 +660,7 @@ Map::Remove(T *obj, bool remove)
     CellPair p = MaNGOS::ComputeCellPair(obj->GetPositionX(), obj->GetPositionY());
     if(p.x_coord >= TOTAL_NUMBER_OF_CELLS_PER_MAP || p.y_coord >= TOTAL_NUMBER_OF_CELLS_PER_MAP )
     {
-        sLog.outError("Map::Remove: Object (GUID: %u TypeId:%u) have invalid coordinates X:%f Y:%f grid cell [%u:%u]", obj->GetGUIDLow(), obj->GetTypeId(), obj->GetPositionX(), obj->GetPositionY(), p.x_coord, p.y_coord);
+        sLog.outError("Map::Remove: Object (%s) have invalid coordinates X:%f Y:%f grid cell [%u:%u]", obj->GetObjectGuid() ? obj->GetObjectGuid().GetString().c_str() : "<no GUID>", obj->GetTypeId(), obj->GetPositionX(), obj->GetPositionY(), p.x_coord, p.y_coord);
         return;
     }
 
@@ -1032,19 +1040,8 @@ void Map::RemoveAllObjectsInRemoveList()
         switch(obj->GetTypeId())
         {
             case TYPEID_CORPSE:
-            {
-                // ??? WTF
-                ObjectGuid guid = obj->GetObjectGuid();
-                if (guid && guid.IsUnit())
-                {
-                    Corpse* corpse = GetCorpse(guid);
-                    if (!corpse)
-                        sLog.outError("Try delete corpse/bones, but corpse of %s not exists!", guid.GetString().c_str());
-                    else
-                        Remove(corpse,true);
-                }
+                Remove((Corpse*)obj,true);
                 break;
-            }
             case TYPEID_DYNAMICOBJECT:
                 Remove((DynamicObject*)obj,true);
                 break;
@@ -1087,7 +1084,7 @@ bool Map::ActiveObjectsNearGrid(uint32 x, uint32 y) const
 
     //we must find visible range in cells so we unload only non-visible cells...
     float viewDist = GetVisibilityDistance();
-    int cell_range = (int)ceilf(viewDist / SIZE_OF_GRID_CELL) + 1;
+    int cell_range = (int)ceil(viewDist / SIZE_OF_GRID_CELL) + 1;
 
     cell_min << cell_range;
     cell_min -= cell_range;
@@ -1348,9 +1345,9 @@ bool DungeonMap::Add(Player *player)
 
                 if (groupBind)
                     DEBUG_LOG("DungeonMap::Add: the group (Id: %d) is bound to instance %d,%d,%d,%d,%d,%d.",
-                    pGroup->GetId(),
-                    groupBind->state->GetMapId(), groupBind->state->GetInstanceId(), groupBind->state->GetDifficulty(),
-                    groupBind->state->GetPlayerCount(), groupBind->state->GetGroupCount(), groupBind->state->CanReset());
+                        pGroup->GetId(),
+                        groupBind->state->GetMapId(), groupBind->state->GetInstanceId(), groupBind->state->GetDifficulty(),
+                        groupBind->state->GetPlayerCount(), groupBind->state->GetGroupCount(), groupBind->state->CanReset());
 
                 // no reason crash if we can fix state
                 player->UnbindInstance(GetId(), GetDifficulty());
@@ -1649,12 +1646,12 @@ void BattleGroundMap::UnloadAll(bool pForce)
 }
 
 /// Put scripts in the execution queue
-void Map::ScriptsStart(ScriptMapMapName const& scripts, uint32 id, Object* source, Object* target)
+bool Map::ScriptsStart(ScriptMapMapName const& scripts, uint32 id, Object* source, Object* target)
 {
     ///- Find the script map
     ScriptMapMap::const_iterator s = scripts.second.find(id);
     if (s == scripts.second.end())
-        return;
+        return false;
 
     // prepare static data
     ObjectGuid sourceGuid = source->GetObjectGuid();
@@ -1663,20 +1660,16 @@ void Map::ScriptsStart(ScriptMapMapName const& scripts, uint32 id, Object* sourc
 
     ///- Schedule script execution for all scripts in the script map
     ScriptMap const *s2 = &(s->second);
-    bool immedScript = false;
     for (ScriptMap::const_iterator iter = s2->begin(); iter != s2->end(); ++iter)
     {
         ScriptAction sa(scripts.first, this, sourceGuid, targetGuid, ownerGuid, &iter->second);
 
         m_scriptSchedule.insert(ScriptScheduleMap::value_type(time_t(sWorld.GetGameTime() + iter->first), sa));
-        if (iter->first == 0)
-            immedScript = true;
 
         sScriptMgr.IncreaseScheduledScriptsCount();
     }
-    ///- If one of the effects should be immediate, launch the script execution
-    if (immedScript)
-        ScriptsProcess();
+
+    return true;
 }
 
 void Map::ScriptCommandStart(ScriptInfo const& script, uint32 delay, Object* source, Object* target)
@@ -1693,10 +1686,6 @@ void Map::ScriptCommandStart(ScriptInfo const& script, uint32 delay, Object* sou
     m_scriptSchedule.insert(ScriptScheduleMap::value_type(time_t(sWorld.GetGameTime() + delay), sa));
 
     sScriptMgr.IncreaseScheduledScriptsCount();
-
-    ///- If effects should be immediate, launch the script execution
-    if(delay == 0)
-        ScriptsProcess();
 }
 
 /// Process queued scripts
@@ -1740,6 +1729,7 @@ Player* Map::GetPlayer(ObjectGuid guid)
  */
 Creature* Map::GetCreature(ObjectGuid guid)
 {
+    ReadGuard Guard(GetLock(MAP_LOCK_TYPE_DEFAULT));
     return m_objectsStore.find<Creature>(guid, (Creature*)NULL);
 }
 
@@ -1750,6 +1740,7 @@ Creature* Map::GetCreature(ObjectGuid guid)
  */
 Pet* Map::GetPet(ObjectGuid guid)
 {
+    ReadGuard Guard(GetLock(MAP_LOCK_TYPE_DEFAULT));
     return m_objectsStore.find<Pet>(guid, (Pet*)NULL);
 }
 
@@ -1791,6 +1782,7 @@ Creature* Map::GetAnyTypeCreature(ObjectGuid guid)
  */
 GameObject* Map::GetGameObject(ObjectGuid guid)
 {
+    ReadGuard Guard(GetLock(MAP_LOCK_TYPE_DEFAULT));
     return m_objectsStore.find<GameObject>(guid, (GameObject*)NULL);
 }
 
@@ -1801,6 +1793,7 @@ GameObject* Map::GetGameObject(ObjectGuid guid)
  */
 DynamicObject* Map::GetDynamicObject(ObjectGuid guid)
 {
+    ReadGuard Guard(GetLock(MAP_LOCK_TYPE_DEFAULT));
     return m_objectsStore.find<DynamicObject>(guid, (DynamicObject*)NULL);
 }
 
@@ -2046,6 +2039,11 @@ bool Map::SetZoneWeather(uint32 zoneId, WeatherType type, float grade)
     return true;
 }
 
+void Map::UpdateWorldState(uint32 state, uint32 value)
+{
+    sWorldStateMgr.SetWorldStateValueFor(this, state, value);
+}
+
 /**
  * Function to operations with attackers per-map storage
  *
@@ -2096,7 +2094,7 @@ void Map::RemoveAllAttackersFor(ObjectGuid targetGuid)
     }
 }
 
-ObjectGuidSet Map::GetAttackersFor(ObjectGuid targetGuid)
+GuidSet Map::GetAttackersFor(ObjectGuid targetGuid)
 {
     if (!targetGuid.IsEmpty())
     {
@@ -2106,7 +2104,7 @@ ObjectGuidSet Map::GetAttackersFor(ObjectGuid targetGuid)
             return itr->second;
     }
 
-    return ObjectGuidSet();
+    return GuidSet();
 }
 
 void Map::CreateAttackersStorageFor(ObjectGuid targetGuid)
@@ -2117,7 +2115,7 @@ void Map::CreateAttackersStorageFor(ObjectGuid targetGuid)
     AttackersMap::iterator itr = m_attackersMap.find(targetGuid);
     if (itr == m_attackersMap.end())
     {
-        m_attackersMap.insert(std::make_pair(targetGuid,ObjectGuidSet()));
+        m_attackersMap.insert(std::make_pair(targetGuid,GuidSet()));
     }
 
 }
@@ -2218,4 +2216,59 @@ float Map::GetVisibilityDistance(WorldObject* obj) const
         return (m_VisibleDistance + ((GameObject*)obj)->GetDeterminativeSize());
     else
         return m_VisibleDistance; 
+}
+
+bool Map::IsInLineOfSight(float srcX, float srcY, float srcZ, float destX, float destY, float destZ, uint32 phasemask) const
+{
+    return VMAP::VMapFactory::createOrGetVMapManager()->isInLineOfSight(GetId(), srcX, srcY, srcZ, destX, destY, destZ)
+        && m_dyn_tree.isInLineOfSight(srcX, srcY, srcZ, destX, destY, destZ, phasemask);
+}
+
+/**
+test if we hit an object. return true if we hit one. the dest position will hold the orginal dest position or the possible hit position
+return true if we hit something
+*/
+// return HitPosition in dest point
+bool Map::GetHitPosition(float srcX, float srcY, float srcZ, float& destX, float& destY, float& destZ, uint32 phasemask, float modifyDist) const
+{
+    // at first check all static objects
+    float tempX, tempY, tempZ = 0.0f;
+    bool result0 = VMAP::VMapFactory::createOrGetVMapManager()->getObjectHitPos(GetId(), srcX, srcY, srcZ, destX, destY, destZ, tempX, tempY, tempZ, modifyDist);
+    if (result0)
+    {
+        DEBUG_LOG("Map::GetHitPosition vmaps corrects gained with static objects! new dest coords are X:%f Y:%f Z:%f",destX, destY, destZ);
+        destX = tempX;
+        destY = tempY;
+        destZ = tempZ;
+    }
+    // at second all dynamic objects, if static check has an hit, then we can calculate only to this point and NOT to end, because we need closely hit point
+    bool result1 = m_dyn_tree.getObjectHitPos(phasemask, srcX, srcY, srcZ, destX, destY, destZ, tempX, tempY, tempZ, modifyDist);
+    if (result1)
+    {
+        DEBUG_LOG("Map::GetHitPosition vmaps corrects gained with dynamic objects! new dest coords are X:%f Y:%f Z:%f",destX, destY, destZ);
+        destX = tempX;
+        destY = tempY;
+        destZ = tempZ;
+    }
+    return result0 || result1;
+}
+
+float Map::GetHeight(uint32 phasemask, float x, float y, float z, bool pCheckVMap/*=true*/, float maxSearchDist/*=DEFAULT_HEIGHT_SEARCH*/) const
+{
+    return std::max<float>(m_TerrainData->GetHeightStatic(x,y,z,pCheckVMap,maxSearchDist), m_dyn_tree.getHeight(x, y,z,maxSearchDist, phasemask));
+}
+
+void Map::InsertGameObjectModel(const GameObjectModel& mdl)
+{
+    m_dyn_tree.insert(mdl);
+}
+
+void Map::RemoveGameObjectModel(const GameObjectModel& mdl)
+{
+    m_dyn_tree.remove(mdl);
+}
+
+bool Map::ContainsGameObjectModel(const GameObjectModel& mdl) const
+{
+    return m_dyn_tree.contains(mdl);
 }

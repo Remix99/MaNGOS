@@ -62,15 +62,11 @@ INSERT INTO `spell_script_target` VALUES (53685, 1, 29175);
 -- ----------------------------
 
 -- Frostbrood Vanquisher
-UPDATE creature_template SET
-    spell1 = 53114,
-    spell2 = 53110,
-    spell3 = 0,
-    spell4 = 0,
-    spell5 = 0,
-    spell6 = 0,
-    vehicle_id = 156
-WHERE entry IN (28670);
+UPDATE `creature_template` SET  `vehicle_id` = 156 WHERE `entry` IN (28670);
+DELETE FROM `creature_spell` WHERE `guid` IN (28670);
+INSERT INTO `creature_spell` (`guid`, `spell`, `index`, `active`, `disabled`, `flags`) VALUES
+(28670, 53114, 0, 0, 0, 0),
+(28670, 53110, 1, 0, 0, 0);
 
 UPDATE creature_template SET maxhealth = 133525, minhealth = 133525, maxmana = 51360, minmana = 51360, InhabitType = 3 WHERE entry = 28670;
 
@@ -288,25 +284,19 @@ UPDATE creature_template SET vehicle_id = 143, speed_run = 2 WHERE entry = 28864
 DELETE FROM `creature_template_addon` WHERE (`entry`=28864);
 INSERT INTO `creature_template_addon` (`entry`, `mount`, `bytes1`, `b2_0_sheath`, `b2_1_pvp_state`, `emote`, `moveflags`, `auras`) VALUES (28864, 0, 0, 0, 0, 0, 0, 61453);
 
-UPDATE creature_template SET
-spell1 = 52435,
-spell2 = 52576,
-spell3 = 0,
-spell4 = 0,
-spell5 = 52588,
-spell6 = 0,
-vehicle_id = 79
-WHERE entry IN (28833);
+UPDATE `creature_template` SET `vehicle_id` = 79 WHERE `entry` IN (28833);
+DELETE FROM `creature_spell` WHERE `guid` IN (28833);
+INSERT INTO `creature_spell` (`guid`, `spell`, `index`, `active`, `disabled`, `flags`) VALUES
+(28833, 52435, 0, 0, 0, 0),
+(28833, 52576, 1, 0, 0, 0),
+(28833, 52588, 4, 0, 0, 0);
 
-UPDATE creature_template SET
-spell1 = 52435,
-spell2 = 52576,
-spell3 = 0,
-spell4 = 0,
-spell5 = 52588,
-spell6 = 0,
-vehicle_id = 68
-WHERE entry IN (28887);
+UPDATE `creature_template` SET `vehicle_id` = 68 WHERE entry IN (28887);
+DELETE FROM `creature_spell` WHERE `guid` IN (28887);
+INSERT INTO `creature_spell` (`guid`, `spell`, `index`, `active`, `disabled`, `flags`) VALUES
+(28887, 52435, 0, 0, 0, 0),
+(28887, 52576, 1, 0, 0, 0),
+(28887, 52588, 4, 0, 0, 0);
 
 INSERT INTO npc_spellclick_spells VALUES ('28833', '52447', '12701', '1', '12701', '1');
 INSERT INTO npc_spellclick_spells VALUES ('28887', '52447', '12701', '1', '12701', '1');

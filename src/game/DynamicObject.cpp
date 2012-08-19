@@ -26,6 +26,7 @@
 #include "CellImpl.h"
 #include "GridNotifiersImpl.h"
 #include "SpellMgr.h"
+#include "DBCStores.h"
 
 DynamicObject::DynamicObject() : WorldObject()
 {
@@ -41,7 +42,10 @@ void DynamicObject::AddToWorld()
 {
     ///- Register the dynamicObject for guid lookup
     if(!IsInWorld())
+    {
+        MAPLOCK_WRITE(this, MAP_LOCK_TYPE_DEFAULT);
         GetMap()->GetObjectsStore().insert<DynamicObject>(GetObjectGuid(), (DynamicObject*)this);
+    }
 
     Object::AddToWorld();
 }
@@ -51,6 +55,7 @@ void DynamicObject::RemoveFromWorld()
     ///- Remove the dynamicObject from the accessor
     if(IsInWorld())
     {
+        MAPLOCK_WRITE(this, MAP_LOCK_TYPE_DEFAULT);
         GetMap()->GetObjectsStore().erase<DynamicObject>(GetObjectGuid(), (DynamicObject*)NULL);
         GetViewPoint().Event_RemovedFromWorld();
     }
@@ -114,7 +119,7 @@ Unit* DynamicObject::GetCaster() const
     return ObjectAccessor::GetUnit(*this, GetCasterGuid());
 }
 
-void DynamicObject::Update(uint32 update_diff, uint32 p_time)
+void DynamicObject::Update(uint32 /*update_diff*/, uint32 p_time)
 {
     // caster can be not in world at time dynamic object update, but dynamic object not yet deleted in Unit destructor
     Unit* caster = GetCaster();
@@ -155,7 +160,7 @@ void DynamicObject::Delete()
 void DynamicObject::Delay(int32 delaytime)
 {
     m_aliveDuration -= delaytime;
-    for(AffectedSet::iterator iter = m_affected.begin(); iter != m_affected.end(); )
+    for (GuidSet::iterator iter = m_affected.begin(); iter != m_affected.end(); )
     {
         Unit *target = GetMap()->GetUnit((*iter));
         if (target)

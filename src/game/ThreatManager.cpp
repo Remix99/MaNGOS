@@ -39,7 +39,7 @@ float ThreatCalcHelper::CalcThreat(Unit* pHatedUnit, Unit* /*pHatingUnit*/, floa
 
     if (pThreatSpell)
     {
-        if (pThreatSpell->AttributesEx & SPELL_ATTR_EX_NO_THREAT && !IsSpellReduceThreat(pThreatSpell))
+        if (pThreatSpell->HasAttribute(SPELL_ATTR_EX_NO_THREAT)&& !IsSpellReduceThreat(pThreatSpell))
             return 0.0f;
 
         if (Player* modOwner = pHatedUnit->GetSpellModOwner())
@@ -224,7 +224,13 @@ void ThreatContainer::clearReferences()
 HostileReference* ThreatContainer::getReferenceByTarget(Unit* pVictim)
 {
     HostileReference* result = NULL;
+    if (!pVictim)
+        return result;
+
     ObjectGuid guid = pVictim->GetObjectGuid();
+    if (guid.IsEmpty())
+        return result;
+
     for(ThreatList::const_iterator i = iThreatList.begin(); i != iThreatList.end(); ++i)
     {
         if ((*i)->getUnitGuid() == guid)
@@ -327,7 +333,6 @@ HostileReference* ThreatContainer::selectNextVictim(Creature* pAttacker, Hostile
         if (!pTarget)
             continue;
 
-        MAPLOCK_READ(pTarget, MAP_LOCK_TYPE_DEFAULT);
         // some units are prefered in comparison to others
         // if (checkThreatArea) consider IsOutOfThreatArea - expected to be only set for pCurrentVictim
         //     This prevents dropping valid targets due to 1.1 or 1.3 threat rule vs invalid current target

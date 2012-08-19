@@ -29,10 +29,6 @@
 #include "GameObject.h"
 #include "Player.h"
 #include "Unit.h"
-#include "CreatureAI.h"
-
-class Player;
-//class Map;
 
 namespace MaNGOS
 {
@@ -40,12 +36,12 @@ namespace MaNGOS
     {
         Camera& i_camera;
         UpdateData i_data;
-        ObjectGuidSet i_clientGUIDs;
+        GuidSet i_clientGUIDs;
         std::set<WorldObject*> i_visibleNow;
 
-        explicit VisibleNotifier(Camera &c) : i_camera(c), i_clientGUIDs(c.GetOwner()->m_clientGUIDs) {}
-        template<class T> void Visit(GridRefManager<T> &m);
-        void Visit(CameraMapType &m) {}
+        explicit VisibleNotifier(Camera& c) : i_camera(c), i_clientGUIDs(c.GetOwner()->m_clientGUIDs) {}
+        template<class T> void Visit(GridRefManager<T>& m);
+        void Visit(CameraMapType& /*m*/) {}
         void Notify(void);
     };
 
@@ -993,25 +989,7 @@ namespace MaNGOS
             CallOfHelpCreatureInRangeDo(Unit* funit, Unit* enemy, float range)
                 : i_funit(funit), i_enemy(enemy), i_range(range)
             {}
-            void operator()(Creature* u)
-            {
-                if (u == i_funit)
-                    return;
-
-                if (!u->CanAssistTo(i_funit, i_enemy, false))
-                    return;
-
-                // too far
-                if (!i_funit->IsWithinDistInMap(u, i_range))
-                    return;
-
-                // only if see assisted creature
-                if (!i_funit->IsWithinLOSInMap(u))
-                    return;
-
-                if (u->AI())
-                    u->AI()->AttackStart(i_enemy);
-            }
+            void operator()(Creature* u);
 
         private:
             Unit* const i_funit;
@@ -1065,24 +1043,8 @@ namespace MaNGOS
             {
             }
             WorldObject const& GetFocusObject() const { return *i_funit; }
-            bool operator()(Creature* u)
-            {
-                if(u == i_funit)
-                    return false;
+            bool operator()(Creature* u);
 
-                if ( !u->CanAssistTo(i_funit, i_enemy) )
-                    return false;
-
-                // too far
-                if( !i_funit->IsWithinDistInMap(u, i_range) )
-                    return false;
-
-                // only if see assisted creature
-                if( !i_funit->IsWithinLOSInMap(u) )
-                    return false;
-
-                return true;
-            }
         private:
             Unit* const i_funit;
             Unit* const i_enemy;
@@ -1130,7 +1092,7 @@ namespace MaNGOS
             WorldObject const& GetFocusObject() const { return i_obj; }
             bool operator()(Creature* u)
             {
-                if (u->GetEntry() == i_entry && u->GetObjectGuid() != i_obj.GetObjectGuid() && (i_onlyAlive && u->isAlive() || i_onlyDead && u->IsCorpse() || !i_onlyAlive && !i_onlyDead) && i_obj.IsWithinDistInMap(u, i_range))
+                if (u->GetEntry() == i_entry && u->GetObjectGuid() != i_obj.GetObjectGuid() && ((i_onlyAlive && u->isAlive()) || (i_onlyDead && u->IsCorpse()) || (!i_onlyAlive && !i_onlyDead)) && i_obj.IsWithinDistInMap(u, i_range))
                 {
                     i_range = i_obj.GetDistance(u);         // use found unit range as new range limit for next check
                     return true;
@@ -1224,7 +1186,63 @@ namespace MaNGOS
             const WorldObject* m_pObject;
             uint32 m_uiEntry;
             float m_fRange;
+
+            // prevent clone this object
+            AllGameObjectsWithEntryInRange(AllGameObjectsWithEntryInRange const&);
     };
+
+    class AllCreaturesOfEntryInRangeCheck
+    {
+        public:
+            AllCreaturesOfEntryInRangeCheck(const WorldObject* pObject, uint32 uiEntry, float fMaxRange) : m_pObject(pObject), m_uiEntry(uiEntry), m_fRange(fMaxRange) {}
+            WorldObject const& GetFocusObject() const { return *m_pObject; }
+            bool operator() (Unit* pUnit)
+            {
+                if (pUnit->GetEntry() == m_uiEntry && m_pObject->IsWithinDist(pUnit,m_fRange,false))
+                    return true;
+
+                return false;
+            }
+
+        private:
+            const WorldObject* m_pObject;
+            uint32 m_uiEntry;
+            float m_fRange;
+
+            // prevent clone this object
+            AllCreaturesOfEntryInRangeCheck(AllCreaturesOfEntryInRangeCheck const&);
+    };
+
+    class AllIdenticalObjectsInRangeCheck
+    {
+        public:
+            AllIdenticalObjectsInRangeCheck(const WorldObject* pObject, float fMaxRange) : m_pObject(pObject), m_fRange(fMaxRange) {}
+            WorldObject const& GetFocusObject() const { return *m_pObject; }
+            bool operator() (WorldObject* pObject)
+            {
+                if (pObject->GetObjectGuid() == m_pObject->GetObjectGuid())
+                    return false;
+
+                if (!pObject->GetObjectGuid().HasEntry() || !m_pObject->GetObjectGuid().HasEntry())
+                    return false;
+
+                if (pObject->GetObjectGuid().GetEntry() != m_pObject->GetObjectGuid().GetEntry())
+                    return false;
+
+                if (m_pObject->IsWithinDist(pObject,m_fRange,false))
+                    return true;
+
+                return false;
+            }
+
+        private:
+            const WorldObject* m_pObject;
+            float m_fRange;
+
+            // prevent clone this object
+            AllIdenticalObjectsInRangeCheck(AllIdenticalObjectsInRangeCheck const&);
+    };
+
 
     // Player checks and do
 
@@ -1261,6 +1279,22 @@ namespace MaNGOS
             WorldObject const* i_obj;
             float i_range;
             uint32 i_spellId;
+    };
+
+    class AnyPlayerInObjectRangeWithOutdoorPvPCheck
+    {
+        public:
+            AnyPlayerInObjectRangeWithOutdoorPvPCheck(WorldObject const* obj, float range)
+                : i_obj(obj), i_range(range) {}
+            WorldObject const& GetFocusObject() const { return *i_obj; }
+            bool operator()(Player* u)
+            {
+                return u->CanUseOutdoorCapturePoint() &&
+                    i_obj->IsWithinDistInMap(u, i_range);
+            }
+        private:
+            WorldObject const* i_obj;
+            float i_range;
     };
 
     // Prepare using Builder localized packets with caching and send to player

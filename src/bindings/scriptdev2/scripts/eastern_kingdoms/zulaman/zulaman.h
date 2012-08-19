@@ -10,6 +10,7 @@ enum InstanceZA
     MAX_ENCOUNTER           = 8,
     MAX_VENDOR              = 2,
     MAX_CHESTS              = 4,
+    MAX_BEAR_WAVES          = 4,
 
     SAY_INST_RELEASE        = -1568067,                     // TODO Event NYI
     SAY_INST_BEGIN          = -1568068,
@@ -23,6 +24,12 @@ enum InstanceZA
     SAY_INST_SACRIF1        = -1568076,
     SAY_INST_SACRIF2        = -1568077,
     SAY_INST_COMPLETE       = -1568078,
+
+    // Bear event yells
+    SAY_WAVE1_AGGRO         = -1568010,
+    SAY_WAVE2_STAIR1        = -1568011,
+    SAY_WAVE3_STAIR2        = -1568012,
+    SAY_WAVE4_PLATFORM      = -1568013,
 
     WORLD_STATE_ID          = 3104,
     WORLD_STATE_COUNTER     = 3106,
@@ -43,14 +50,29 @@ enum InstanceZA
     TYPE_J_EGGS_LEFT        = 11,
 
     NPC_AKILZON             = 23574,
-    // NPC_NALORAKK         = 23576,
+    NPC_NALORAKK            = 23576,
     // NPC_JANALAI          = 23578,
     NPC_HALAZZI             = 23577,
     NPC_MALACRASS           = 24239,
     // NPC_ZULJIN           = 23863,
 
+    // Narolakk event npcs
+    NPC_MEDICINE_MAN        = 23581,
+    NPC_TRIBES_MAN          = 23582,
+    NPC_AXETHROWER          = 23542,
+    NPC_WARBRINGER          = 23580,
+
+    // Malacrass companions
+    NPC_ALYSON              = 24240,
+    NPC_THURG               = 24241,
+    NPC_SLITHER             = 24242,
+    NPC_RADAAN              = 24243,
+    NPC_GAZAKROTH           = 24244,
+    NPC_FENSTALKER          = 24245,
+    NPC_DARKHEART           = 24246,
+    NPC_KORAGG              = 24247,
+
     NPC_EGG                 = 23817,
-    NPC_SPIRIT_LYNX         = 24143,
 
     NPC_HARRISON            = 24358,
     // Time Run Event NPCs
@@ -64,6 +86,7 @@ enum InstanceZA
     NPC_ASHIL_CORPSE        = 24441,
     NPC_HARKOR_CORPSE       = 24443,
 
+    // Zul'jin event spirits
     NPC_BEAR_SPIRIT         = 23878,                        // They should all have aura 42466
     NPC_EAGLE_SPIRIT        = 23880,
     NPC_LYNX_SPIRIT         = 23877,
@@ -110,6 +133,26 @@ struct TimeEventNpcInfo
     ObjectGuid npGuid;
 };
 
+struct NalorakkBearEventInfo
+{
+    int iYellId;
+    float fX, fY, fZ, fO, fAggroDist;
+};
+
+static const NalorakkBearEventInfo aBearEventInfo[MAX_BEAR_WAVES] =
+{
+    {SAY_WAVE1_AGGRO,    0, 0, 0, 0, 45.0f},
+    {SAY_WAVE2_STAIR1,   -54.948f, 1419.772f, 27.303f, 0.03f, 37.0f},
+    {SAY_WAVE3_STAIR2,   -80.303f, 1372.622f, 40.764f, 1.67f, 35.0f},
+    {SAY_WAVE4_PLATFORM, -77.495f, 1294.760f, 48.487f, 1.66f, 60.0f}
+};
+
+struct NalorakkTrashInfo
+{
+    GuidSet sBearTrashGuidSet;
+    uint8 uiTrashKilled;
+};
+
 class MANGOS_DLL_DECL instance_zulaman : public ScriptedInstance
 {
     public:
@@ -120,12 +163,18 @@ class MANGOS_DLL_DECL instance_zulaman : public ScriptedInstance
 
         void OnCreatureCreate(Creature* pCreature);
         void OnObjectCreate(GameObject* pGo);
+        void OnCreatureDeath(Creature* pCreature);
+        void OnCreatureEvade(Creature* pCreature);
 
         void SetData(uint32 uiType, uint32 uiData);
         uint32 GetData(uint32 uiType);
 
         const char* Save() { return m_strInstData.c_str(); }
         void Load(const char* chrIn);
+
+        bool IsBearPhaseInProgress() { return m_bIsBearPhaseInProgress; }
+        void SetBearEventProgress(bool bIsInProgress) { m_bIsBearPhaseInProgress = bIsInProgress; }
+        void SendNextBearWave(Unit* pTarget);
 
         void Update(uint32 uiDiff);
 
@@ -142,7 +191,11 @@ class MANGOS_DLL_DECL instance_zulaman : public ScriptedInstance
         uint32 m_uiEventTimer;
         uint32 m_uiGongCount;
 
-        GUIDList m_lEggsGUIDList;
+        NalorakkTrashInfo m_aNalorakkEvent[MAX_BEAR_WAVES];
+        uint8 m_uiBearEventPhase;
+        bool m_bIsBearPhaseInProgress;
+
+        GuidList m_lEggsGuidList;
         uint32 m_uiEggsRemainingCount_Left;
         uint32 m_uiEggsRemainingCount_Right;
 };

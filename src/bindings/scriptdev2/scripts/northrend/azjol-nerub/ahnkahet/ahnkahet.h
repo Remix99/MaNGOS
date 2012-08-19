@@ -79,8 +79,8 @@ class MANGOS_DLL_DECL instance_ahnkahet : public ScriptedInstance
 
         uint8 m_uiDevicesActivated;
 
-        GUIDList m_GuardianEggList;
-        GUIDList m_SwarmerEggList;
+        GuidList m_GuardianEggList;
+        GuidList m_SwarmerEggList;
 };
 
 #endif

@@ -304,17 +304,11 @@ struct MANGOS_DLL_DECL npc_injured_draeneiAI : public ScriptedAI
         }
     }
 
-    void MoveInLineOfSight(Unit* pWho)
-    {
-        return;                                             //ignore everyone around them (won't aggro anything)
-    }
+    void MoveInLineOfSight(Unit* pWho) { }                  // ignore everyone around them (won't aggro anything)
 
-    void UpdateAI(const uint32 uiDiff)
-    {
-        return;
-    }
-
+    void UpdateAI(const uint32 uiDiff) { }
 };
+
 CreatureAI* GetAI_npc_injured_draenei(Creature* pCreature)
 {
     return new npc_injured_draeneiAI(pCreature);
@@ -326,27 +320,28 @@ CreatureAI* GetAI_npc_injured_draenei(Creature* pCreature)
 
 enum
 {
-    SAY_START              = -1000111,
-    SAY_AGGRO              = -1000112,
-    SAY_PROGRESS           = -1000113,
-    SAY_END1               = -1000114,
-    SAY_END2               = -1000115,
-    EMOTE_HUG              = -1000116,
-    QUEST_A_CRY_FOR_HELP   = 9528,
+    SAY_START               = -1000111,
+    SAY_AGGRO               = -1000112,
+    SAY_PROGRESS            = -1000113,
+    SAY_END1                = -1000114,
+    SAY_END2                = -1000115,
+    EMOTE_HUG               = -1000116,
+
+    QUEST_A_CRY_FOR_HELP    = 9528
 };
 
 struct MANGOS_DLL_DECL npc_magwinAI : public npc_escortAI
 {
-    npc_magwinAI(Creature* pCreature) : npc_escortAI(pCreature) {Reset();}
+    npc_magwinAI(Creature* pCreature) : npc_escortAI(pCreature) { Reset(); }
 
-    void WaypointReached(uint32 i)
+    void WaypointReached(uint32 uiPointId)
     {
         Player* pPlayer = GetPlayerForEscort();
 
         if (!pPlayer)
             return;
 
-        switch(i)
+        switch(uiPointId)
         {
             case 0:
                 DoScriptText(SAY_START, m_creature, pPlayer);

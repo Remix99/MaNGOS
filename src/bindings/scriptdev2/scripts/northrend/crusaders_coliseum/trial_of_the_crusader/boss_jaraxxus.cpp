@@ -109,7 +109,6 @@ struct MANGOS_DLL_DECL boss_jaraxxusAI : public ScriptedAI
     uint32 m_uiInfernalEruptionTimer;
     uint32 m_uiNetherPortalTimer;
     uint32 m_uiEnrageTimer;
-    uint32 m_uiCheckTimer;
 
     std::list<Creature*> mistressEntryList;
 
@@ -128,7 +127,6 @@ struct MANGOS_DLL_DECL boss_jaraxxusAI : public ScriptedAI
         m_uiInfernalEruptionTimer   = 80000;
         m_uiNetherPortalTimer       = 20000;
         m_uiEnrageTimer             = 600000;
-        m_uiCheckTimer              = 1000;
 
         m_creature->SetRespawnDelay(DAY);
 
@@ -148,6 +146,15 @@ struct MANGOS_DLL_DECL boss_jaraxxusAI : public ScriptedAI
     {
         if (!m_pInstance) 
             return;
+
+        // Find required NPC as achievement criteria
+        mistressEntryList.clear();
+        GetCreatureListWithEntryInGrid(mistressEntryList, m_creature, NPC_MISTRESS, 250.0f);
+
+        if (mistressEntryList.empty())
+            m_pInstance->SetSpecialAchievementCriteria(TYPE_THREE_SIXTY_PAIN_SPIKE, false);
+        else
+            m_pInstance->SetSpecialAchievementCriteria(TYPE_THREE_SIXTY_PAIN_SPIKE, mistressEntryList.size() >= 2);
 
         DoScriptText(SAY_DEATH, m_creature);
         m_pInstance->SetData(TYPE_JARAXXUS, DONE);
@@ -174,35 +181,11 @@ struct MANGOS_DLL_DECL boss_jaraxxusAI : public ScriptedAI
         DoScriptText(SAY_SLAY_1 - urand(0, 1),m_creature,pVictim);
     }
 
-    void CheckAchiev()
-    {
-        mistressEntryList.clear();
-        GetCreatureListWithEntryInGrid(mistressEntryList, m_creature, NPC_MISTRESS, 250.0f);
-
-        if (mistressEntryList.empty())
-        {
-            m_pInstance->SetSpecialAchievementCriteria(TYPE_SIXTY_PAIN_SPIKE, false);
-            return;
-        }
-
-        if (mistressEntryList.size()-1 >= 2)
-            m_pInstance->SetSpecialAchievementCriteria(TYPE_SIXTY_PAIN_SPIKE, true);
-        else
-            m_pInstance->SetSpecialAchievementCriteria(TYPE_SIXTY_PAIN_SPIKE, false);
-    }
 
     void UpdateAI(const uint32 uiDiff)
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
-
-        if (m_uiCheckTimer < uiDiff)
-        {
-            CheckAchiev();
-            m_uiCheckTimer = 500;
-        }
-        else
-            m_uiCheckTimer -= uiDiff;
 
         if (m_uiEnrageTimer <= uiDiff)
         {

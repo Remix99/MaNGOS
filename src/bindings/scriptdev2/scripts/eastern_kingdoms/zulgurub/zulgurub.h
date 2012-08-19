@@ -25,7 +25,10 @@ enum
     NPC_JINDO               = 11380,
     NPC_HAKKAR              = 14834,
     NPC_PANTHER_TRIGGER     = 15091,
+    NPC_BLOODLORD_MANDOKIR  = 11382,
+    NPC_MARLI               = 14510,
 
+    GO_SPIDER_EGG           = 179985,
     GO_GONG_OF_BETHEKK      = 180526,
     GO_FORCEFIELD           = 180497,
 
@@ -37,6 +40,8 @@ enum
     AREATRIGGER_ENTER       = 3958,
     AREATRIGGER_ALTAR       = 3960,
 };
+
+static const float aMandokirDownstairsPos[3] = {-12196.30f, -1948.37f, 130.31f};
 
 class MANGOS_DLL_DECL instance_zulgurub : public ScriptedInstance
 {
@@ -66,8 +71,9 @@ class MANGOS_DLL_DECL instance_zulgurub : public ScriptedInstance
         uint32 m_auiEncounter[MAX_ENCOUNTER];
         std::string m_strInstData;
 
-        GUIDList m_lRightPantherTirggerGUIDList;
-        GUIDList m_lLeftPantherTriggerGUIDList;
+        GuidList m_lRightPantherTriggerGuidList;
+        GuidList m_lLeftPantherTriggerGuidList;
+        GuidList m_lSpiderEggGuidList;
 
         bool m_bHasIntroYelled;
         bool m_bHasAltarYelled;

@@ -256,7 +256,15 @@ struct MANGOS_DLL_DECL boss_faction_championsAI : public BSWScriptedAI
     void JustDied(Unit *killer)
     {
         if (m_pInstance)
+        {
             m_pInstance->SetData(TYPE_CRUSADERS_COUNT, 0);
+
+            if (m_pInstance->GetData(TYPE_CRUSADERS_COUNT) == 0)
+                if(!m_pInstance->GetData(TYPE_CRUSADERS_ACHIEV_FAIL))
+                    m_pInstance->DoUpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BE_SPELL_TARGET, SPELL_ACHIEV_RESILIENCE_WILL_FIX_IT);
+
+            m_pInstance->SetData(TYPE_CRUSADERS_DEAD, m_pInstance->GetData(TYPE_CRUSADERS_DEAD) + 1);
+        }
     }
 
     void Aggro(Unit *who)
@@ -385,7 +393,7 @@ struct MANGOS_DLL_DECL boss_faction_championsAI : public BSWScriptedAI
         if (m_threatlist.empty())
             return NULL;
 
-        GUIDList distPositive;
+        GuidList distPositive;
         for (ThreatList::const_iterator itr = m_threatlist.begin(); itr!= m_threatlist.end(); ++itr)
         {
             if (Unit* pTemp = m_creature->GetMap()->GetUnit((*itr)->getUnitGuid()))
@@ -398,7 +406,7 @@ struct MANGOS_DLL_DECL boss_faction_championsAI : public BSWScriptedAI
 
         if (!distPositive.empty())
         {
-            GUIDList::iterator m_uiPlayerGUID = distPositive.begin();
+            GuidList::iterator m_uiPlayerGUID = distPositive.begin();
             advance(m_uiPlayerGUID, (rand()%distPositive.size()));
 
             if (Player* pTemp = m_creature->GetMap()->GetPlayer(*m_uiPlayerGUID))

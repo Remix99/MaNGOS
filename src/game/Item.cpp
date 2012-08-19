@@ -23,6 +23,7 @@
 #include "WorldPacket.h"
 #include "Database/DatabaseEnv.h"
 #include "ItemEnchantmentMgr.h"
+#include "SQLStorages.h"
 
 void AddItemsSetItem(Player* player, Item* item)
 {
@@ -210,8 +211,9 @@ bool ItemCanGoIntoBag(ItemPrototype const* pProto, ItemPrototype const* pBagProt
                         return false;
                     return true;
                 default:
-                    return false;
+                    break;
             }
+            break;
         case ITEM_CLASS_QUIVER:
             switch (pBagProto->SubClass)
             {
@@ -226,6 +228,9 @@ bool ItemCanGoIntoBag(ItemPrototype const* pProto, ItemPrototype const* pBagProt
                 default:
                     return false;
             }
+            break;
+        default:
+            break;
     }
     return false;
 }
@@ -637,6 +642,7 @@ uint32 Item::GetSpell()
                 case ITEM_SUBCLASS_WEAPON_WAND:    return 5009;
                 default: return 0;
             }
+            break;
         case ITEM_CLASS_ARMOR:
             switch (proto->SubClass)
             {
@@ -647,6 +653,9 @@ uint32 Item::GetSpell()
                 case ITEM_SUBCLASS_ARMOR_SHIELD:   return 9116;
                 default: return 0;
             }
+            break;
+        default:
+            break;
     }
     return 0;
 }

@@ -198,6 +198,7 @@ struct MANGOS_DLL_DECL boss_anubarak_trialAI : public BSWScriptedAI
         if (!m_pInstance) 
             return;
 
+        m_pInstance->SetData(TYPE_COUNTER, m_pInstance->GetData(TYPE_COUNTER));
         DoScriptText(SAY_DEATH, m_creature);
         m_pInstance->SetData(TYPE_ANUBARAK, DONE);
         m_pInstance->SetData(TYPE_EVENT, 6000);
@@ -524,7 +525,8 @@ struct MANGOS_DLL_DECL mob_swarm_scarabAI : public BSWScriptedAI
 
     void JustDied(Unit* Killer)
     {
-        m_creature->CastSpell(m_creature, m_bIs25Man ? SPELL_ACHIEV_TRAITOR_KING_25 : SPELL_ACHIEV_TRAITOR_KING_10, false);
+        m_pInstance->DoStartTimedAchievement(ACHIEVEMENT_CRITERIA_TYPE_BE_SPELL_TARGET, m_bIs25Man ? SPELL_ACHIEV_TRAITOR_KING_25 : SPELL_ACHIEV_TRAITOR_KING_10);
+        m_pInstance->DoUpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BE_SPELL_TARGET, m_bIs25Man ? SPELL_ACHIEV_TRAITOR_KING_25 : SPELL_ACHIEV_TRAITOR_KING_10);
         m_creature->ForcedDespawn(5000);
     }
 

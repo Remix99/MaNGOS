@@ -79,7 +79,7 @@ struct MANGOS_DLL_DECL boss_general_vezaxAI : public ScriptedAI
 
     uint8 m_uiVaporsGathered;
 
-    GUIDList m_lVaporsGuids;
+    GuidList m_lVaporsGuids;
 
     void Reset()
     {
@@ -174,7 +174,7 @@ struct MANGOS_DLL_DECL boss_general_vezaxAI : public ScriptedAI
             pSummoned->CastSpell(pSummoned, SPELL_ANIMUS_FORMATION, true);
 
             // Despawn the vapors
-            for (GUIDList::const_iterator itr = m_lVaporsGuids.begin(); itr != m_lVaporsGuids.end(); ++itr)
+            for (GuidList::const_iterator itr = m_lVaporsGuids.begin(); itr != m_lVaporsGuids.end(); ++itr)
             {
                 if (Creature* pVapor = m_creature->GetMap()->GetCreature(*itr))
                     pVapor->ForcedDespawn(4000);
@@ -189,7 +189,7 @@ struct MANGOS_DLL_DECL boss_general_vezaxAI : public ScriptedAI
     void DoPrepareAnimusIfCan()
     {
         // Gather the vapors to the boss - NOTE: not sure if position is ok
-        for (GUIDList::const_iterator itr = m_lVaporsGuids.begin(); itr != m_lVaporsGuids.end(); ++itr)
+        for (GuidList::const_iterator itr = m_lVaporsGuids.begin(); itr != m_lVaporsGuids.end(); ++itr)
         {
             // Better place: near him or some fixed position?
             if (Creature* pVapor = m_creature->GetMap()->GetCreature(*itr))
@@ -228,13 +228,17 @@ struct MANGOS_DLL_DECL boss_general_vezaxAI : public ScriptedAI
                 m_uiSaroniteVaporTimer -= uiDiff;
         }
 
-        if (m_uiFlamesTimer < uiDiff)
+        // Searing flames only while animus is not around
+        if (m_pInstance && m_pInstance->GetData(TYPE_VEZAX_HARD) != IN_PROGRESS)
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_SEARING_FLAMES) == CAST_OK)
-                m_uiFlamesTimer = urand(5000, 10000);
+            if (m_uiFlamesTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_SEARING_FLAMES) == CAST_OK)
+                    m_uiFlamesTimer = urand(9000, 16000);
+            }
+            else
+                m_uiFlamesTimer -= uiDiff;
         }
-        else
-            m_uiFlamesTimer -= uiDiff;
 
         if (m_uiSurgeTimer < uiDiff)
         {
@@ -348,9 +352,6 @@ struct MANGOS_DLL_DECL mob_saronite_animusAI : public ScriptedAI
         DoMeleeAttackIfReady();
     }
 };
-
-
-
 
 CreatureAI* GetAI_mob_saronite_animus(Creature* pCreature)
 {

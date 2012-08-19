@@ -24,7 +24,7 @@ CREATE TABLE `db_version` (
   `version` varchar(120) default NULL,
   `creature_ai_version` varchar(120) default NULL,
   `cache_id` int(10) default '0',
-  `required_11958_01_mangos_mangos_string` bit(1) default NULL
+  `required_12097_01_mangos_mangos_string` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Used DB version notes';
 
 --
@@ -618,7 +618,7 @@ INSERT INTO `command` VALUES
 ('help',0,'Syntax: .help [$command]\r\n\r\nDisplay usage instructions for the given $command. If no $command provided show list available commands.'),
 ('hidearea',3,'Syntax: .hidearea #areaid\r\n\r\nHide the area of #areaid to the selected character. If no character is selected, hide this area to you.'),
 ('honor add',2,'Syntax: .honor add $amount\r\n\r\nAdd a certain amount of honor (gained today) to the selected player.'),
-('honor addkill',2,'Syntax: .honor addkikll\r\n\r\nAdd the targeted unit as one of your pvp kills today (you only get honor if it\'s a racial leader or a player)'),
+('honor addkill',2,'Syntax: .honor addkill\r\n\r\nAdd the targeted unit as one of your pvp kills today (you only get honor if it\'s a racial leader or a player)'),
 ('honor update',2,'Syntax: .honor update\r\n\r\nForce the yesterday\'s honor fields to be updated with today\'s data, which will get reset for the selected player.'),
 ('instance unbind',3,'Syntax: .instance unbind all\r\n  All of the selected player\'s binds will be cleared.\r\n.instance unbind #mapid\r\n Only the specified #mapid instance will be cleared.'),
 ('instance listbinds',3,'Syntax: .instance listbinds\r\n  Lists the binds of the selected player.'),
@@ -819,6 +819,27 @@ INSERT INTO `command` VALUES
 UNLOCK TABLES;
 
 --
+-- Table structure for table `conditions`
+--
+DROP TABLE IF EXISTS `conditions`;
+CREATE TABLE `conditions` (
+  `condition_entry` mediumint(8) unsigned NOT NULL auto_increment COMMENT 'Identifier',
+  `type` tinyint(3) signed NOT NULL DEFAULT '0' COMMENT 'Type of the condition',
+  `value1` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT 'data field one for the condition',
+  `value2` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT 'data field two for the condition',
+  PRIMARY KEY  (`condition_entry`),
+  CONSTRAINT unique_conditions UNIQUE (type,value1,value2)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Condition System';
+
+--
+-- Dumping data for table `conditions`
+--
+LOCK TABLES `conditions` WRITE;
+/*!40000 ALTER TABLE `conditions` DISABLE KEYS */;
+/*!40000 ALTER TABLE `conditions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `creature`
 --
 
@@ -946,6 +967,28 @@ LOCK TABLES `creature_involvedrelation` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `creature_linking`
+--
+
+DROP TABLE IF EXISTS creature_linking;
+CREATE TABLE `creature_linking` (
+  `guid` int(10) UNSIGNED NOT NULL COMMENT 'creature.guid of the slave mob that is linked',
+  `master_guid` int(10) UNSIGNED NOT NULL COMMENT 'master to trigger events',
+  `flag` mediumint(8) UNSIGNED NOT NULL COMMENT 'flag - describing what should happen when',
+  PRIMARY KEY  (`guid`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Creature Linking System';
+
+
+--
+-- Dumping data for table `creature_linking`
+--
+
+LOCK TABLES `creature_linking` WRITE;
+/*!40000 ALTER TABLE `creature_linking` DISABLE KEYS */;
+/*!40000 ALTER TABLE `creature_linking` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `creature_linking_template`
 --
 
@@ -955,6 +998,7 @@ CREATE TABLE `creature_linking_template` (
   `map` SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Id of map of the mobs',
   `master_entry` mediumint(8) UNSIGNED NOT NULL DEFAULT '0' COMMENT 'master to trigger events',
   `flag` mediumint(8) UNSIGNED NOT NULL DEFAULT '0' COMMENT 'flag - describing what should happen when',
+  `search_range` mediumint(8) UNSIGNED NOT NULL DEFAULT '0' COMMENT 'search_range - describing in which range (spawn-coords) master and slave are linked together',
   PRIMARY KEY  (`entry`,`map`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Creature Linking System';
 
@@ -983,6 +1027,7 @@ CREATE TABLE `creature_loot_template` (
   `lootcondition` tinyint(3) unsigned NOT NULL default '0',
   `condition_value1` mediumint(8) unsigned NOT NULL default '0',
   `condition_value2` mediumint(8) unsigned NOT NULL default '0',
+  `condition_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Loot System';
 
@@ -1391,6 +1436,7 @@ CREATE TABLE `disenchant_loot_template` (
   `lootcondition` tinyint(3) unsigned NOT NULL default '0',
   `condition_value1` mediumint(8) unsigned NOT NULL default '0',
   `condition_value2` mediumint(8) unsigned NOT NULL default '0',
+  `condition_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Loot System';
 
@@ -1643,6 +1689,7 @@ CREATE TABLE `fishing_loot_template` (
   `lootcondition` tinyint(3) unsigned NOT NULL default '0',
   `condition_value1` mediumint(8) unsigned NOT NULL default '0',
   `condition_value2` mediumint(8) unsigned NOT NULL default '0',
+  `condition_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Loot System';
 
@@ -1980,6 +2027,7 @@ CREATE TABLE `gameobject_loot_template` (
   `lootcondition` tinyint(3) unsigned NOT NULL default '0',
   `condition_value1` mediumint(8) unsigned NOT NULL default '0',
   `condition_value2` mediumint(8) unsigned NOT NULL default '0',
+  `condition_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Loot System';
 
@@ -2108,6 +2156,40 @@ LOCK TABLES `gameobject_template` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `gameobject_template_scripts`
+--
+
+DROP TABLE IF EXISTS `gameobject_template_scripts`;
+CREATE TABLE `gameobject_template_scripts` (
+  `id` mediumint(8) unsigned NOT NULL default '0',
+  `delay` int(10) unsigned NOT NULL default '0',
+  `command` mediumint(8) unsigned NOT NULL default '0',
+  `datalong` mediumint(8) unsigned NOT NULL default '0',
+  `datalong2` int(10) unsigned NOT NULL default '0',
+  `buddy_entry` int(10) unsigned NOT NULL default '0',
+  `search_radius` int(10) unsigned NOT NULL default '0',
+  `data_flags` tinyint(3) unsigned NOT NULL default '0',
+  `dataint` int(11) NOT NULL default '0',
+  `dataint2` int(11) NOT NULL default '0',
+  `dataint3` int(11) NOT NULL default '0',
+  `dataint4` int(11) NOT NULL default '0',
+  `x` float NOT NULL default '0',
+  `y` float NOT NULL default '0',
+  `z` float NOT NULL default '0',
+  `o` float NOT NULL default '0',
+  `comments` varchar(255) NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
+-- Dumping data for table `gameobject_template_scripts`
+--
+
+LOCK TABLES `gameobject_template_scripts` WRITE;
+/*!40000 ALTER TABLE `gameobject_template_scripts` DISABLE KEYS */;
+/*!40000 ALTER TABLE `gameobject_template_scripts` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `gossip_menu`
 --
 
@@ -2122,6 +2204,7 @@ CREATE TABLE gossip_menu (
   cond_2 tinyint(3) unsigned NOT NULL default '0',
   cond_2_val_1 mediumint(8) unsigned NOT NULL default '0',
   cond_2_val_2 mediumint(8) unsigned NOT NULL default '0',
+  condition_id MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY (entry, text_id, script_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -2161,6 +2244,7 @@ CREATE TABLE gossip_menu_option (
   cond_3 tinyint(3) unsigned NOT NULL default '0',
   cond_3_val_1 mediumint(8) unsigned NOT NULL default '0',
   cond_3_val_2 mediumint(8) unsigned NOT NULL default '0',
+  condition_id MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY (menu_id, id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -2171,22 +2255,22 @@ CREATE TABLE gossip_menu_option (
 LOCK TABLES `gossip_menu_option` WRITE;
 /*!40000 ALTER TABLE `gossip_menu_option` DISABLE KEYS */;
 INSERT INTO gossip_menu_option VALUES
-(0, 0,0,'GOSSIP_OPTION_QUESTGIVER',       2,0x000002,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0, 1,1,'GOSSIP_OPTION_VENDOR',           3,0x000080,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0, 2,2,'GOSSIP_OPTION_TAXIVENDOR',       4,0x002000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0, 3,3,'GOSSIP_OPTION_TRAINER',          5,0x000010,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0, 4,4,'GOSSIP_OPTION_SPIRITHEALER',     6,0x004000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0, 5,4,'GOSSIP_OPTION_SPIRITGUIDE',      7,0x008000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0, 6,5,'GOSSIP_OPTION_INNKEEPER',        8,0x010000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0, 7,6,'GOSSIP_OPTION_BANKER',           9,0x020000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0, 8,7,'GOSSIP_OPTION_PETITIONER',      10,0x040000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0, 9,8,'GOSSIP_OPTION_TABARDDESIGNER',  11,0x080000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0,10,9,'GOSSIP_OPTION_BATTLEFIELD',     12,0x100000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0,11,6,'GOSSIP_OPTION_AUCTIONEER',      13,0x200000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0,12,0,'GOSSIP_OPTION_STABLEPET',       14,0x400000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0,13,1,'GOSSIP_OPTION_ARMORER',         15,0x001000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0,14,0,'GOSSIP_OPTION_UNLEARNTALENTS',  16,0x000010,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0),
-(0,15,2,'GOSSIP_OPTION_UNLEARNPETSKILLS',17,0x000010,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0);
+(0, 0,0,'GOSSIP_OPTION_QUESTGIVER',       2,0x000002,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0, 1,1,'GOSSIP_OPTION_VENDOR',           3,0x000080,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0, 2,2,'GOSSIP_OPTION_TAXIVENDOR',       4,0x002000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0, 3,3,'GOSSIP_OPTION_TRAINER',          5,0x000010,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0, 4,4,'GOSSIP_OPTION_SPIRITHEALER',     6,0x004000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0, 5,4,'GOSSIP_OPTION_SPIRITGUIDE',      7,0x008000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0, 6,5,'GOSSIP_OPTION_INNKEEPER',        8,0x010000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0, 7,6,'GOSSIP_OPTION_BANKER',           9,0x020000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0, 8,7,'GOSSIP_OPTION_PETITIONER',      10,0x040000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0, 9,8,'GOSSIP_OPTION_TABARDDESIGNER',  11,0x080000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0,10,9,'GOSSIP_OPTION_BATTLEFIELD',     12,0x100000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0,11,6,'GOSSIP_OPTION_AUCTIONEER',      13,0x200000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0,12,0,'GOSSIP_OPTION_STABLEPET',       14,0x400000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0,13,1,'GOSSIP_OPTION_ARMORER',         15,0x001000,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0,14,0,'GOSSIP_OPTION_UNLEARNTALENTS',  16,0x000010,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0),
+(0,15,2,'GOSSIP_OPTION_UNLEARNPETSKILLS',17,0x000010,0,0,0,0,0,NULL,0,0,0,0,0,0,0,0,0,0);
 /*!40000 ALTER TABLE `gossip_menu_option` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2323,6 +2407,7 @@ CREATE TABLE `item_loot_template` (
   `lootcondition` tinyint(3) unsigned NOT NULL default '0',
   `condition_value1` mediumint(8) unsigned NOT NULL default '0',
   `condition_value2` mediumint(8) unsigned NOT NULL default '0',
+  `condition_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Loot System';
 
@@ -3123,6 +3208,7 @@ CREATE TABLE `mail_loot_template` (
   `lootcondition` tinyint(3) unsigned NOT NULL default '0',
   `condition_value1` mediumint(8) unsigned NOT NULL default '0',
   `condition_value2` mediumint(8) unsigned NOT NULL default '0',
+  `condition_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Loot System';
 
@@ -3756,7 +3842,7 @@ INSERT INTO `mangos_string` VALUES
 (703,'Fifteen seconds until the Arena battle begins!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (704,'The Arena battle has begun!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (705,'You must wait %s before speaking again.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(706,'This item(s) have problems with equipping/storing in inventory.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(706,'This item(s) has problems with equipping/storing to inventory.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (707,'%s does not wish to be disturbed: %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (708,'%s is Away from Keyboard: %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (709,'Do not Disturb',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -3784,7 +3870,7 @@ INSERT INTO `mangos_string` VALUES
 (734,'You cannot summon players to a battleground or arena map.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (735,'You must be in GM mode to teleport to a player in a battleground.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (736,'You cannot teleport to a battleground from another battleground. Please leave the current battleground first.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(737,'Arenas are set to 1v1 for debugging. So, don\'t join as group.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(737,'Arenas are set to 1v1 for debugging. You cannot join as a group.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (738,'Arenas are set to normal playercount.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (739,'Battlegrounds are set to 1v0 for debugging.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (740,'Battlegrounds are set to normal playercount.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -3851,7 +3937,7 @@ INSERT INTO `mangos_string` VALUES
 (1002,'Account %s NOT deleted (probably sql file format was updated)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1003,'Account %s NOT deleted (unknown error)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1004,'Account created: %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1005,'Account name can\'t be longer than 16 characters (client limit), account not created!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1005,'Account name cannot be longer than 16 characters (client limit), account not created!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1006,'Account with this name already exist!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1007,'Account %s NOT created (probably sql file format was updated)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1008,'Account %s NOT created (unknown error)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -3860,22 +3946,22 @@ INSERT INTO `mangos_string` VALUES
 (1012,'========================================================================================',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1013,'| %10u |%15s| %20s | %15s |%4d| %9d |',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1014,'No online players.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1015,'Used not fully typed quit command, need type it fully (quit), or command used not in RA command line.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1015,'Can only quit from a Remote Admin console or the quit command was not entered in full (quit).',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1016,'| GUID       | Name                 | Account                      | Delete Date         |',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1017,'| %10u | %20s | %15s (%10u) | %19s |',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1018,'==========================================================================================',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1019,'No characters found.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1020,'Restoring the following characters:',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1021,'Deleting the following characters:',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1022,'ERROR: You can only assign a new name if you have only selected a single character!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1023,'Character \'%s\' (GUID: %u Account %u) can\'t be restored: account not exist!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1022,'ERROR: You can only assign a new name for a single selected character!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1023,'Character \'%s\' (GUID: %u Account %u) can\'t be restored: account doesn\'t exist!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1024,'Character \'%s\' (GUID: %u Account %u) can\'t be restored: account character list full!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1025,'Character \'%s\' (GUID: %u Account %u) can\'t be restored: new name already used!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1025,'Character \'%s\' (GUID: %u Account %u) can\'t be restored: name already in use!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1026,'GUID: %u Name: %s Account: %s (%u) Date: %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1027,'Log filters state:',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1028,'All log filters set to: %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1029, 'Command can be called only from RA-console.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1100,'Account %s (Id: %u) have up to %u expansion allowed now.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1029,'Command can only be called from a Remote Admin console.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1100,'Account %s (Id: %u) has been granted %u expansion rights.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1101,'Message of the day changed to:\r\n%s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1102,'Message sent to %s: %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1103,'%d - %s %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -3978,12 +4064,49 @@ INSERT INTO `mangos_string` VALUES
 (1500,'%u - [%s] AutoSpawn: %u MaxLimit: %u Creatures: %u GameObjecs: %u Pools %u Chance: %f %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1501,'%u - |cffffffff|Hpool:%u|h[%s]|h|r AutoSpawn: %u MaxLimit: %u Creatures: %u GameObjecs: %u Pools %u %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1502,'%u - [%s] AutoSpawn: %u MaxLimit: %u Creatures: %u GameObjecs: %u Pools %u %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1503,'Can not add spawn because no free guids for static spawn in reserved guids range. Server restart is required before command can be used. Also look GuidReserveSize.* config options.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1503,'Cannot add spawn because no free guids for static spawn in reserved guids range. Server restart is required before command can be used. Also look GuidReserveSize.* config options.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1504,'AI-Information for Npc Entry %u',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1505,'AIName: %s (%s) ScriptName: %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1506,'Current phase = %u',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (1507,'Combat-Movement is %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(1508,'Melee attacking is %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+(1508,'Melee attacking is %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1600,'|cffffff00Northpass Tower has been taken by the Horde!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1601,'|cffffff00Northpass Tower has been taken by the Alliance!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1602,'|cffffff00Crown Guard Tower has been taken by the Horde!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1603,'|cffffff00Crown Guard Tower has been taken by the Alliance!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1604,'|cffffff00Eastwall Tower has been taken by the Horde!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1605,'|cffffff00Eastwall Tower has been taken by the Alliance!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1606,'|cffffff00The Plaguewood Tower has been taken by the Horde!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1607,'|cffffff00The Plaguewood Tower has been taken by the Alliance!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1608,'|cffffff00The Overlook has been taken by the Horde!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1609,'|cffffff00The Overlook has been taken by the Alliance!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1610,'|cffffff00The Stadium has been taken by the Horde!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1611,'|cffffff00The Stadium has been taken by the Alliance!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1612,'|cffffff00Broken Hill has been taken by the Horde!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1613,'|cffffff00Broken Hill has been taken by the Alliance!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1614,'|cffffff00The Horde has taken control of the East Beacon!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1615,'|cffffff00The Alliance has taken control of the East Beacon!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1616,'|cffffff00The Horde has taken control of the West Beacon!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1617,'|cffffff00The Alliance has taken control of the West Beacon!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1618,'|cffffff00The Horde has taken control of both beacons!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1619,'|cffffff00The Alliance has taken control of both beacons!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1620,'|cffffff00The Horde Field Scout is now issuing battle standards.|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1621,'|cffffff00The Alliance Field Scout is now issuing battle standards.|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1622,'|cffffff00The Horde has taken control of Twin Spire Ruins!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1623,'|cffffff00The Alliance has taken control of Twin Spire Ruins!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1624,'|cffffff00The Horde has taken control of a Spirit Tower!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1625,'|cffffff00The Alliance has taken control of a Spirit Tower!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1626,'|cffffff00The Horde has lost control of a Spirit Tower!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1627,'|cffffff00The Alliance has lost control of a Spirit Tower!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1628,'|cffffff00The Horde has taken control of The Bone Wastes!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1629,'|cffffff00The Alliance has taken control of The Bone Wastes!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1630,'|cffffff00The Horde is gaining control of Halaa!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1631,'|cffffff00The Alliance is gaining control of Halaa!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1632,'|cffffff00The Horde has taken control of Halaa!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1633,'|cffffff00The Alliance has taken control of Halaa!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1634,'|cffffff00Halaa is defenseless!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1635,'|cffffff00The Horde has collected 200 silithyst!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(1636,'|cffffff00The Alliance has collected 200 silithyst!|r',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
 /*!40000 ALTER TABLE `mangos_string` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -4003,6 +4126,7 @@ CREATE TABLE `milling_loot_template` (
   `lootcondition` tinyint(3) unsigned NOT NULL default '0',
   `condition_value1` mediumint(8) unsigned NOT NULL default '0',
   `condition_value2` mediumint(8) unsigned NOT NULL default '0',
+  `condition_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Loot System';
 
@@ -4579,6 +4703,7 @@ CREATE TABLE `pickpocketing_loot_template` (
   `lootcondition` tinyint(3) unsigned NOT NULL default '0',
   `condition_value1` mediumint(8) unsigned NOT NULL default '0',
   `condition_value2` mediumint(8) unsigned NOT NULL default '0',
+  `condition_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Loot System';
 
@@ -14043,6 +14168,7 @@ CREATE TABLE `prospecting_loot_template` (
   `lootcondition` tinyint(3) unsigned NOT NULL default '0',
   `condition_value1` mediumint(8) unsigned NOT NULL default '0',
   `condition_value2` mediumint(8) unsigned NOT NULL default '0',
+  `condition_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Loot System';
 
@@ -14345,6 +14471,7 @@ CREATE TABLE `reference_loot_template` (
   `lootcondition` tinyint(3) unsigned NOT NULL default '0',
   `condition_value1` mediumint(8) unsigned NOT NULL default '0',
   `condition_value2` mediumint(8) unsigned NOT NULL default '0',
+  `condition_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Loot System';
 
@@ -14548,6 +14675,7 @@ CREATE TABLE `skinning_loot_template` (
   `lootcondition` tinyint(3) unsigned NOT NULL default '0',
   `condition_value1` mediumint(8) unsigned NOT NULL default '0',
   `condition_value2` mediumint(8) unsigned NOT NULL default '0',
+  `condition_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Loot System';
 
@@ -14791,7 +14919,7 @@ CREATE TABLE `spell_chain` (
 
 LOCK TABLES `spell_chain` WRITE;
 /*!40000 ALTER TABLE `spell_chain` DISABLE KEYS */;
-INSERT INTO spell_chain VALUES
+INSERT INTO `spell_chain` VALUES
 -- ------------------
 -- (0) Not associated with skills
 -- ------------------
@@ -14899,7 +15027,7 @@ INSERT INTO spell_chain VALUES
 (42198,42213,42208,7,0),
 (42937,42198,42208,8,0),
 (42938,42937,42208,9,0),
-/* ConeofCold */
+/* Cone of Cold */
 (120,0,120,1,0),
 (8492,120,120,2,0),
 (10159,8492,120,3,0),
@@ -14908,18 +15036,18 @@ INSERT INTO spell_chain VALUES
 (27087,10161,120,6,0),
 (42930,27087,120,7,0),
 (42931,42930,120,8,0),
-/* FrostArmor */
+/* Frost Armor */
 (168,0,168,1,0),
 (7300,168,168,2,0),
 (7301,7300,168,3,0),
-/* FrostNova */
+/* Frost Nova */
 (122,0,122,1,0),
 (865,122,122,2,0),
 (6131,865,122,3,0),
 (10230,6131,122,4,0),
 (27088,10230,122,5,0),
 (42917,27088,122,6,0),
-/* FrostWard */
+/* Frost Ward */
 (6143,0,6143,1,0),
 (8461,6143,6143,2,0),
 (8462,8461,6143,3,0),
@@ -14944,14 +15072,14 @@ INSERT INTO spell_chain VALUES
 (38697,27072,116,14,0),
 (42841,38697,116,15,0),
 (42842,42841,116,16,0),
-/* IceArmor */
+/* Ice Armor */
 (7302,0,7302,1,0),
 (7320,7302,7302,2,0),
 (10219,7320,7302,3,0),
 (10220,10219,7302,4,0),
 (27124,10220,7302,5,0),
 (43008,27124,7302,6,0),
-/* IceBarrier */
+/* Ice Barrier */
 (11426,0,11426,1,0),
 (13031,11426,11426,2,0),
 (13032,13031,11426,3,0),
@@ -14960,14 +15088,14 @@ INSERT INTO spell_chain VALUES
 (33405,27134,11426,6,0),
 (43038,33405,11426,7,0),
 (43039,43038,11426,8,0),
-/* IceLance */
+/* Ice Lance */
 (30455,0,30455,1,0),
 (42913,30455,30455,2,0),
 (42914,42913,30455,3,0),
 -- ------------------
 -- (8)Fire
 -- ------------------
-/*Blast Wave*/
+/* Blast Wave */
 (11113,0,11113,1,0),
 (13018,11113,11113,2,0),
 (13019,13018,11113,3,0),
@@ -15091,7 +15219,7 @@ INSERT INTO spell_chain VALUES
 (20190,20043,20043,2,0),
 (27045,20190,20043,3,0),
 (49071,27045,20043,4,0),
-/* MendPet */
+/* Mend Pet */
 (136,0,136,1,0),
 (3111,136,136,2,0),
 (3661,3111,136,3,0),
@@ -15109,7 +15237,7 @@ INSERT INTO spell_chain VALUES
 -- ------------------
 -- (51)Survival
 -- ------------------
-/*Black Arrow*/
+/* Black Arrow */
 (3674,0,3674,1,0),
 (63668,3674,3674,2,0),
 (63669,63668,3674,3,0),
@@ -15183,7 +15311,7 @@ INSERT INTO spell_chain VALUES
 (27014,14266,2973,9,0),
 (48995,27014,2973,10,0),
 (48996,48995,2973,11,0),
-/* WyvernSting */
+/* Wyvern Sting */
 (19386,0,19386,1,0),
 (24132,19386,19386,2,0),
 (24133,24132,19386,3,0),
@@ -15378,14 +15506,14 @@ INSERT INTO spell_chain VALUES
 /* Mind Sear Trigger */
 (49821,0,49821,1,0),
 (53022,49821,49821,2,0),
-/* MindVision */
+/* Mind Vision */
 (2096,0,2096,1,0),
 (10909,2096,2096,2,0),
 /* Prayer of Shadow Protection */
 (27683,0,27683,1,0),
 (39374,27683,27683,2,0),
 (48170,39374,27683,3,0),
-/* PsychicScream */
+/* Psychic Scream */
 (8122,0,8122,1,0),
 (8124,8122,8122,2,0),
 (10888,8124,8122,3,0),
@@ -15396,12 +15524,12 @@ INSERT INTO spell_chain VALUES
 (10958,10957,976,3,0),
 (25433,10958,976,4,0),
 (48169,25433,976,5,0),
-/* ShadowWord:Death */
+/* Shadow Word: Death */
 (32379,0,32379,1,0),
 (32996,32379,32379,2,0),
 (48157,32996,32379,3,0),
 (48158,48157,32379,4,0),
-/* ShadowWord:Pain */
+/* Shadow Word: Pain */
 (589,0,589,1,0),
 (594,589,589,2,0),
 (970,594,589,3,0),
@@ -15464,7 +15592,7 @@ INSERT INTO spell_chain VALUES
 (27021,25294,2643,6,0),
 (49047,27021,2643,7,0),
 (49048,49047,2643,8,0),
-/* SerpentSting */
+/* Serpent Sting */
 (1978,0,1978,1,0),
 (13549,1978,1978,2,0),
 (13550,13549,1978,3,0),
@@ -15477,7 +15605,7 @@ INSERT INTO spell_chain VALUES
 (27016,25295,1978,10,0),
 (49000,27016,1978,11,0),
 (49001,49000,1978,12,0),
-/* SteadyShot */
+/* Steady Shot */
 (56641,0,56641,1,0),
 (34120,56641,56641,2,0),
 (49051,34120,56641,3,0),
@@ -15522,7 +15650,7 @@ INSERT INTO spell_chain VALUES
 -- ------------------
 -- (184) Retribution (Paladin)
 -- ------------------
-/* Blessingof Might */
+/* Blessing of Might */
 (19740,0,19740,1,0),
 (19834,19740,19740,2,0),
 (19835,19834,19740,3,0),
@@ -15646,10 +15774,10 @@ INSERT INTO spell_chain VALUES
 (10054,10053,759,4,0),
 (27101,10054,759,5,0),
 (42985,27101,759,6,0),
-/* ConjureRefreshment */
+/* Conjure Refreshment */
 (42955,0,42955,1,0),
 (42956,42955,42955,2,0),
-/* ConjureWater */
+/* Conjure Water */
 (5504,0,5504,1,0),
 (5505,5504,5504,2,0),
 (5506,5505,5504,3,0),
@@ -15663,7 +15791,7 @@ INSERT INTO spell_chain VALUES
 (61024,0,61024,1,27126),
 /* Dalaran Brilliance */
 (61316,0,61316,1,27127),
-/* DampenMagic */
+/* Dampen Magic */
 (604,0,604,1,0),
 (8450,604,604,2,0),
 (8451,8450,604,3,0),
@@ -15671,14 +15799,14 @@ INSERT INTO spell_chain VALUES
 (10174,10173,604,5,0),
 (33944,10174,604,6,0),
 (43015,33944,604,7,0),
-/* MageArmor */
+/* Mage Armor */
 (6117,0,6117,1,0),
 (22782,6117,6117,2,0),
 (22783,22782,6117,3,0),
 (27125,22783,6117,4,0),
 (43023,27125,6117,5,0),
 (43024,43023,6117,6,0),
-/* ManaShield */
+/* Mana Shield */
 (1463,0,1463,1,0),
 (8494,1463,1463,2,0),
 (8495,8494,1463,3,0),
@@ -15693,13 +15821,13 @@ INSERT INTO spell_chain VALUES
 (12824,118,118,2,0),
 (12825,12824,118,3,0),
 (12826,12825,118,4,0),
-/* RitualofRefreshment */
+/* Ritual of Refreshment */
 (43987,0,43987,1,0),
 (58659,43987,43987,2,0),
 -- ------------------
 -- (267) Protection (Paladin)
 -- ------------------
-/* Avenger'sShield */
+/* Avenger's Shield */
 (31935,0,31935,1,0),
 (32699,31935,31935,2,0),
 (32700,32699,31935,3,0),
@@ -15711,12 +15839,12 @@ INSERT INTO spell_chain VALUES
 /* Greater Blessing of Sanctuary */
 (20911,0,20911,1,0),
 (25899,20911,20911,2,0),
-/* HammerofJustice */
+/* Hammer of Justice */
 (853,0,853,1,0),
 (5588,853,853,2,0),
 (5589,5588,853,3,0),
 (10308,5589,853,4,0),
-/* HandofProtection */
+/* Hand of Protection */
 (1022,0,1022,1,0),
 (5599,1022,1022,2,0),
 (10278,5599,1022,3,0),
@@ -15736,7 +15864,7 @@ INSERT INTO spell_chain VALUES
 /* Banish */
 (710,0,710,1,0),
 (18647,710,710,2,0),
-/* CreateFirestone */
+/* Create Firestone */
 (6366,0,6366,1,0),
 (17951,6366,6366,2,0),
 (17952,17951,6366,3,0),
@@ -15744,7 +15872,7 @@ INSERT INTO spell_chain VALUES
 (27250,17953,6366,5,0),
 (60219,27250,6366,6,0),
 (60220,60219,6366,7,0),
-/* CreateHealthstone */
+/* Create Healthstone */
 (6201,0,6201,1,0),
 (6202,6201,6201,2,0),
 (5699,6202,6201,3,0),
@@ -15753,7 +15881,7 @@ INSERT INTO spell_chain VALUES
 (27230,11730,6201,6,0),
 (47871,27230,6201,7,0),
 (47878,47871,6201,8,0),
-/* CreateSoulstone */
+/* Create Soulstone */
 (693,0,693,1,0),
 (20752,693,693,2,0),
 (20755,20752,693,3,0),
@@ -15761,14 +15889,14 @@ INSERT INTO spell_chain VALUES
 (20757,20756,693,5,0),
 (27238,20757,693,6,0),
 (47884,27238,693,7,0),
-/* CreateSpellstone */
+/* Create Spellstone */
 (2362,0,2362,1,0),
 (17727,2362,2362,2,0),
 (17728,17727,2362,3,0),
 (28172,17728,2362,4,0),
 (47886,28172,2362,5,0),
 (47888,47886,2362,6,0),
-/* DemonArmor */
+/* Demon Armor */
 (706,0,706,1,0),
 (1086,706,706,2,0),
 (11733,1086,706,3,0),
@@ -15777,20 +15905,20 @@ INSERT INTO spell_chain VALUES
 (27260,11735,706,6,0),
 (47793,27260,706,7,0),
 (47889,47793,706,8,0),
-/* DemonSkin */
+/* Demon Skin */
 (687,0,687,1,0),
 (696,687,687,2,0),
-/* EnslaveDemon */
+/* Enslave Demon */
 (1098,0,1098,1,0),
 (11725,1098,1098,2,0),
 (11726,11725,1098,3,0),
 (61191,11726,1098,4,0),
-/* FelArmor */
+/* Fel Armor */
 (28176,0,28176,1,0),
 (28189,28176,28176,2,0),
 (47892,28189,28176,3,0),
 (47893,47892,28176,4,0),
-/* HealthFunnel */
+/* Health Funnel */
 (755,0,755,1,0),
 (3698,755,755,2,0),
 (3699,3698,755,3,0),
@@ -15800,10 +15928,10 @@ INSERT INTO spell_chain VALUES
 (11695,11694,755,7,0),
 (27259,11695,755,8,0),
 (47856,27259,755,9,0),
-/* RitualofSouls */
+/* Ritual of Souls */
 (29893,0,29893,1,0),
 (58887,29893,29893,2,0),
-/* ShadowWard */
+/* Shadow Ward */
 (6229,0,6229,1,0),
 (11739,6229,6229,2,0),
 (11740,11739,6229,3,0),
@@ -15858,7 +15986,7 @@ INSERT INTO spell_chain VALUES
 (30909,27224,702,8,0),
 (50511,30909,702,9,0),
 /* Dark Pact */
-(18220,0,    18220,1,0),
+(18220,0,18220,1,0),
 (18937,18220,18220,2,0),
 (18938,18937,18220,3,0),
 (27265,18938,18220,4,0),
@@ -16021,7 +16149,7 @@ INSERT INTO spell_chain VALUES
 (25528,25361,8075,6,0),
 (57622,25528,8075,7,0),
 (58643,57622,8075,8,0),
-/* WindfuryWeapon */
+/* Windfury Weapon */
 (8232,0,8232,1,0),
 (8235,8232,8232,2,0),
 (10486,8235,8232,3,0),
@@ -16033,7 +16161,7 @@ INSERT INTO spell_chain VALUES
 -- ------------------
 -- (374) Restoration (Shaman)
 -- ------------------
-/* AncestralSpirit */
+/* Ancestral Spirit */
 (2008,0,2008,1,0),
 (20609,2008,2008,2,0),
 (20610,20609,2008,3,0),
@@ -16041,7 +16169,7 @@ INSERT INTO spell_chain VALUES
 (20777,20776,2008,5,0),
 (25590,20777,2008,6,0),
 (49277,25590,2008,7,0),
-/* ChainHeal */
+/* Chain Heal */
 (1064,0,1064,1,0),
 (10622,1064,1064,2,0),
 (10623,10622,1064,3,0),
@@ -16049,20 +16177,20 @@ INSERT INTO spell_chain VALUES
 (25423,25422,1064,5,0),
 (55458,25423,1064,6,0),
 (55459,55458,1064,7,0),
-/* EarthShield */
+/* Earth Shield */
 (974,0,974,1,0),
 (32593,974,974,2,0),
 (32594,32593,974,3,0),
 (49283,32594,974,4,0),
 (49284,49283,974,5,0),
-/* EarthlivingWeapon */
+/* Earthliving Weapon */
 (51730,0,51730,1,0),
 (51988,51730,51730,2,0),
 (51991,51988,51730,3,0),
 (51992,51991,51730,4,0),
 (51993,51992,51730,5,0),
 (51994,51993,51730,6,0),
-/* HealingStreamTotem */
+/* Healing Stream Totem */
 (5394,0,5394,1,0),
 (6375,5394,5394,2,0),
 (6377,6375,5394,3,0),
@@ -16072,7 +16200,7 @@ INSERT INTO spell_chain VALUES
 (58755,25567,5394,7,0),
 (58756,58755,5394,8,0),
 (58757,58756,5394,9,0),
-/* HealingWave */
+/* Healing Wave */
 (331,0,331,1,0),
 (332,331,331,2,0),
 (547,332,331,3,0),
@@ -16087,7 +16215,7 @@ INSERT INTO spell_chain VALUES
 (25396,25391,331,12,0),
 (49272,25396,331,13,0),
 (49273,49272,331,14,0),
-/* LesserHealingWave */
+/* Lesser Healing Wave */
 (8004,0,8004,1,0),
 (8008,8004,8004,2,0),
 (8010,8008,8004,3,0),
@@ -16236,12 +16364,12 @@ INSERT INTO spell_chain VALUES
 -- ------------------
 -- (573)Restoration
 -- ------------------
-/* GiftoftheWild */
+/* Gift of the Wild */
 (21849,0,21849,1,0),
 (21850,21849,21849,2,0),
 (26991,21850,21849,3,0),
 (48470,26991,21849,4,0),
-/* HealingTouch */
+/* Healing Touch */
 (5185,0,5185,1,0),
 (5186,5185,5185,2,0),
 (5187,5186,5185,3,0),
@@ -16261,7 +16389,7 @@ INSERT INTO spell_chain VALUES
 (33763,0,33763,1,0),
 (48450,33763,33763,2,0),
 (48451,48450,33763,3,0),
-/* MarkoftheWild */
+/* Mark of the Wild */
 (1126,0,1126,1,0),
 (5232,1126,1126,2,0),
 (6756,5232,1126,3,0),
@@ -16325,7 +16453,7 @@ INSERT INTO spell_chain VALUES
 (48446,26983,740,6,0),
 (48447,48446,740,7,0),
 /* Tranquility Triggered */
-(44203,    0,44203,1,0),
+(44203,0,44203,1,0),
 (44205,44203,44203,2,0),
 (44206,44205,44203,3,0),
 (44207,44206,44203,4,0),
@@ -16340,7 +16468,7 @@ INSERT INTO spell_chain VALUES
 -- ------------------
 -- (574)Balance
 -- ------------------
-/* EntanglingRoots */
+/* Entangling Roots */
 (339,0,339,1,0),
 (1062,339,339,2,0),
 (5195,1062,339,3,0),
@@ -16349,7 +16477,7 @@ INSERT INTO spell_chain VALUES
 (9853,9852,339,6,0),
 (26989,9853,339,7,0),
 (53308,26989,339,8,0),
-/* Nature'sGrasp */
+/* Nature's Grasp */
 (16689,0,16689,1,339),
 (16810,16689,16689,2,1062),
 (16811,16810,16689,3,5195),
@@ -16369,7 +16497,7 @@ INSERT INTO spell_chain VALUES
 (27012,17402,16914,4,0),
 (48467,27012,16914,5,0),
 /* Hurricane Triggered */
-(42231,    0,42231,1,0),
+(42231,0,42231,1,0),
 (42232,42231,42231,2,0),
 (42233,42232,42231,3,0),
 (42230,42233,42231,4,0),
@@ -16560,7 +16688,7 @@ INSERT INTO spell_chain VALUES
 (30414,30413,30283,3,0),
 (47846,30414,30283,4,0),
 (47847,47846,30283,5,0),
-/* SoulFire */
+/* Soul Fire */
 (6353,0,6353,1,0),
 (17924,6353,6353,2,0),
 (27211,17924,6353,3,0),
@@ -16670,17 +16798,17 @@ INSERT INTO spell_chain VALUES
 -- ------------------
 -- (613)Discipline
 -- ------------------
-/* DispelMagic */
+/* Dispel Magic*/
 (527,0,527,1,0),
 (988,527,527,2,0),
-/* DivineSpirit */
+/* Divine Spirit */
 (14752,0,14752,1,0),
 (14818,14752,14752,2,0),
 (14819,14818,14752,3,0),
 (27841,14819,14752,4,0),
 (25312,27841,14752,5,0),
 (48073,25312,14752,6,0),
-/* InnerFire */
+/* Inner Fire */
 (588,0,588,1,0),
 (7128,588,588,2,0),
 (602,7128,588,3,0),
@@ -16705,7 +16833,7 @@ INSERT INTO spell_chain VALUES
 (52983,47750,47750,2,0),
 (52984,52983,47750,3,0),
 (52985,52984,47750,4,0),
-/* PowerWord:Fortitude */
+/* Power Word: Fortitude */
 (1243,0,1243,1,0),
 (1244,1243,1243,2,0),
 (1245,1244,1243,3,0),
@@ -16714,7 +16842,7 @@ INSERT INTO spell_chain VALUES
 (10938,10937,1243,6,0),
 (25389,10938,1243,7,0),
 (48161,25389,1243,8,0),
-/* PowerWord:Shield */
+/* Power Word: Shield */
 (17,0,17,1,0),
 (592,17,17,2,0),
 (600,592,17,3,0),
@@ -16729,7 +16857,7 @@ INSERT INTO spell_chain VALUES
 (25218,25217,17,12,0),
 (48065,25218,17,13,0),
 (48066,48065,17,14,0),
-/* PrayerofFortitude */
+/* Prayer of Fortitude */
 (21562,0,21562,1,0),
 (21564,21562,21562,2,0),
 (25392,21564,21562,3,0),
@@ -16738,7 +16866,7 @@ INSERT INTO spell_chain VALUES
 (27681,14752,14752,2,0),
 (32999,27681,14752,3,0),
 (48074,32999,14752,4,0),
-/* ShackleUndead */
+/* Shackle Undead */
 (9484,0,9484,1,0),
 (9485,9484,9484,2,0),
 (10955,9485,9484,3,0),
@@ -16754,7 +16882,7 @@ INSERT INTO spell_chain VALUES
 -- ------------------
 -- (771)Frost
 -- ------------------
-/* HornofWinter */
+/* Horn of Winter */
 (57330,0,57330,1,0),
 (57623,57330,57330,2,0),
 /* Howling Blast */
@@ -16983,6 +17111,7 @@ CREATE TABLE `spell_loot_template` (
   `lootcondition` tinyint(3) unsigned NOT NULL default '0',
   `condition_value1` mediumint(8) unsigned NOT NULL default '0',
   `condition_value2` mediumint(8) unsigned NOT NULL default '0',
+  `condition_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
   PRIMARY KEY  (`entry`,`item`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Loot System';
 
@@ -17067,6 +17196,7 @@ UNLOCK TABLES;
 --
 -- Table structure for table `spell_proc_event`
 --
+
 DROP TABLE IF EXISTS `spell_proc_event`;
 CREATE TABLE `spell_proc_event` (
   `entry` mediumint(8) unsigned NOT NULL DEFAULT '0',
@@ -17873,6 +18003,49 @@ CREATE TABLE `spell_target_position` (
 LOCK TABLES `spell_target_position` WRITE;
 /*!40000 ALTER TABLE `spell_target_position` DISABLE KEYS */;
 /*!40000 ALTER TABLE `spell_target_position` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `spell_template`
+--
+
+DROP TABLE IF EXISTS `spell_template`;
+CREATE TABLE `spell_template` (
+  `id` int(11) unsigned NOT NULL DEFAULT '0',
+  `proc_flags` int(11) unsigned NOT NULL DEFAULT '0',
+  `proc_chance` int(11) unsigned NOT NULL DEFAULT '0',
+  `duration_index` int(11) unsigned NOT NULL DEFAULT '0',
+  `effect0` int(11) unsigned NOT NULL DEFAULT '0',
+  `effect0_implicit_target_a` int(11) unsigned NOT NULL DEFAULT '0',
+  `effect0_radius_idx` int(11) unsigned NOT NULL DEFAULT '0',
+  `effect0_apply_aura_name` int(11) unsigned NOT NULL DEFAULT '0',
+  `effect0_misc_value` int(11) unsigned NOT NULL DEFAULT '0',
+  `effect0_trigger_spell` int(11) unsigned NOT NULL DEFAULT '0',
+  `comments` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='MaNGOS server side spells';
+
+--
+-- Dumping data for table `spell_template`
+--
+LOCK TABLES `spell_template` WRITE;
+/*!40000 ALTER TABLE `spell_template` DISABLE KEYS */;
+INSERT INTO `spell_template` VALUES
+-- ID   proc_flags chnce dur  ef0 tarA0 rad  aur  misc    trigger
+(21387, 0x00000028,  15,  21,   6,   1,   0,  42, 0,      21388, 'Melt-Weapon trigger aura related used by Ragnaros'),
+(23363, 0x00000000, 101,  21,  76,  18,   0,   0, 179804, 0,     'Summon Drakonid Corpse Trigger'),
+(25192, 0x00000000, 101,  21,  76,  18,   0,   0, 180619, 0,     'Summon Ossirian Crystal'),
+(26133, 0x00000000, 101,  21,  76,  18,   0,   0, 180795, 0,     'Summon Sandworm Base'),
+(44920, 0x00000000, 101,  21,   6,   1,   0,  56, 24941,  0,     'Model - Shattered Sun Marksman - BE Male Tier 4'),
+(44924, 0x00000000, 101,  21,   6,   1,   0,  56, 24945,  0,     'Model - Shattered Sun Marksman - BE Female Tier 4'),
+(44928, 0x00000000, 101,  21,   6,   1,   0,  56, 24949,  0,     'Model - Shattered Sun Marksman - Draenei Male Tier 4'),
+(44932, 0x00000000, 101,  21,   6,   1,   0,  56, 24953,  0,     'Model - Shattered Sun Marksman - Draenei Female Tier 4'),
+(45158, 0x00000000, 101,  21,   6,   1,   0,  56, 25119,  0,     'Model - Shattered Sun Warrior - BE Female Tier 4'),
+(45162, 0x00000000, 101,  21,   6,   1,   0,  56, 25123,  0,     'Model - Shattered Sun Warrior - BE Male Tier 4'),
+(45166, 0x00000000, 101,  21,   6,   1,   0,  56, 25127,  0,     'Model - Shattered Sun Warrior - Draenei Female Tier 4'),
+(45170, 0x00000000, 101,  21,   6,   1,   0,  56, 25131,  0,     'Model - Shattered Sun Warrior - Draenei Male Tier 4'),
+(62388, 0x00000000, 101,  21,   6,   1,   0,   4, 0,      0,     'Aura required for Demonic Circle 48020');
+/*!40000 ALTER TABLE `spell_template` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --

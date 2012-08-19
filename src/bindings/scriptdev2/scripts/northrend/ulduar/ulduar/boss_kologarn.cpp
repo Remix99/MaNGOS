@@ -570,14 +570,14 @@ struct MANGOS_DLL_DECL boss_right_armAI : public ScriptedAI
     uint32 m_uiStone_Grip_Timer;
     uint32 m_uiFreeDamage;
     uint32 m_uiMaxDamage;
-    std::list<ObjectGuid> m_lGripTargetGUIDList;
+    std::list<ObjectGuid> m_lGripTargetGuidList;
 
     void Reset()
     {
         m_uiStone_Grip_Timer    = 20000;
         m_uiFreeDamage          = 0;
         m_uiMaxDamage           = m_bIsRegularMode ? 80000 : 380000;
-        m_lGripTargetGUIDList.clear();
+        m_lGripTargetGuidList.clear();
         DoCast(m_creature, SPELL_ARM_VISUAL);
     }
 
@@ -586,9 +586,9 @@ struct MANGOS_DLL_DECL boss_right_armAI : public ScriptedAI
         m_uiFreeDamage += uiDamage;
         if (m_uiFreeDamage > m_uiMaxDamage)
         {
-            if (!m_lGripTargetGUIDList.empty())
+            if (!m_lGripTargetGuidList.empty())
             {
-                for(std::list<ObjectGuid>::iterator itr = m_lGripTargetGUIDList.begin(); itr != m_lGripTargetGUIDList.end(); ++itr)
+                for(std::list<ObjectGuid>::iterator itr = m_lGripTargetGuidList.begin(); itr != m_lGripTargetGuidList.end(); ++itr)
                     if (Unit* pTemp = m_creature->GetMap()->GetUnit(*itr))
                     {
                         pTemp->RemoveAurasDueToSpell(m_bIsRegularMode ? SPELL_STONE_GRIP : SPELL_STONE_GRIP_H);
@@ -598,7 +598,7 @@ struct MANGOS_DLL_DECL boss_right_armAI : public ScriptedAI
                         DoTeleportPlayer(pTemp,KoloFront[0],KoloFront[1],KoloFront[2],0.0f);
                     }
             }
-            m_lGripTargetGUIDList.clear();
+            m_lGripTargetGuidList.clear();
         }
     }
 
@@ -619,9 +619,9 @@ struct MANGOS_DLL_DECL boss_right_armAI : public ScriptedAI
             }
         }
 
-        if (!m_lGripTargetGUIDList.empty())
+        if (!m_lGripTargetGuidList.empty())
         {
-            for(std::list<ObjectGuid>::iterator itr = m_lGripTargetGUIDList.begin(); itr != m_lGripTargetGUIDList.end(); ++itr)
+            for(std::list<ObjectGuid>::iterator itr = m_lGripTargetGuidList.begin(); itr != m_lGripTargetGuidList.end(); ++itr)
                 if (Unit* pTemp = m_creature->GetMap()->GetUnit(*itr))
                 {
                     pTemp->RemoveAurasDueToSpell(m_bIsRegularMode ? SPELL_STONE_GRIP : SPELL_STONE_GRIP_H);
@@ -631,7 +631,7 @@ struct MANGOS_DLL_DECL boss_right_armAI : public ScriptedAI
                     DoTeleportPlayer(pTemp,KoloFront[0],KoloFront[1],KoloFront[2],0.0f);
                 }
         }
-        m_lGripTargetGUIDList.clear();
+        m_lGripTargetGuidList.clear();
     }
 
     /*void SpellHitTarget(Unit* victim, const SpellEntry* spell)
@@ -639,7 +639,7 @@ struct MANGOS_DLL_DECL boss_right_armAI : public ScriptedAI
         if (spell->Id == SPELL_STONE_GRIP_GRAB || spell->Id == SPELL_STONE_GRIP_GRAB_H)
         {
             victim->CastSpell(victim, 54661 , true); //HACK
-            m_lGripTargetGUIDList.push_back(victim->GetObjectGuid());
+            m_lGripTargetGuidList.push_back(victim->GetObjectGuid());
             victim->EnterVehicle(vehicle);
         }
     }*/ 
@@ -661,7 +661,7 @@ struct MANGOS_DLL_DECL boss_right_armAI : public ScriptedAI
                     {
                         pTarget->CastSpell(pTarget, 54661 , true);//HACK
                         pTarget->CastSpell(pTarget, m_bIsRegularMode ? SPELL_STONE_GRIP : SPELL_STONE_GRIP_H, true, 0, 0, pKologarn->GetObjectGuid());
-                        m_lGripTargetGUIDList.push_back(pTarget->GetObjectGuid());
+                        m_lGripTargetGuidList.push_back(pTarget->GetObjectGuid());
                         pTarget->EnterVehicle(vehicle, i+1);
                     }
                 }

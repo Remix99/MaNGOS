@@ -311,7 +311,7 @@ bool WorldSession::Update(PacketFilter& updater)
                     packet->GetOpcode(), GetRemoteAddress().c_str(), GetAccountId());
             if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))
             {
-                sLog.outDebug("Dumping error causing packet:");
+                DEBUG_LOG("Dumping error causing packet:");
                 packet->hexlike();
             }
 
@@ -419,9 +419,9 @@ void WorldSession::LogoutPlayer(bool Save)
 
             // build set of player who attack _player or who have pet attacking of _player
             std::set<Player*> aset;
-            ObjectGuidSet attackers = GetPlayer()->GetMap()->GetAttackersFor(GetPlayer()->GetObjectGuid());
+            GuidSet attackers = GetPlayer()->GetMap()->GetAttackersFor(GetPlayer()->GetObjectGuid());
 
-            for (ObjectGuidSet::const_iterator itr = attackers.begin(); itr != attackers.end();)
+            for (GuidSet::const_iterator itr = attackers.begin(); itr != attackers.end();)
             {
                 Unit* attacker = GetPlayer()->GetMap()->GetUnit(*itr++);
                 if (!attacker)
@@ -506,7 +506,8 @@ void WorldSession::LogoutPlayer(bool Save)
         }
 
         ///- If the player is in a guild, update the guild roster and broadcast a logout message to other guild members
-        if (Guild* guild = sGuildMgr.GetGuildById(GetPlayer()->GetGuildId()))
+        Guild* guild = sGuildMgr.GetGuildById(GetPlayer()->GetGuildId());
+        if (guild)
         {
             if (MemberSlot* slot = guild->GetMemberSlot(GetPlayer()->GetObjectGuid()))
             {
@@ -521,6 +522,26 @@ void WorldSession::LogoutPlayer(bool Save)
         GetPlayer()->RemovePet(PET_SAVE_AS_CURRENT);
 
         GetPlayer()->InterruptNonMeleeSpells(true);
+
+        if (VehicleKit* vehicle = GetPlayer()->GetVehicle())
+        {
+            if (Creature* base = ((Creature*)vehicle->GetBase()))
+            {
+                bool dismiss = true;
+                if (!base->IsTemporarySummon() ||
+                    base->GetVehicleInfo()->GetEntry()->m_flags & (VEHICLE_FLAG_NOT_DISMISS | VEHICLE_FLAG_ACCESSORY))
+                    dismiss = false;
+
+                if (!base->RemoveSpellsCausingAuraByCaster(SPELL_AURA_CONTROL_VEHICLE, GetPlayer()->GetObjectGuid()))
+                    GetPlayer()->ExitVehicle();
+
+                if (base->HasAuraType(SPELL_AURA_CONTROL_VEHICLE))
+                    dismiss = false;
+
+                if (dismiss)
+                    base->ForcedDespawn(1000);
+            }
+        }
 
         ///- empty buyback items and save the player in the database
         // some save parts only correctly work in case player present in map/player_lists (pets, etc)
@@ -1024,9 +1045,9 @@ void WorldSession::SendRedirectClient(std::string& ip, uint16 port)
     pkt << uint32(ip2);                                     // inet_addr(ipstr)
     pkt << uint16(port);                                    // port
 
-    pkt << uint32(GetLatency());                            // latency-related?
+    pkt << uint32(0);                                       // unknown
 
-    HMACSHA1 sha1(20, m_Socket->GetSessionKey().AsByteArray());
+    HMACSHA1 sha1(40, m_Socket->GetSessionKey().AsByteArray());
     sha1.UpdateData((uint8*)&ip2, 4);
     sha1.UpdateData((uint8*)&port, 2);
     sha1.Finalize();

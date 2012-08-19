@@ -301,7 +301,6 @@ void WorldSession::HandleGameObjectUseOpcode( WorldPacket & recv_data )
         return;
 
     GameObject *obj = GetPlayer()->GetMap()->GetGameObject(guid);
-
     if(!obj)
         return;
 
@@ -387,7 +386,7 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
 
     Unit* mover = NULL;
 
-    if (spellInfo->AttributesEx6 & SPELL_ATTR_EX6_CASTABLE_ON_VEHICLE && _mover->IsCharmerOrOwnerPlayerOrPlayerItself())
+    if (spellInfo->HasAttribute(SPELL_ATTR_EX6_CASTABLE_ON_VEHICLE) && _mover->IsCharmerOrOwnerPlayerOrPlayerItself())
         mover = _mover->GetCharmerOrOwnerPlayerOrPlayerItself();
     else
         mover = _mover;
@@ -397,8 +396,8 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
     {
         Player *plr = mover->GetCharmerOrOwnerPlayerOrPlayerItself();
         if (mover->GetVehicleKit()->GetSeatInfo(plr) &&
-           (mover->GetVehicleKit()->GetSeatInfo(plr)->m_flags & SEAT_FLAG_CAN_ATTACK ||
-            mover->GetVehicleKit()->GetSeatInfo(plr)->m_flags & SEAT_FLAG_CAN_CAST ))
+           ((mover->GetVehicleKit()->GetSeatInfo(plr)->m_flags & SEAT_FLAG_CAN_ATTACK) ||
+            (mover->GetVehicleKit()->GetSeatInfo(plr)->m_flags & SEAT_FLAG_CAN_CAST) ))
             mover = plr;
     }
 
@@ -489,7 +488,7 @@ void WorldSession::HandleCancelAuraOpcode( WorldPacket& recvPacket)
     if (!spellInfo)
         return;
 
-    if (spellInfo->Attributes & SPELL_ATTR_CANT_CANCEL)
+    if (spellInfo->HasAttribute(SPELL_ATTR_CANT_CANCEL))
         return;
 
     if (IsPassiveSpell(spellInfo))
@@ -796,4 +795,58 @@ void WorldSession::HandleGetMirrorimageData(WorldPacket& recv_data)
     }
 
     SendPacket(&data);
+}
+
+void WorldSession::HandleUpdateMissileTrajectory(WorldPacket& recv_data)
+{
+    DEBUG_LOG("WORLD: CMSG_UPDATE_MISSILE_TRAJECTORY");
+
+    ObjectGuid guid;
+    uint32 spellId;
+    float elevation, speed;
+    float srcX, srcY, srcZ;
+    float dstX, dstY, dstZ;
+    uint8 moveFlag;
+
+    recv_data >> guid;
+
+//    if (!guid.IsPlayer())
+//        return;
+
+    recv_data >> spellId;
+    recv_data >> elevation;
+    recv_data >> speed;
+    recv_data >> srcX >> srcY >> srcZ;
+    recv_data >> dstX >> dstY >> dstZ;
+    recv_data >> moveFlag;
+
+    Unit* unit = ObjectAccessor::GetUnit(*GetPlayer(), guid);
+    if (!unit)
+        return;
+
+    Spell* spell = unit ? unit->GetCurrentSpell(CURRENT_GENERIC_SPELL) : NULL;
+    if (!spell || spell->m_spellInfo->Id != spellId || !(spell->m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION))
+    {
+        return;
+    }
+    DEBUG_LOG("WorldSession::HandleUpdateMissileTrajectory spell %u ajusted coords: %f/%f %f/%f %f/%f speed %f/%f elevation %f/%f",
+        spellId,
+        spell->m_targets.m_srcX, srcX, spell->m_targets.m_srcY, srcY, spell->m_targets.m_srcZ, srcZ,
+        spell->m_targets.m_destX, dstX, spell->m_targets.m_destY, dstY, spell->m_targets.m_destZ, dstZ,
+        spell->m_targets.GetSpeed(), speed, spell->m_targets.GetElevation(), elevation);
+
+    spell->m_targets.setSource(srcX, srcY, srcZ);
+    spell->m_targets.setDestination(dstX, dstY, dstZ);
+    spell->m_targets.SetElevation(elevation);
+    spell->m_targets.SetSpeed(speed);
+
+    if (moveFlag)
+    {
+        ObjectGuid guid2;                               // unk guid (possible - active mover) - unused
+        MovementInfo movementInfo;                      // MovementInfo
+
+        recv_data >> Unused<uint32>();                  // >> MSG_MOVE_STOP
+        recv_data >> guid.ReadAsPacked();
+        recv_data >> movementInfo;
+    }
 }

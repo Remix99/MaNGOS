@@ -41,7 +41,7 @@
 #include "GridNotifiersImpl.h"
 #include "ObjectPosSelector.h"
 #include "TemporarySummon.h"
-#include "WorldPvP/WorldPvPMgr.h"
+#include "OutdoorPvP/OutdoorPvPMgr.h"
 #include "movement/packet_builder.h"
 
 #define TERRAIN_LOS_STEP_DISTANCE   3.0f        // sample distance for terrain LoS
@@ -248,13 +248,6 @@ void Object::DestroyForPlayer( Player *target, bool anim ) const
 
 void Object::BuildMovementUpdate(ByteBuffer * data, uint16 updateFlags) const
 {
-/* removed by zergtmn. strange...
-    uint16 moveFlags2 = (isType(TYPEMASK_UNIT) ? ((Unit*)this)->m_movementInfo.GetMovementFlags2() : MOVEFLAG2_NONE);
-
-    if (GetTypeId() == TYPEID_UNIT)
-        if(((Creature*)this)->GetVehicleKit())
-            moveFlags2 |= MOVEFLAG2_ALLOW_PITCHING;         // always allow pitch
-*/
 
     *data << uint16(updateFlags);                           // update flags
 
@@ -262,15 +255,6 @@ void Object::BuildMovementUpdate(ByteBuffer * data, uint16 updateFlags) const
     if (updateFlags & UPDATEFLAG_LIVING)
     {
         Unit *unit = ((Unit*)this);
-
-        if (GetTypeId() == TYPEID_PLAYER)
-        {
-            Player *player = ((Player*)unit);
-            if (player->GetTransport())
-                player->m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
-            else
-                player->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
-        }
 
         if (unit->GetTransport() || unit->GetVehicle())
             unit->m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
@@ -301,13 +285,36 @@ void Object::BuildMovementUpdate(ByteBuffer * data, uint16 updateFlags) const
     {
         if (updateFlags & UPDATEFLAG_POSITION)
         {
-            *data << uint8(0);                              // unk PGUID!
+            ObjectGuid transportGuid;
+            if (GetObjectGuid().IsUnit())
+            {
+                if (((Unit*)this)->m_movementInfo.HasMovementFlag(MOVEFLAG_ONTRANSPORT))
+                    transportGuid = ((Unit*)this)->m_movementInfo.GetTransportGuid();
+            }
+            else if (Transport* transport = ((WorldObject*)this)->GetTransport())
+                transportGuid = transport->GetObjectGuid();
+
+            if (transportGuid)
+                *data << transportGuid.WriteAsPacked();
+            else
+                *data << uint8(0);
+
             *data << float(((WorldObject*)this)->GetPositionX());
             *data << float(((WorldObject*)this)->GetPositionY());
             *data << float(((WorldObject*)this)->GetPositionZ());
-            *data << float(((WorldObject*)this)->GetPositionX());
-            *data << float(((WorldObject*)this)->GetPositionY());
-            *data << float(((WorldObject*)this)->GetPositionZ());
+
+            if (transportGuid)
+            {
+                *data << float(((WorldObject*)this)->GetTransOffsetX());
+                *data << float(((WorldObject*)this)->GetTransOffsetY());
+                *data << float(((WorldObject*)this)->GetTransOffsetZ());
+            }
+            else
+            {
+                *data << float(((WorldObject*)this)->GetPositionX());
+                *data << float(((WorldObject*)this)->GetPositionY());
+                *data << float(((WorldObject*)this)->GetPositionZ());
+            }
             *data << float(((WorldObject*)this)->GetOrientation());
 
             if (GetTypeId() == TYPEID_CORPSE)
@@ -321,12 +328,19 @@ void Object::BuildMovementUpdate(ByteBuffer * data, uint16 updateFlags) const
             if (updateFlags & UPDATEFLAG_HAS_POSITION)
             {
                 // 0x02
-                if (updateFlags & UPDATEFLAG_TRANSPORT && ((GameObject*)this)->GetGoType() == GAMEOBJECT_TYPE_MO_TRANSPORT)
+                if ((updateFlags & UPDATEFLAG_TRANSPORT) && ((GameObject*)this)->GetGoType() == GAMEOBJECT_TYPE_MO_TRANSPORT)
                 {
                     *data << float(0);
                     *data << float(0);
                     *data << float(0);
                     *data << float(((WorldObject *)this)->GetOrientation());
+                }
+                else if (updateFlags & UPDATEFLAG_TRANSPORT)
+                {
+                    *data << float(((WorldObject*)this)->GetTransOffsetX());
+                    *data << float(((WorldObject*)this)->GetTransOffsetY());
+                    *data << float(((WorldObject*)this)->GetTransOffsetZ());
+                    *data << float(((WorldObject*)this)->GetTransOffsetO());
                 }
                 else
                 {
@@ -1004,7 +1018,7 @@ void Object::MarkForClientUpdate()
 
 WorldObject::WorldObject()
     : m_groupLootTimer(0), m_groupLootId(0), m_lootGroupRecipientId(0),
-    m_isActiveObject(false), m_currMap(NULL), m_mapId(0), m_InstanceId(0), m_phaseMask(PHASEMASK_NORMAL), m_zoneScript(NULL)
+    m_isActiveObject(false), m_currMap(NULL), m_mapId(0), m_InstanceId(0), m_phaseMask(PHASEMASK_NORMAL)
 {
 }
 
@@ -1161,28 +1175,21 @@ bool WorldObject::_IsWithinDist(WorldObject const* obj, float dist2compare, bool
     return distsq < maxdist * maxdist;
 }
 
-bool WorldObject::IsWithinLOSInMap(const WorldObject* obj, bool strict) const
+bool WorldObject::IsWithinLOSInMap(const WorldObject* obj) const
 {
     if (!IsInMap(obj))
         return false;
 
     float ox,oy,oz;
     obj->GetPosition(ox,oy,oz);
-
-    return(IsWithinLOS(ox, oy, oz, strict ));
+    return IsWithinLOS(ox, oy, oz );
 }
 
-bool WorldObject::IsWithinLOS(float ox, float oy, float oz, bool strict) const
+bool WorldObject::IsWithinLOS(float ox, float oy, float oz) const
 {
     float x,y,z;
     GetPosition(x,y,z);
-
-    Unit* searcher = GetObjectGuid().IsUnit() ? (Unit*)this : NULL;
-
-    VMAP::IVMapManager* vMapManager = VMAP::VMapFactory::createOrGetVMapManager();
-    return vMapManager->isInLineOfSight(GetMapId(), x, y, z + 2.0f, ox, oy, oz + 2.0f) ?
-            (strict ? GetTerrain()->CheckPathAccurate(x,y,z, ox, oy, oz, sWorld.getConfig(CONFIG_BOOL_CHECK_GO_IN_PATH) ? searcher : NULL ) : true) :
-            false;
+    return GetMap()->IsInLineOfSight(x, y, z + 2.0f, ox, oy, oz + 2.0f, GetPhaseMask());
 }
 
 bool WorldObject::GetDistanceOrder(WorldObject const* obj1, WorldObject const* obj2, bool is3D /* = true */) const
@@ -1294,11 +1301,13 @@ float WorldObject::GetAngle(const WorldObject* obj) const
     if (!obj)
         return 0.0f;
 
-//    MANGOS_ASSERT(obj != this || PrintEntryError("GetAngle (for self)"));
-
+    // Rework the assert, when more cases where such a call can happen have been fixed
+    //MANGOS_ASSERT(obj != this || PrintEntryError("GetAngle (for self)"));
     if (obj == this)
+    {
+        sLog.outError("WorldObject::GetAngle INVALID CALL for GetAngle for %s", obj->GetGuidStr().c_str());
         return 0.0f;
-
+    }
     return GetAngle(obj->GetPositionX(), obj->GetPositionY());
 }
 
@@ -1382,7 +1391,7 @@ void WorldObject::GetRandomPoint( float x, float y, float z, float distance, flo
 
 void WorldObject::UpdateGroundPositionZ(float x, float y, float &z) const
 {
-    float new_z = GetTerrain()->GetHeight(x,y,z,true);
+    float new_z = GetMap()->GetHeight(GetPhaseMask(),x,y,z,true);
     if (new_z > INVALID_HEIGHT)
         z = new_z+ 0.05f;                                   // just to be sure that we are not a few pixel under the surface
 }
@@ -1406,8 +1415,9 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float &z) const
             {
                 bool canSwim = ((Creature const*)this)->CanSwim();
                 float ground_z = z;
-                float max_z = GetTerrain()->GetWaterOrGroundLevel(x, y, z, &ground_z, (canSwim && !((Unit const*)this)->HasAuraType(SPELL_AURA_WATER_WALK)));
-
+                float max_z = canSwim
+                    ? GetTerrain()->GetWaterOrGroundLevel(x, y, z, &ground_z, !((Unit const*)this)->HasAuraType(SPELL_AURA_WATER_WALK))
+                    : ((ground_z = GetMap()->GetHeight(GetPhaseMask(), x, y, z, true)));
                 if (max_z > INVALID_HEIGHT)
                 {
                     if (z > max_z)
@@ -1418,7 +1428,7 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float &z) const
             }
             else
             {
-                float ground_z = GetTerrain()->GetHeight(x, y, z, true);
+                float ground_z = GetMap()->GetHeight(GetPhaseMask(), x, y, z, true);
                 if (z < ground_z)
                     z = ground_z;
             }
@@ -1441,7 +1451,7 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float &z) const
             }
             else
             {
-                float ground_z = GetTerrain()->GetHeight(x, y, z, true);
+                float ground_z = GetMap()->GetHeight(GetPhaseMask(), x, y, z, true);
                 if (z < ground_z)
                     z = ground_z;
             }
@@ -1449,7 +1459,7 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float &z) const
         }
         default:
         {
-            float ground_z = GetTerrain()->GetHeight(x, y, z, true);
+            float ground_z = GetMap()->GetHeight(GetPhaseMask(), x, y, z, true);
             if (ground_z > INVALID_HEIGHT)
                 z = ground_z;
             break;
@@ -1644,21 +1654,12 @@ void WorldObject::SetMap(Map * map)
 TerrainInfo const* WorldObject::GetTerrain() const
 {
     MANGOS_ASSERT(m_currMap);
-    return m_currMap ? m_currMap->GetTerrain() : NULL;
+    return m_currMap->GetTerrain();
 }
 
 void WorldObject::AddObjectToRemoveList()
 {
     GetMap()->AddObjectToRemoveList(this);
-}
-
-void WorldObject::SetZoneScript()
-{
-    if (Map *map = GetMap())
-    {
-        if (!map->IsBattleGroundOrArena() && !map->IsDungeon())
-            m_zoneScript = sWorldPvPMgr.GetZoneScript(GetZoneId());
-    }
 }
 
 Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, float ang,TempSummonType spwtype,uint32 despwtime, bool asActiveObject)
@@ -2082,7 +2083,8 @@ void WorldObject::StopGroupLoot()
     if (!m_groupLootId)
         return;
 
-    if (Group* group = sObjectMgr.GetGroupById(m_groupLootId))
+    Group* group = sObjectMgr.GetGroupById(m_groupLootId);
+    if (group)
         group->EndRoll();
 
     m_groupLootTimer = 0;
@@ -2199,4 +2201,15 @@ void WorldObject::SetActiveObjectState(bool active)
             GetMap()->AddToActive(this);
     }
     m_isActiveObject = active;
+}
+
+void WorldObject::UpdateWorldState(uint32 state, uint32 value)
+{
+    if (GetMap())
+        sWorldStateMgr.SetWorldStateValueFor(GetMap(), state, value);
+}
+
+uint32 WorldObject::GetWorldState(uint32 stateId)
+{
+    return sWorldStateMgr.GetWorldStateValueFor(this, stateId);
 }

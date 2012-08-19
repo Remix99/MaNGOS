@@ -89,7 +89,8 @@ void BattleGroundDS::Update(uint32 diff)
             {
                 for (BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
                 {
-                    if (Player *plr = sObjectMgr.GetPlayer(itr->first))
+                    Player* plr = sObjectMgr.GetPlayer(itr->first);
+                    if (plr)
                     {
                         if (plr->GetPositionZ() < 11.0f)
                             continue;
@@ -222,11 +223,11 @@ void BattleGroundDS::HandleAreaTrigger(Player *Source, uint32 Trigger)
     }
 }
 
-void BattleGroundDS::FillInitialWorldStates(WorldPacket &data, uint32& count)
+void BattleGroundDS::FillInitialWorldStates()
 {
-    FillInitialWorldState(data, count, 0xe11, GetAlivePlayersCountByTeam(ALLIANCE));
-    FillInitialWorldState(data, count, 0xe10, GetAlivePlayersCountByTeam(HORDE));
-    FillInitialWorldState(data, count, 0xe1a, 1);
+    FillInitialWorldState(0xe11, GetAlivePlayersCountByTeam(ALLIANCE));
+    FillInitialWorldState(0xe10, GetAlivePlayersCountByTeam(HORDE));
+    FillInitialWorldState(0xe1a, 1);
 }
 
 void BattleGroundDS::Reset()

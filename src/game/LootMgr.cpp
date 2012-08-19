@@ -24,6 +24,8 @@
 #include "Util.h"
 #include "SharedDefines.h"
 #include "SpellMgr.h"
+#include "DBCStores.h"
+#include "SQLStorages.h"
 
 static eConfigFloatValues const qualityToRate[MAX_ITEM_QUALITY] = {
     CONFIG_FLOAT_RATE_DROP_ITEM_POOR,                                    // ITEM_QUALITY_POOR
@@ -55,7 +57,7 @@ class LootTemplate::LootGroup                               // A set of loot def
         bool HasQuestDrop() const;                          // True if group includes at least 1 quest drop entry
         bool HasQuestDropForPlayer(Player const * player) const;
                                                             // The same for active quests of the player
-        void Process(Loot& loot) const;                     // Rolls an item from the group (if any) and adds the item to the loot
+        void Process(Loot& loot, LootStore const& store) const;                     // Rolls an item from the group (if any) and adds the item to the loot
         float RawTotalChance() const;                       // Overall chance for the group (without equal chanced items)
         float TotalChance() const;                          // Overall chance for the group
 
@@ -97,8 +99,8 @@ void LootStore::LoadLootTable()
 
     sLog.outString( "%s :", GetName());
 
-    //                                                 0      1     2                    3        4              5         6              7                 8
-    QueryResult *result = WorldDatabase.PQuery("SELECT entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount, lootcondition, condition_value1, condition_value2 FROM %s",GetName());
+    //                                                 0      1     2                    3        4              5         6
+    QueryResult *result = WorldDatabase.PQuery("SELECT entry, item, ChanceOrQuestChance, groupid, mincountOrRef, maxcount, condition_id FROM %s",GetName());
 
     if (result)
     {
@@ -115,9 +117,7 @@ void LootStore::LoadLootTable()
             uint8  group               = fields[3].GetUInt8();
             int32  mincountOrRef       = fields[4].GetInt32();
             uint32 maxcount            = fields[5].GetUInt32();
-            ConditionType condition    = (ConditionType)fields[6].GetUInt8();
-            uint32 cond_value1         = fields[7].GetUInt32();
-            uint32 cond_value2         = fields[8].GetUInt32();
+            uint16 conditionId         = fields[6].GetUInt16();
 
             if (maxcount > std::numeric_limits<uint8>::max())
             {
@@ -125,20 +125,21 @@ void LootStore::LoadLootTable()
                 continue;                                   // error already printed to log/console.
             }
 
-            if (mincountOrRef < 0 && condition != CONDITION_NONE)
+            if (mincountOrRef < 0 && conditionId)
             {
                 sLog.outErrorDb("Table '%s' entry %u mincountOrRef %i < 0 and not allowed has condition, skipped", GetName(), entry, mincountOrRef);
                 continue;
             }
 
-            if (!PlayerCondition::IsValid(condition,cond_value1, cond_value2))
+            if (conditionId)
             {
-                sLog.outErrorDb("... in table '%s' entry %u item %u", GetName(), entry, item);
-                continue;                                   // error already printed to log/console.
+                const PlayerCondition* condition = sConditionStorage.LookupEntry<PlayerCondition>(conditionId);
+                if (!condition)
+                {
+                    sLog.outErrorDb("Table `%s` for entry %u, item %u has condition_id %u that does not exist in `conditions`, ignoring", GetName(), entry,item, conditionId);
+                    conditionId = 0;
+                }
             }
-
-            // (condition + cond_value1/2) are converted into single conditionId
-            uint16 conditionId = sObjectMgr.GetConditionId(condition, cond_value1, cond_value2);
 
             LootStoreItem storeitem = LootStoreItem(item, chanceOrQuestChance, group, conditionId, mincountOrRef, maxcount);
 
@@ -307,7 +308,7 @@ bool LootStoreItem::IsValid(LootStore const& store, uint32 entry) const
             sLog.outErrorDb("Table '%s' entry %d item %d: negative chance is specified for a reference, skipped", store.GetName(), entry, itemid);
             return false;
         }
-        else if (chance == 0)                               // no chance for the reference
+        else if (chance == 0 && group == 0)                               // no chance for the reference
         {
             sLog.outErrorDb("Table '%s' entry %d item %d: zero chance is specified for a reference, skipped", store.GetName(), entry, itemid);
             return false;
@@ -363,7 +364,7 @@ LootItem::LootItem(uint32 itemid_, uint32 count_, uint32 randomSuffix_, int32 ra
 bool LootItem::AllowedForPlayer(Player const * player) const
 {
     // DB conditions check
-    if (!sObjectMgr.IsPlayerMeetToCondition(player,conditionId))
+    if (conditionId && !sObjectMgr.IsPlayerMeetToNEWCondition(player, conditionId))
         return false;
 
     ItemPrototype const *pProto = ObjectMgr::GetItemPrototype(itemid);
@@ -406,20 +407,18 @@ LootSlotType LootItem::GetSlotTypeForSharedLoot(PermissionTypes permission, Play
 
     switch (permission)
     {
-        case GROUP_PERMISSION:
-            return (is_blocked || is_underthreshold) ? LOOT_SLOT_NORMAL : LOOT_SLOT_VIEW;
         case ALL_PERMISSION:
             return LOOT_SLOT_NORMAL;
-        case OWNER_PERMISSION:
-            return LOOT_SLOT_OWNER;
+        case GROUP_PERMISSION:
+            return (is_blocked || is_underthreshold) ? LOOT_SLOT_NORMAL : LOOT_SLOT_VIEW;
         case MASTER_PERMISSION:
             return !is_underthreshold ? LOOT_SLOT_MASTER : LOOT_SLOT_NORMAL;
+        case OWNER_PERMISSION:
+            return LOOT_SLOT_OWNER;
         case NONE_PERMISSION:
         default:
-            break;
+            return MAX_LOOT_SLOT_TYPE;
     }
-
-    return MAX_LOOT_SLOT_TYPE;
 }
 
 //
@@ -598,8 +597,8 @@ void Loot::NotifyItemRemoved(uint8 lootIndex)
 {
     // notify all players that are looting this that the item was removed
     // convert the index to the slot the player sees
-    PlayersLooting::iterator i_next;
-    for (PlayersLooting::iterator i = m_playersLooting.begin(); i != m_playersLooting.end(); i = i_next)
+    GuidSet::iterator i_next;
+    for (GuidSet::iterator i = m_playersLooting.begin(); i != m_playersLooting.end(); i = i_next)
     {
         i_next = i;
         ++i_next;
@@ -613,8 +612,8 @@ void Loot::NotifyItemRemoved(uint8 lootIndex)
 void Loot::NotifyMoneyRemoved()
 {
     // notify all players that are looting this that the money was removed
-    PlayersLooting::iterator i_next;
-    for (PlayersLooting::iterator i = m_playersLooting.begin(); i != m_playersLooting.end(); i = i_next)
+    GuidSet::iterator i_next;
+    for (GuidSet::iterator i = m_playersLooting.begin(); i != m_playersLooting.end(); i = i_next)
     {
         i_next = i;
         ++i_next;
@@ -632,8 +631,8 @@ void Loot::NotifyQuestItemRemoved(uint8 questIndex)
     // (other questitems can be looted by each group member)
     // bit inefficient but isnt called often
 
-    PlayersLooting::iterator i_next;
-    for (PlayersLooting::iterator i = m_playersLooting.begin(); i != m_playersLooting.end(); i = i_next)
+    GuidSet::iterator i_next;
+    for (GuidSet::iterator i = m_playersLooting.begin(); i != m_playersLooting.end(); i = i_next)
     {
         i_next = i;
         ++i_next;
@@ -709,7 +708,7 @@ LootItem* Loot::LootItemInSlot(uint32 lootSlot, Player* player, QuestItem **qite
                     }
             }
         }
-        else if(item->conditionId)
+        else if (item->conditionId)
         {
             QuestItemMap::const_iterator itr = m_playerNonQuestNonFFAConditionalItems.find(player->GetGUIDLow());
             if (itr != m_playerNonQuestNonFFAConditionalItems.end())
@@ -910,11 +909,23 @@ bool LootTemplate::LootGroup::HasQuestDropForPlayer(Player const * player) const
 }
 
 // Rolls an item from the group (if any takes its chance) and adds the item to the loot
-void LootTemplate::LootGroup::Process(Loot& loot) const
+void LootTemplate::LootGroup::Process(Loot& loot, LootStore const& store) const
 {
     LootStoreItem const * item = Roll();
     if (item != NULL)
-        loot.AddItem(*item);
+    {
+        if (item->mincountOrRef < 0)                           // References processing
+        {
+            LootTemplate const* Referenced = LootTemplates_Reference.GetLootFor(-item->mincountOrRef);
+            if(!Referenced)
+                return;                                   // Error message already printed at loading stage
+
+            for (uint32 loop=0; loop < item->maxcount; ++loop )// Ref multiplicator
+                Referenced->Process(loot, store, false, 0);
+        }
+        else
+            loot.AddItem(*item);
+    }
 }
 
 // Overall chance for the group without equal chanced items
@@ -986,7 +997,7 @@ void LootTemplate::LootGroup::CheckLootRefs(LootIdSet* ref_set) const
 // Adds an entry to the group (at loading stage)
 void LootTemplate::AddEntry(LootStoreItem& item)
 {
-    if (item.group > 0 && item.mincountOrRef > 0)           // Group
+    if (item.group > 0)           // Group
     {
         if (item.group >= Groups.size())
             Groups.resize(item.group);                      // Adds new group the the loot template if needed
@@ -1004,7 +1015,7 @@ void LootTemplate::Process(Loot& loot, LootStore const& store, bool rate, uint8 
         if (groupId > Groups.size())
             return;                                         // Error message already printed at loading stage
 
-        Groups[groupId-1].Process(loot);
+        Groups[groupId-1].Process(loot, store);
         return;
     }
 
@@ -1030,7 +1041,7 @@ void LootTemplate::Process(Loot& loot, LootStore const& store, bool rate, uint8 
 
     // Now processing groups
     for (LootGroups::const_iterator i = Groups.begin( ) ; i != Groups.end( ) ; ++i )
-        i->Process(loot);
+        i->Process(loot, store);
 }
 
 // True if template includes at least 1 quest drop entry
@@ -1388,7 +1399,7 @@ void LoadLootTemplates_Spell()
         {
             // not report about not trainable spells (optionally supported by DB)
             // ignore 61756 (Northrend Inscription Research (FAST QA VERSION) for example
-            if (!(spellInfo->Attributes & SPELL_ATTR_NOT_SHAPESHIFT) || (spellInfo->Attributes & SPELL_ATTR_TRADESPELL))
+            if (!spellInfo->HasAttribute(SPELL_ATTR_NOT_SHAPESHIFT) || spellInfo->HasAttribute(SPELL_ATTR_TRADESPELL))
             {
                 LootTemplates_Spell.ReportNotExistedId(spell_id);
             }

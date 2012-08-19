@@ -8,7 +8,6 @@
 #include "Common.h"
 #include "DBCStructure.h"
 #include "Database/DatabaseEnv.h"
-#include "LockedVector.h"
 
 class Player;
 class Creature;
@@ -31,11 +30,6 @@ class ObjectGuid;
 // Basic defines
 #define VISIBLE_RANGE       (166.0f)                        // MAX visible range (size of grid)
 #define DEFAULT_TEXT        "<ScriptDev2 Text Entry Missing!>"
-
-typedef ACE_Based::LockedVector<ObjectGuid> GUIDList;
-typedef std::set<ObjectGuid> GUIDSet;
-typedef ACE_Based::LockedVector<ObjectGuid> GUIDVector;
-typedef std::map<uint32, ObjectGuid> EntryGuidMap;
 
 /* Escort Factions
  * TODO: find better namings and definitions.

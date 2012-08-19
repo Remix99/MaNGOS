@@ -25,6 +25,19 @@ enum
     SAY_SAPP_DIALOG3            = -1533086,
     SAY_SAPP_DIALOG4_LICH       = -1533087,
     SAY_SAPP_DIALOG5            = -1533088,
+    // Horsemen dialogue texts
+    SAY_BLAU_TAUNT1             = -1533045,
+    SAY_BLAU_TAUNT2             = -1533046,
+    SAY_BLAU_TAUNT3             = -1533047,             // NYI - requires additiona research
+    SAY_RIVE_TAUNT1             = -1533071,
+    SAY_RIVE_TAUNT2             = -1533072,
+    SAY_RIVE_TAUNT3             = -1533073,             // NYI - requires additiona research
+    SAY_KORT_TAUNT1             = -1533052,
+    SAY_KORT_TAUNT2             = -1533053,
+    SAY_KORT_TAUNT3             = -1533054,             // NYI - requires additiona research
+    SAY_ZELI_TAUNT1             = -1533059,
+    SAY_ZELI_TAUNT2             = -1533060,
+    SAY_ZELI_TAUNT3             = -1533061,             // NYI - requires additiona research
 
     TYPE_ANUB_REKHAN            = 0,
     TYPE_FAERLINA               = 1,
@@ -53,14 +66,15 @@ enum
     TYPE_MAX_HEIGAN_TRAPS_3     = 20,
     TYPE_MAX_HEIGAN_TRAPS_4     = 21,
 
-    MAX_SPECIAL_ACHIEV_CRITS    = 6,
+    MAX_SPECIAL_ACHIEV_CRITS    = 7,
 
     TYPE_ACHIEV_SAFETY_DANCE    = 0,
     TYPE_ACHIEV_KNOCK_YOU_OUT   = 1,
     TYPE_ACHIEV_HUNDRED_CLUB    = 2,
-    TYPE_ACHIEV_SHOCKING        = 3,
-    TYPE_ACHIEV_SPORE_LOSER     = 4,
-    TYPE_ACHIEV_GET_ENOUGH      = 5,
+    TYPE_ACHIEV_AND_THEY        = 3,
+    TYPE_ACHIEV_SHOCKING        = 4,
+    TYPE_ACHIEV_SPORE_LOSER     = 5,
+    TYPE_ACHIEV_GET_ENOUGH      = 6,
 
     MAX_HEIGAN_TRAP_AREAS       = 4,
 
@@ -141,6 +155,11 @@ enum
     GO_MILI_EYE_RAMP            = 181210,
     GO_CONS_EYE_RAMP            = 181213,
 
+    GO_ARAC_EYE_BOSS            = 181233,
+    GO_PLAG_EYE_BOSS            = 181231,
+    GO_MILI_EYE_BOSS            = 181230,
+    GO_CONS_EYE_BOSS            = 181232,
+
     // Portals
     GO_ARAC_PORTAL              = 181575,
     GO_PLAG_PORTAL              = 181577,
@@ -159,6 +178,8 @@ enum
     ACHIEV_CRIT_KNOCK_YOU_OUT_H = 7549,
     ACHIEV_CRIT_HUNDRED_CLUB_N  = 7567,                     // Sapphiron, achievs 2146, 2147
     ACHIEV_CRIT_HUNDRED_CLUB_H  = 7568,
+    ACHIEV_CRIT_AND_THEY_N      = 7600,                     // Horsemen, achieves 2176, 2177
+    ACHIEV_CRIT_AND_THEY_H      = 7601,
     ACHIEV_CRIT_SHOCKING_N      = 7604,                     // Thaddius, achievs 2178, 2179
     ACHIEV_CRIT_SHOCKING_H      = 7605,
     ACHIEV_CRIT_SPORE_LOSER_N   = 7612,                     // Loatheb, achievs 2182, 2183
@@ -181,6 +202,9 @@ enum
     // Timed achievement criterias
     ACHIEV_START_PATCHWERK_ID   = 10286,
     ACHIEV_START_MAEXXNA_ID     = 9891,
+
+    // Achievement Spells
+    ACHIEV_SPELL_FOUR_HORSEMEN  = 59450,
 };
 
 struct GothTrigger
@@ -229,7 +253,7 @@ class MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
         uint64 GetHeiganTrapData64(uint8 uiAreaIndex, uint32 uiIndex);
 
         // thaddius
-        void GetThadTeslaCreatures(GUIDList &lList){ lList = m_lThadTeslaCoilList; };
+        void GetThadTeslaCreatures(GuidList &lList){ lList = m_lThadTeslaCoilList; };
 
         // kel
         void SetChamberCenterCoords(float fX, float fY, float fZ);
@@ -241,11 +265,11 @@ class MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
         bool m_abAchievCriteria[MAX_SPECIAL_ACHIEV_CRITS];
         std::string m_strInstData;
 
-        GUIDList m_lThadTeslaCoilList;
-        GUIDList m_lGothTriggerList;
+        GuidList m_lThadTeslaCoilList;
+        GuidList m_lGothTriggerList;
 
         UNORDERED_MAP<ObjectGuid, GothTrigger> m_mGothTriggerMap;
-        GUIDList m_alHeiganTrapGuids[MAX_HEIGAN_TRAP_AREAS];
+        GuidList m_alHeiganTrapGuids[MAX_HEIGAN_TRAP_AREAS];
 
         std::vector<uint64> m_avuiHeiganTraps[MAX_HEIGAN_TRAP_AREAS];
 
@@ -254,6 +278,7 @@ class MANGOS_DLL_DECL instance_naxxramas : public ScriptedInstance
         float m_fChamberCenterZ;
 
         uint32 m_uiTauntTimer;
+        uint8 m_uiHorseMenKilled;
 
         DialogueHelper m_dialogueHelper;
 };

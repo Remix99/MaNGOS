@@ -37,161 +37,184 @@ enum
     SAY_VAROS_SPAWN        = -1578029,
 };
 
-struct MANGOS_DLL_DECL instance_oculus : public ScriptedInstance
+instance_oculus::instance_oculus(Map* pMap) : ScriptedInstance(pMap)
 {
-    instance_oculus(Map* pMap) : ScriptedInstance(pMap) 
-    {
-        m_bIsRegularMode = pMap->IsRegularDifficulty();
-        Initialize();
-    };
-
-    uint32 m_auiEncounter[MAX_ENCOUNTERS+1];
-
-    std::string strSaveData;
-    bool m_bIsRegularMode;
-
-    void Initialize()
-    {
-        for (uint8 i = 0; i < MAX_ENCOUNTERS+1; ++i)
-            m_auiEncounter[i] = NOT_STARTED;
-
-        m_auiEncounter[TYPE_ROBOTS] = 10;
-        m_auiEncounter[TYPE_UROM_PHASE] = 0;
-    }
-
-    void OnObjectCreate(GameObject* pGo)
-    {
-        switch(pGo->GetEntry())
-        {
-            case GO_DRAGON_CAGE_DOOR:
-                break;
-
-           default:
-                return;
-        }
-        m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
-    }
-
-    void OnCreatureCreate(Creature* pCreature)
-    {
-        switch(pCreature->GetEntry())
-        {
-            case NPC_VAROS:
-                pCreature->SetActiveObjectState(true);
-                break;
-            case NPC_DRAKOS:
-            case NPC_UROM:
-            case NPC_EREGOS:
-            case NPC_BELGARISTRASZ:
-            case NPC_VERDISA:
-            case NPC_ETERNOS:
-            case NPC_BALGAR_IMAGE:
-                break;
-        }
-        m_mNpcEntryGuidStore[pCreature->GetEntry()] = pCreature->GetObjectGuid();
-    }
-
-    void SetData(uint32 type, uint32 data)
-    {
-        switch(type)
-        {
-            case TYPE_DRAKOS:
-            case TYPE_VAROS:
-            case TYPE_UROM:
-                m_auiEncounter[type] = data;
-                break;
-            case TYPE_EREGOS:
-                m_auiEncounter[type] = data;
-                if (data == DONE)
-                {
-                    DoRespawnGameObject(m_bIsRegularMode ? GO_EREGOS_CACHE : GO_EREGOS_CACHE_H, HOUR);
-                    DoRespawnGameObject(GO_SPOTLIGHT, HOUR);
-                }
-                break;
-            case TYPE_ROBOTS:
-                m_auiEncounter[type] = m_auiEncounter[type] - data;
-                if(m_auiEncounter[type] == 0)
-                {
-                    if(Creature* pVaros = GetSingleCreatureFromStorage(NPC_VAROS))
-                    {
-                        DoScriptText(SAY_VAROS_SPAWN, pVaros);
-                        pVaros->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-                        pVaros->InterruptNonMeleeSpells(false);
-                        pVaros->RemoveAurasDueToSpell(50053);
-                    }
-                }
-                data = NOT_STARTED;
-                break;
-            case TYPE_UROM_PHASE:
-                m_auiEncounter[type] = data;
-                data = NOT_STARTED;
-                break;
-        }
-
-        if (data == DONE)
-        {
-            OUT_SAVE_INST_DATA;
-
-            std::ostringstream saveStream;
-
-            for(uint8 i = 0; i < MAX_ENCOUNTERS; ++i)
-                saveStream << m_auiEncounter[i] << " ";
-
-            strSaveData = saveStream.str();
-
-            SaveToDB();
-            OUT_SAVE_INST_DATA_COMPLETE;
-        }
-    }
-
-    uint32 GetData(uint32 type)
-    {
-        switch(type)
-        {
-            case TYPE_DRAKOS:
-            case TYPE_VAROS:
-            case TYPE_UROM:
-            case TYPE_EREGOS:
-            case TYPE_ROBOTS:
-            case TYPE_UROM_PHASE:
-                return m_auiEncounter[type];
-            default:
-                return 0;
-        }
-        return 0;
-    }
-
-    const char* Save()
-    {
-        return strSaveData.c_str();
-    }
-
-    void Load(const char* chrIn)
-    {
-        if (!chrIn)
-        {
-            OUT_LOAD_INST_DATA_FAIL;
-            return;
-        }
-
-        OUT_LOAD_INST_DATA(chrIn);
-
-        std::istringstream loadStream(chrIn);
-
-        for(uint8 i = 0; i < MAX_ENCOUNTERS; ++i)
-        {
-            loadStream >> m_auiEncounter[i];
-
-            if (m_auiEncounter[i] == IN_PROGRESS)
-                m_auiEncounter[i] = NOT_STARTED;
-        }
-
-        m_auiEncounter[TYPE_ROBOTS] = 10;
-        m_auiEncounter[TYPE_UROM_PHASE] = 0;
-
-        OUT_LOAD_INST_DATA_COMPLETE;
-    }
+    m_bIsRegularMode = pMap->IsRegularDifficulty();
+    Initialize();
 };
+
+
+void instance_oculus::Initialize()
+{
+    for (uint8 i = 0; i < MAX_ENCOUNTERS+1; ++i)
+        m_auiEncounter[i] = NOT_STARTED;
+
+    m_auiEncounter[TYPE_ROBOTS] = 10;
+    m_auiEncounter[TYPE_UROM_PHASE] = 0;
+    for (uint8 i = 0; i < ACHIEV_COUNT; ++i)
+        m_bAchievCriteria[i] = false;
+}
+
+void instance_oculus::OnObjectCreate(GameObject* pGo)
+{
+    switch(pGo->GetEntry())
+    {
+        case GO_DRAGON_CAGE_DOOR_1:
+            break;
+        case GO_DRAGON_CAGE_DOOR_2:
+            break;
+        case GO_DRAGON_CAGE_DOOR_3:
+            break;
+        default:
+            return;
+    }
+
+    m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
+}
+
+void instance_oculus::OnCreatureCreate(Creature* pCreature)
+{
+    switch(pCreature->GetEntry())
+    {
+        case NPC_VAROS:
+            pCreature->SetActiveObjectState(true);
+        case NPC_TRIGGER:
+        case NPC_ETERNOS:
+        case NPC_VERDISA:
+        case NPC_BELGAR:
+        case NPC_DRAKOS:
+        case NPC_UROM:
+        case NPC_EREGOS:
+        case NPC_BALGAR_IMAGE:
+            m_mNpcEntryGuidStore[pCreature->GetEntry()] = pCreature->GetObjectGuid();
+            break;
+    }
+}
+
+bool instance_oculus::CheckAchievementCriteriaMeet(uint32 uiCriteriaId, Player const* pSource, Unit const* pTarget, uint32 uiMiscValue1 /* = 0*/)
+{
+    switch (uiCriteriaId)
+    {
+        case ACHIEV_CRITERIA_RUBY_VOID:
+            return m_bAchievCriteria[ACHIEV_RUBY_VOID];
+        case ACHIEV_CRITERIA_EMERALD_VOID:
+            return m_bAchievCriteria[ACHIEV_EMERALD_VOID];
+        case ACHIEV_CRITERIA_AMBER_VOID:
+            return m_bAchievCriteria[ACHIEV_AMBER_VOID];
+        default:
+            return false;
+    }
+}
+
+void instance_oculus::SetSpecialAchievementCriteria(uint32 uiType, bool bIsMet)
+{
+    if (uiType < ACHIEV_COUNT)
+        m_bAchievCriteria[uiType] = bIsMet;
+}
+
+void instance_oculus::SetData(uint32 type, uint32 data)
+{
+    switch(type)
+    {
+        case TYPE_DRAKOS:
+            m_auiEncounter[type] = data;
+            if (data == IN_PROGRESS)
+                DoStartTimedAchievement(ACHIEVEMENT_CRITERIA_TYPE_KILL_CREATURE, ACHIEV_START_EREGOS_ID);
+            break;
+        case TYPE_VAROS:
+        case TYPE_UROM:
+            m_auiEncounter[type] = data;
+            break;
+        case TYPE_EREGOS:
+            m_auiEncounter[type] = data;
+            if (data == DONE)
+            {
+                DoRespawnGameObject(m_bIsRegularMode ? GO_EREGOS_CACHE : GO_EREGOS_CACHE_H, HOUR);
+                DoRespawnGameObject(GO_SPOTLIGHT, HOUR);
+            }
+            break;
+        case TYPE_ROBOTS:
+            m_auiEncounter[type] = m_auiEncounter[type] - data;
+            if(m_auiEncounter[type] == 0)
+            {
+                if(Creature* pVaros = GetSingleCreatureFromStorage(NPC_VAROS))
+                {
+                    DoScriptText(SAY_VAROS_SPAWN, pVaros);
+                    pVaros->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                    pVaros->InterruptNonMeleeSpells(false);
+                    pVaros->RemoveAurasDueToSpell(50053);
+                }
+            }
+            data = NOT_STARTED;
+            break;
+        case TYPE_UROM_PHASE:
+            m_auiEncounter[type] = data;
+            data = NOT_STARTED;
+            break;
+        default:
+            return;
+    }
+
+    if (data == DONE)
+    {
+        OUT_SAVE_INST_DATA;
+        std::ostringstream saveStream;
+        for(uint8 i = 0; i < MAX_ENCOUNTERS; ++i)
+            saveStream << m_auiEncounter[i] << " ";
+
+        strSaveData = saveStream.str();
+
+        SaveToDB();
+        OUT_SAVE_INST_DATA_COMPLETE;
+    }
+}
+
+uint32 instance_oculus::GetData(uint32 type)
+{
+    switch(type)
+    {
+        case TYPE_DRAKOS:
+        case TYPE_VAROS:
+        case TYPE_UROM:
+        case TYPE_EREGOS:
+        case TYPE_ROBOTS:
+        case TYPE_UROM_PHASE:
+            return m_auiEncounter[type];
+        default:
+            return 0;
+    }
+    return 0;
+}
+
+const char* instance_oculus::Save()
+{
+    return strSaveData.c_str();
+}
+
+void instance_oculus::Load(const char* chrIn)
+{
+    if (!chrIn)
+    {
+        OUT_LOAD_INST_DATA_FAIL;
+        return;
+    }
+
+    OUT_LOAD_INST_DATA(chrIn);
+    std::istringstream loadStream(chrIn);
+
+    for(uint8 i = 0; i < MAX_ENCOUNTERS; ++i)
+    {
+        loadStream >> m_auiEncounter[i];
+
+        if (m_auiEncounter[i] == IN_PROGRESS)
+            m_auiEncounter[i] = NOT_STARTED;
+    }
+
+    m_auiEncounter[TYPE_ROBOTS] = 10;
+    m_auiEncounter[TYPE_UROM_PHASE] = 0;
+
+    OUT_LOAD_INST_DATA_COMPLETE;
+}
 
 InstanceData* GetInstanceData_instance_oculus(Map* pMap)
 {

@@ -79,7 +79,7 @@ struct MANGOS_DLL_DECL boss_volkhanAI : public ScriptedAI
 
     ScriptedInstance* m_pInstance;
 
-    GUIDList m_lGolemGUIDList;
+    GuidList m_lGolemGuidList;
 
     bool m_bIsRegularMode;
     bool m_bHasShattered;
@@ -134,10 +134,10 @@ struct MANGOS_DLL_DECL boss_volkhanAI : public ScriptedAI
 
     void DespawnGolems()
     {
-        if (m_lGolemGUIDList.empty())
+        if (m_lGolemGuidList.empty())
             return;
 
-        for(GUIDList::const_iterator itr = m_lGolemGUIDList.begin(); itr != m_lGolemGUIDList.end(); ++itr)
+        for(GuidList::const_iterator itr = m_lGolemGuidList.begin(); itr != m_lGolemGuidList.end(); ++itr)
         {
             if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
             {
@@ -149,12 +149,12 @@ struct MANGOS_DLL_DECL boss_volkhanAI : public ScriptedAI
 
     void ShatterGolems()
     {
-        if (m_lGolemGUIDList.empty())
+        if (m_lGolemGuidList.empty())
             return;
 
         uint8 m_uiBrittleGolemsCount = 0;
 
-        for(GUIDList::const_iterator itr = m_lGolemGUIDList.begin(); itr != m_lGolemGUIDList.end(); ++itr)
+        for(GuidList::const_iterator itr = m_lGolemGuidList.begin(); itr != m_lGolemGuidList.end(); ++itr)
         {
             if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
             {
@@ -179,7 +179,7 @@ struct MANGOS_DLL_DECL boss_volkhanAI : public ScriptedAI
     {
         if (pSummoned->GetEntry() == NPC_MOLTEN_GOLEM)
         {
-            m_lGolemGUIDList.push_back(pSummoned->GetObjectGuid());
+            m_lGolemGuidList.push_back(pSummoned->GetObjectGuid());
 
             if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
                 pSummoned->AI()->AttackStart(pTarget);

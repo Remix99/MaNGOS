@@ -26,7 +26,6 @@ EndScriptData */
 
 enum
 {
-    SAY_ENTER               = -1269000,
     SAY_AGGRO               = -1269001,
     SAY_BANISH              = -1269002,
     SAY_SLAY1               = -1269003,
@@ -78,9 +77,6 @@ struct MANGOS_DLL_DECL boss_temporusAI : public ScriptedAI
     void JustDied(Unit* pKiller)
     {
         DoScriptText(SAY_DEATH, m_creature);
-
-        if (m_pInstance)
-            m_pInstance->SetData(TYPE_RIFT, SPECIAL);
     }
 
     void MoveInLineOfSight(Unit* pWho)

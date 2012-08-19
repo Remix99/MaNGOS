@@ -520,8 +520,8 @@ struct MANGOS_DLL_DECL boss_razorscaleAI : public ScriptedAI
     uint8 m_uiFlyNo;
     uint8 m_uiScorchedDwarves;
 
-    GUIDList m_lRepairHarpoonsGUID;
-    GUIDList m_lHarpoonsDummyGUID;
+    GuidList m_lRepairHarpoonsGUID;
+    GuidList m_lHarpoonsDummyGUID;
 
     RazorscalePhase razorscalePhase;
 
@@ -596,21 +596,21 @@ struct MANGOS_DLL_DECL boss_razorscaleAI : public ScriptedAI
     void BreakHarpoons()
     {
         // reset harpoons
-        for (GUIDVector::iterator iter = m_pInstance->m_lBreakHarpoonGUID.begin(); iter != m_pInstance->m_lBreakHarpoonGUID.end(); ++iter)
+        for (GuidVector::iterator iter = m_pInstance->m_lBreakHarpoonGUID.begin(); iter != m_pInstance->m_lBreakHarpoonGUID.end(); ++iter)
         {
             if (GameObject* pBreakHarpoon = m_creature->GetMap()->GetGameObject(*iter))
             {
                 pBreakHarpoon->SetPhaseMask(1, true);                
             }
         }
-        for (GUIDList::iterator iter = m_lRepairHarpoonsGUID.begin(); iter != m_lRepairHarpoonsGUID.end(); ++iter)
+        for (GuidList::iterator iter = m_lRepairHarpoonsGUID.begin(); iter != m_lRepairHarpoonsGUID.end(); ++iter)
         {
             if (GameObject* pRepairHarpoon = m_creature->GetMap()->GetGameObject(*iter))
             {
                 pRepairHarpoon->Delete();
             }
         }
-        for (GUIDList::iterator iter = m_lHarpoonsDummyGUID.begin(); iter != m_lHarpoonsDummyGUID.end(); ++iter)
+        for (GuidList::iterator iter = m_lHarpoonsDummyGUID.begin(); iter != m_lHarpoonsDummyGUID.end(); ++iter)
         {
             if (Creature* pHarpoonDummy = m_creature->GetMap()->GetCreature(*iter))
             {

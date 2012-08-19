@@ -17,7 +17,7 @@
 /* ScriptData
 SDName: Shattrath_City
 SD%Complete: 100
-SDComment: Quest support: 10004, 10231. Flask vendors
+SDComment: Quest support: 10004, 10231.
 SDCategory: Shattrath City
 EndScriptData */
 
@@ -26,7 +26,6 @@ npc_dirty_larry
 npc_ishanah
 npc_khadgars_servant
 npc_salsalabim
-npc_shattrathflaskvendors
 EndContentData */
 
 #include "precompiled.h"
@@ -550,49 +549,55 @@ CreatureAI* GetAI_npc_khadgars_servant(Creature* pCreature)
 # npc_salsalabim
 ######*/
 
-#define FACTION_HOSTILE_SA              90
-#define FACTION_FRIENDLY_SA             35
-#define QUEST_10004                     10004
+enum
+{
+    FACTION_HOSTILE_SA              = 90,
+    QUEST_10004                     = 10004,
 
-#define SPELL_MAGNETIC_PULL             31705
+    SPELL_MAGNETIC_PULL             = 31705,
+};
 
 struct MANGOS_DLL_DECL npc_salsalabimAI : public ScriptedAI
 {
     npc_salsalabimAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
 
-    uint32 MagneticPull_Timer;
+    uint32 m_uiMagneticPullTimer;
 
     void Reset()
     {
-        MagneticPull_Timer = 15000;
-        m_creature->setFaction(FACTION_FRIENDLY_SA);
+        m_uiMagneticPullTimer = 15000;
     }
 
-    void DamageTaken(Unit *done_by, uint32 &damage)
+    void DamageTaken(Unit* pDoneBy, uint32 &uiDamage)
     {
-        if (done_by->GetTypeId() == TYPEID_PLAYER)
-            if ((m_creature->GetHealth()-damage)*100 / m_creature->GetMaxHealth() < 20)
+        if (pDoneBy->GetTypeId() == TYPEID_PLAYER)
         {
-            ((Player*)done_by)->GroupEventHappens(QUEST_10004,m_creature);
-            damage = 0;
-            EnterEvadeMode();
+            if (m_creature->GetHealthPercent() < 20.0f)
+            {
+                ((Player*)pDoneBy)->GroupEventHappens(QUEST_10004,m_creature);
+                uiDamage = 0;
+                EnterEvadeMode();
+            }
         }
     }
 
-    void UpdateAI(const uint32 diff)
+    void UpdateAI(const uint32 uiDiff)
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        if (MagneticPull_Timer < diff)
+        if (m_uiMagneticPullTimer < uiDiff)
         {
-            DoCastSpellIfCan(m_creature->getVictim(),SPELL_MAGNETIC_PULL);
-            MagneticPull_Timer = 15000;
-        }else MagneticPull_Timer -= diff;
+            DoCastSpellIfCan(m_creature->getVictim(), SPELL_MAGNETIC_PULL);
+            m_uiMagneticPullTimer = 15000;
+        }
+        else
+            m_uiMagneticPullTimer -= uiDiff;
 
         DoMeleeAttackIfReady();
     }
 };
+
 CreatureAI* GetAI_npc_salsalabim(Creature* pCreature)
 {
     return new npc_salsalabimAI(pCreature);
@@ -602,66 +607,16 @@ bool GossipHello_npc_salsalabim(Player* pPlayer, Creature* pCreature)
 {
     if (pPlayer->GetQuestStatus(QUEST_10004) == QUEST_STATUS_INCOMPLETE)
     {
-        pCreature->setFaction(FACTION_HOSTILE_SA);
+        pCreature->SetFactionTemporary(FACTION_HOSTILE_SA, TEMPFACTION_RESTORE_REACH_HOME);
         pCreature->AI()->AttackStart(pPlayer);
     }
     else
     {
         if (pCreature->isQuestGiver())
             pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
+
         pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
     }
-    return true;
-}
-
-/*
-##################################################
-Shattrath City Flask Vendors provides flasks to people exalted with 3 factions:
-Haldor the Compulsive
-Arcanist Xorith
-Both sell special flasks for use in Outlands 25man raids only,
-purchasable for one Mark of Illidari each
-Purchase requires exalted reputation with Scryers/Aldor, Cenarion Expedition and The Sha'tar
-##################################################
-*/
-
-bool GossipHello_npc_shattrathflaskvendors(Player* pPlayer, Creature* pCreature)
-{
-    if (pCreature->GetEntry() == 23484)
-    {
-        // Aldor vendor
-        if (pCreature->isVendor() && (pPlayer->GetReputationRank(932) == REP_EXALTED) && (pPlayer->GetReputationRank(935) == REP_EXALTED) && (pPlayer->GetReputationRank(942) == REP_EXALTED))
-        {
-            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, GOSSIP_TEXT_BROWSE_GOODS, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_TRADE);
-            pPlayer->SEND_GOSSIP_MENU(11085, pCreature->GetObjectGuid());
-        }
-        else
-        {
-            pPlayer->SEND_GOSSIP_MENU(11083, pCreature->GetObjectGuid());
-        }
-    }
-
-    if (pCreature->GetEntry() == 23483)
-    {
-        // Scryers vendor
-        if (pCreature->isVendor() && (pPlayer->GetReputationRank(934) == REP_EXALTED) && (pPlayer->GetReputationRank(935) == REP_EXALTED) && (pPlayer->GetReputationRank(942) == REP_EXALTED))
-        {
-            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, GOSSIP_TEXT_BROWSE_GOODS, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_TRADE);
-            pPlayer->SEND_GOSSIP_MENU(11085, pCreature->GetObjectGuid());
-        }
-        else
-        {
-            pPlayer->SEND_GOSSIP_MENU(11084, pCreature->GetObjectGuid());
-        }
-    }
-
-    return true;
-}
-
-bool GossipSelect_npc_shattrathflaskvendors(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction)
-{
-    if (uiAction == GOSSIP_ACTION_TRADE)
-        pPlayer->SEND_VENDORLIST(pCreature->GetObjectGuid());
 
     return true;
 }
@@ -686,11 +641,5 @@ void AddSC_shattrath_city()
     pNewScript->Name = "npc_salsalabim";
     pNewScript->GetAI = &GetAI_npc_salsalabim;
     pNewScript->pGossipHello = &GossipHello_npc_salsalabim;
-    pNewScript->RegisterSelf();
-
-    pNewScript = new Script;
-    pNewScript->Name = "npc_shattrathflaskvendors";
-    pNewScript->pGossipHello = &GossipHello_npc_shattrathflaskvendors;
-    pNewScript->pGossipSelect = &GossipSelect_npc_shattrathflaskvendors;
     pNewScript->RegisterSelf();
 }

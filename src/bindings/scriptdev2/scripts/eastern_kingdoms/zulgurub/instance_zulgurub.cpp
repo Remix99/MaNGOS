@@ -59,13 +59,15 @@ void instance_zulgurub::OnCreatureCreate(Creature* pCreature)
         case NPC_THEKAL:
         case NPC_JINDO:
         case NPC_HAKKAR:
+        case NPC_BLOODLORD_MANDOKIR:
+        case NPC_MARLI:
             m_mNpcEntryGuidStore[pCreature->GetEntry()] = pCreature->GetObjectGuid();
             break;
         case NPC_PANTHER_TRIGGER:
             if (pCreature->GetPositionY() < -1626)
-                m_lLeftPantherTriggerGUIDList.push_back(pCreature->GetObjectGuid());
+                m_lLeftPantherTriggerGuidList.push_back(pCreature->GetObjectGuid());
             else
-                m_lRightPantherTirggerGUIDList.push_back(pCreature->GetObjectGuid());
+                m_lRightPantherTriggerGuidList.push_back(pCreature->GetObjectGuid());
             break;
     }
 }
@@ -77,6 +79,9 @@ void instance_zulgurub::OnObjectCreate(GameObject* pGo)
         case GO_GONG_OF_BETHEKK:
         case GO_FORCEFIELD:
             break;
+        case GO_SPIDER_EGG:
+            m_lSpiderEggGuidList.push_back(pGo->GetObjectGuid());
+            return;
     }
 
     m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
@@ -88,20 +93,55 @@ void instance_zulgurub::SetData(uint32 uiType, uint32 uiData)
     {
         case TYPE_JEKLIK:
         case TYPE_VENOXIS:
-        case TYPE_MARLI:
         case TYPE_THEKAL:
             m_auiEncounter[uiType] = uiData;
             if (uiData == DONE)
                 DoLowerHakkarHitPoints();
+            break;
+        case TYPE_MARLI:
+            m_auiEncounter[uiType] = uiData;
+            if (uiData == DONE)
+                DoLowerHakkarHitPoints();
+            if (uiData == FAIL)
+            {
+                for (GuidList::const_iterator itr = m_lSpiderEggGuidList.begin(); itr != m_lSpiderEggGuidList.end(); ++itr)
+                {
+                    if (GameObject* pEgg = instance->GetGameObject(*itr))
+                    {
+                        // Note: this type of Gameobject needs to be respawned manually
+                        pEgg->SetRespawnTime(2*DAY);
+                        pEgg->Respawn();
+                    }
+                }
+            }
             break;
         case TYPE_ARLOKK:
             m_auiEncounter[uiType] = uiData;
             DoUseDoorOrButton(GO_FORCEFIELD);
             if (uiData == DONE)
                 DoLowerHakkarHitPoints();
-            // ToDo: Reset the Gong on FAIL
+            if (uiData == FAIL)
+            {
+                // Note: this gameobject should change flags - currently it despawns which isn't correct
+                if (GameObject* pGong = GetSingleGameObjectFromStorage(GO_GONG_OF_BETHEKK))
+                {
+                    pGong->SetRespawnTime(2*DAY);
+                    pGong->Respawn();
+                }
+            }
             break;
         case TYPE_OHGAN:
+            // Note: SPECIAL instance data is set via ACID!
+            if (uiData == SPECIAL)
+            {
+                if (Creature* pMandokir = GetSingleCreatureFromStorage(NPC_BLOODLORD_MANDOKIR))
+                {
+                    pMandokir->SetWalk(false);
+                    pMandokir->GetMotionMaster()->MovePoint(1, aMandokirDownstairsPos[0], aMandokirDownstairsPos[1], aMandokirDownstairsPos[2]);
+                }
+            }
+            m_auiEncounter[uiType] = uiData;
+            break;
         case TYPE_LORKHAN:
         case TYPE_ZATH:
             m_auiEncounter[uiType] = uiData;
@@ -170,11 +210,11 @@ uint32 instance_zulgurub::GetData(uint32 uiType)
 
 Creature* instance_zulgurub::SelectRandomPantherTrigger(bool bIsLeft)
 {
-    GUIDList* plTempList = bIsLeft ? &m_lLeftPantherTriggerGUIDList : &m_lRightPantherTirggerGUIDList;
+    GuidList* plTempList = bIsLeft ? &m_lLeftPantherTriggerGuidList : &m_lRightPantherTriggerGuidList;
     std::vector<Creature*> vTriggers;
     vTriggers.reserve(plTempList->size());
 
-    for (GUIDList::const_iterator itr = plTempList->begin(); itr != plTempList->end(); ++itr)
+    for (GuidList::const_iterator itr = plTempList->begin(); itr != plTempList->end(); ++itr)
     {
         if (Creature* pTemp = instance->GetCreature(*itr))
             vTriggers.push_back(pTemp);

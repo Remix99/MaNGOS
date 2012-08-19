@@ -35,7 +35,6 @@
 #include "Util.h"
 #include "LootMgr.h"
 #include "LFGMgr.h"
-#include "Chat.h"
 
 // Playerbot  	
 #include "playerbot/PlayerbotMgr.h"
@@ -158,6 +157,7 @@ bool Group::Create(ObjectGuid guid, const char * name)
         CharacterDatabase.BeginTransaction();
         CharacterDatabase.PExecute("DELETE FROM groups WHERE groupId ='%u'", m_Guid.GetCounter());
         CharacterDatabase.PExecute("DELETE FROM group_member WHERE groupId ='%u'", m_Guid.GetCounter());
+
         CharacterDatabase.PExecute("INSERT INTO groups (groupId,leaderGuid,lootMethod,looterGuid,lootThreshold,icon1,icon2,icon3,icon4,icon5,icon6,icon7,icon8,groupType,difficulty,raiddifficulty) "
             "VALUES ('%u','%u','%u','%u','%u','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','%u','%u','%u')",
             m_Guid.GetCounter(), m_leaderGuid.GetCounter(), uint32(m_lootMethod),
@@ -217,7 +217,7 @@ bool Group::LoadGroupFromDB(Field* fields)
     return true;
 }
 
-bool Group::LoadMemberFromDB(uint32 guidLow, uint8 subgroup, GroupFlagMask flags, uint8 roles)
+bool Group::LoadMemberFromDB(uint32 guidLow, uint8 subgroup, GroupFlagMask flags, LFGRoleMask roles)
 {
     MemberSlot member;
     member.guid      = ObjectGuid(HIGHGUID_PLAYER, guidLow);
@@ -233,10 +233,11 @@ bool Group::LoadMemberFromDB(uint32 guidLow, uint8 subgroup, GroupFlagMask flags
 
     SubGroupCounterIncrease(subgroup);
 
-    if (Player* player = sObjectMgr.GetPlayer(member.guid))
+    Player* player = sObjectMgr.GetPlayer(member.guid);
+    if (player)
     {
         if (player->IsInWorld())
-            player->GetLFGState()->SetRoles(roles);
+            player->GetLFGPlayerState()->SetRoles(roles);
     }
 
     return true;
@@ -254,8 +255,11 @@ void Group::ConvertToRaid()
 
     // update quest related GO states (quest activity dependent from raid membership)
     for(member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
-        if(Player* player = sObjectMgr.GetPlayer(citr->guid))
+    {
+        Player* player = sObjectMgr.GetPlayer(citr->guid);
+        if(player)
             player->UpdateForQuestWorldObjects();
+    }
 }
 
 bool Group::AddInvite(Player *player)
@@ -332,7 +336,8 @@ bool Group::AddMember(ObjectGuid guid, const char* name)
     if (isLFDGroup())
         sLFGMgr.AddMemberToLFDGroup(guid);
 
-    if (Player* player = sObjectMgr.GetPlayer(guid))
+    Player* player = sObjectMgr.GetPlayer(guid);
+    if (player)
     {
         if (!IsLeader(player->GetObjectGuid()) && !isBGGroup())
         {
@@ -385,7 +390,8 @@ uint32 Group::RemoveMember(ObjectGuid guid, uint8 method)
     {
         bool leaderChanged = _removeMember(guid);
 
-        if (Player *player = sObjectMgr.GetPlayer( guid ))
+        Player* player = sObjectMgr.GetPlayer(guid);
+        if (player)
         {
             // quest related GO state dependent from raid membership
             if (isRaidGroup())
@@ -1082,8 +1088,8 @@ void Group::SendUpdate()
         data << (isLFGGroup() ? uint8(citr->roles) : uint8(0)); // roles mask
         if(isLFGGroup())
         {
-            uint32 dungeonID = GetLFGState()->GetDungeon() ? GetLFGState()->GetDungeon()->ID : 0;
-            data << uint8(GetLFGState()->GetState() == LFG_STATE_FINISHED_DUNGEON ? 2 : 0);
+            uint32 dungeonID = GetLFGGroupState()->GetDungeon() ? GetLFGGroupState()->GetDungeon()->ID : 0;
+            data << uint8(GetLFGGroupState()->GetState() == LFG_STATE_FINISHED_DUNGEON ? 2 : 0);
             data << uint32(dungeonID);
         }
         data << GetObjectGuid();                            // group guid
@@ -1180,10 +1186,10 @@ bool Group::_addMember(ObjectGuid guid, const char* name)
     // get first not-full group
     uint8 groupid = 0;
     GroupFlagMask flags   = GROUP_MEMBER;
-    uint8 roles   = 0;
+    LFGRoleMask roles = LFG_ROLE_MASK_NONE;
 
     if (isLFGGroup() && sObjectMgr.GetPlayer(guid))
-        roles = sObjectMgr.GetPlayer(guid)->GetLFGState()->GetRoles();
+        roles = sObjectMgr.GetPlayer(guid)->GetLFGPlayerState()->GetRoles();
 
     if (m_subGroupsCounts)
     {
@@ -1204,7 +1210,7 @@ bool Group::_addMember(ObjectGuid guid, const char* name)
     return _addMember(guid, name, groupid, flags, roles);
 }
 
-bool Group::_addMember(ObjectGuid guid, const char* name, uint8 group, GroupFlagMask flags, uint8 roles)
+bool Group::_addMember(ObjectGuid guid, const char* name, uint8 group, GroupFlagMask flags, LFGRoleMask roles)
 {
     if (IsFull())
         return false;
@@ -2043,7 +2049,6 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
     uint32 sum_level = 0;
     Player* member_with_max_level = NULL;
     Player* not_gray_member_with_max_level = NULL;
-    Player* victim = NULL;
 
     GetDataForXPAtKill(pVictim,count,sum_level,member_with_max_level,not_gray_member_with_max_level,player_tap);
 
@@ -2056,9 +2061,6 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
         bool is_raid = PvP ? false : sMapStore.LookupEntry(pVictim->GetMapId())->IsRaid() && isRaidGroup();
         bool is_dungeon = PvP ? false : sMapStore.LookupEntry(pVictim->GetMapId())->IsDungeon();
         float group_rate = MaNGOS::XP::xp_in_group_rate(count,is_raid);
-    
-        if(pVictim->GetTypeId() == TYPEID_PLAYER && PvP)
-            victim = (Player*)pVictim;
 
         for(GroupReference *itr = GetFirstMember(); itr != NULL; itr = itr->next())
         {
@@ -2078,14 +2080,7 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
                         pGroupGuy->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_KILL_CREATURE_TYPE, normalType, xp);
 
             RewardGroupAtKill_helper(pGroupGuy, pVictim, count, PvP, group_rate, sum_level, is_dungeon, not_gray_member_with_max_level, member_with_max_level, xp);
-      
-      // Reward group members
-            if(victim && (player_tap->GetSession()->GetRemoteAddress() != victim->GetSession()->GetRemoteAddress()))
-            {
-                ChatHandler(pGroupGuy).PSendSysMessage(PVP_CHAT_COLOR"Group member %s killed %s, you have been awarded a Badge of Justice", player_tap->GetName(), victim->GetName());
-                pGroupGuy->StoreNewItemInBestSlots(29434, 1);
-            }
-    }
+        }
 
         if(player_tap)
         {
@@ -2093,16 +2088,6 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
             if(player_tap->IsAtGroupRewardDistance(pVictim))
                 RewardGroupAtKill_helper(player_tap, pVictim, count, PvP, group_rate, sum_level, is_dungeon, not_gray_member_with_max_level, member_with_max_level, xp);
 
-      // Handle victims death for PvP mod
-            if(victim && (player_tap->GetSession()->GetRemoteAddress() != victim->GetSession()->GetRemoteAddress()))
-            {
-                victim->HandlePvPDeath(player_tap);
-                ChatHandler(player_tap).PSendSysMessage(PVP_CHAT_COLOR"Group member %s killed %s, you have been awarded a Badge of Justice", player_tap->GetName(), victim->GetName());
-                player_tap->StoreNewItemInBestSlots(29434, 1);
-                player_tap->PvP_CurrentDeaths = 0;
-                player_tap->CastSpell(player_tap, 47883, true);
-            }
-    }
             if (pVictim->GetTypeId()==TYPEID_UNIT)
                 if (CreatureInfo const* normalInfo = ObjectMgr::GetCreatureTemplate(pVictim->GetEntry()))
                     if(uint32 normalType = normalInfo->type)
@@ -2110,6 +2095,7 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
             player_tap->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_GET_KILLING_BLOWS, 1, 0, pVictim);
         }
     }
+}
 
 bool Group::ConvertToLFG(LFGType type)
 {
@@ -2149,7 +2135,7 @@ bool Group::ConvertToLFG(LFGType type)
     return true;
 }
 
-void Group::SetGroupRoles(ObjectGuid guid, uint8 roles)
+void Group::SetGroupRoles(ObjectGuid guid, LFGRoleMask roles)
 {
     for (member_witerator itr = m_memberSlots.begin(); itr != m_memberSlots.end(); ++itr)
     {
@@ -2165,12 +2151,12 @@ void Group::SetGroupRoles(ObjectGuid guid, uint8 roles)
     }
 }
 
-uint8 Group::GetGroupRoles(ObjectGuid guid)
+LFGRoleMask Group::GetGroupRoles(ObjectGuid guid)
 {
     for (member_witerator itr = m_memberSlots.begin(); itr != m_memberSlots.end(); ++itr)
     {
         if (itr->guid == guid)
             return itr->roles;
     }
-    return 0;
+    return LFG_ROLE_MASK_NONE;
 }

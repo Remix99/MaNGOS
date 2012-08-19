@@ -33,6 +33,7 @@
 #include "MapPersistentStateMgr.h"
 #include "Mail.h"
 #include "Util.h"
+#include "SpellMgr.h"
 #ifdef _DEBUG_VMAPS
 #include "VMapFactory.h"
 #endif
@@ -138,7 +139,7 @@ bool ChatHandler::HandleNameAnnounceCommand(char* args)
     if (!*args)
         return false;
 
-    switch(m_session->GetSecurity()) 
+    switch(m_session->GetSecurity())
     {
       case SEC_MODERATOR:
         strid = LANG_SYSTEMMESSAGE_MODERATOR;
@@ -257,21 +258,28 @@ bool ChatHandler::HandleGMVisibleCommand(char* args)
         return false;
     }
 
+    Player* player = m_session->GetPlayer();
+    SpellEntry const* invisibleAuraInfo = sSpellStore.LookupEntry(sWorld.getConfig(CONFIG_UINT32_GM_INVISIBLE_AURA));
+    if (!invisibleAuraInfo || !IsSpellAppliesAura(invisibleAuraInfo))
+        invisibleAuraInfo = NULL;
+
     if (value)
     {
-        m_session->GetPlayer()->SetGMVisible(true);
+        player->SetGMVisible(true);
         m_session->SendNotification(LANG_INVISIBLE_VISIBLE);
+        if (invisibleAuraInfo)
+            player->RemoveAurasDueToSpell(invisibleAuraInfo->Id);
     }
     else
     {
         m_session->SendNotification(LANG_INVISIBLE_INVISIBLE);
-        m_session->GetPlayer()->SetGMVisible(false);
+        player->SetGMVisible(false);
+        if (invisibleAuraInfo)
+            player->CastSpell(player, invisibleAuraInfo, true);
     }
 
     return true;
 }
-
-
 
 bool ChatHandler::HandleGPSCommand(char* args)
 {
@@ -318,9 +326,9 @@ bool ChatHandler::HandleGPSCommand(char* args)
         zone_y = 0;
     }
 
-    TerrainInfo const *map = obj->GetTerrain();
-    float ground_z = map->GetHeight(obj->GetPositionX(), obj->GetPositionY(), MAX_HEIGHT);
-    float floor_z = map->GetHeight(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ());
+    Map const *map = obj->GetMap();
+    float ground_z = map->GetHeight(obj->GetPhaseMask(), obj->GetPositionX(), obj->GetPositionY(), MAX_HEIGHT);
+    float floor_z = map->GetHeight(obj->GetPhaseMask(), obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ());
 
     GridPair p = MaNGOS::ComputeGridPair(obj->GetPositionX(), obj->GetPositionY());
 
@@ -329,10 +337,10 @@ bool ChatHandler::HandleGPSCommand(char* args)
 
     uint32 have_map = GridMap::ExistMap(obj->GetMapId(),gx,gy) ? 1 : 0;
     uint32 have_vmap = GridMap::ExistVMap(obj->GetMapId(),gx,gy) ? 1 : 0;
-
+    TerrainInfo const *terrain = obj->GetTerrain();
     if (have_vmap)
     {
-        if(map->IsOutdoors(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ()))
+        if(terrain->IsOutdoors(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ()))
             PSendSysMessage("You are OUTdoor");
         else
             PSendSysMessage("You are INdoor");
@@ -363,10 +371,10 @@ bool ChatHandler::HandleGPSCommand(char* args)
         zone_x, zone_y, ground_z, floor_z, have_map, have_vmap );
 
     GridMapLiquidData liquid_status;
-    GridMapLiquidStatus res = map->getLiquidStatus(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), MAP_ALL_LIQUIDS, &liquid_status);
+    GridMapLiquidStatus res = terrain->getLiquidStatus(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), MAP_ALL_LIQUIDS, &liquid_status);
     if (res)
     {
-        PSendSysMessage(LANG_LIQUID_STATUS, liquid_status.level, liquid_status.depth_level, liquid_status.type, res);
+        PSendSysMessage(LANG_LIQUID_STATUS, liquid_status.level, liquid_status.depth_level, liquid_status.type_flags, res);
     }
     return true;
 }
@@ -596,10 +604,14 @@ bool ChatHandler::HandleGonameCommand(char* args)
         target->InterruptTaxiFlying();
 
         // to point to see at target with same orientation
-        float x,y,z;
-        target->GetContactPoint(_player,x,y,z);
+        float x, y, z;
 
-        _player->TeleportTo(target->GetMapId(), x, y, z, _player->GetAngle(target), TELE_TO_GM_MODE);
+        if (_player->GetMapId() == target->GetMapId())
+            target->GetContactPoint(_player, x, y, z);
+        else
+            target->GetPosition(x, y, z);
+
+        _player->TeleportTo(target->GetMapId(), x, y, z + 0.5f, _player->GetAngle(target), TELE_TO_GM_MODE);
     }
     else
     {
@@ -617,6 +629,8 @@ bool ChatHandler::HandleGonameCommand(char* args)
         bool in_flight;
         if (!Player::LoadPositionFromDB(target_guid, map,x,y,z,o,in_flight))
             return false;
+
+        z += 0.5f;
 
         return HandleGoHelper(_player, map, x, y, &z);
     }

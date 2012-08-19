@@ -41,6 +41,7 @@
 #include "AccountMgr.h"
 #include "GMTicketMgr.h"
 #include "WaypointManager.h"
+#include "WorldStateMgr.h"
 #include "Config/Config.h"
 #include "Util.h"
 #include <cctype>
@@ -79,7 +80,8 @@ bool ChatHandler::HandleMuteCommand(char* args)
     // find only player from same account if any
     if (!target)
     {
-        if (WorldSession* session = sWorld.FindSession(account_id))
+        WorldSession* session = sWorld.FindSession(account_id);
+        if (session)
             target = session->GetPlayer();
     }
 
@@ -128,7 +130,8 @@ bool ChatHandler::HandleUnmuteCommand(char* args)
     // find only player from same account if any
     if (!target)
     {
-        if (WorldSession* session = sWorld.FindSession(account_id))
+        WorldSession* session = sWorld.FindSession(account_id);
+        if (session)
             target = session->GetPlayer();
     }
 
@@ -1071,11 +1074,10 @@ bool ChatHandler::HandleGameObjectAddCommand(char* args)
     if (!ExtractOptInt32(&args, spawntimeSecs, 0))
         return false;
 
-    const GameObjectInfo *gInfo = ObjectMgr::GetGameObjectInfo(id);
-
+    const GameObjectInfo* gInfo = ObjectMgr::GetGameObjectInfo(id);
     if (!gInfo)
     {
-        PSendSysMessage(LANG_GAMEOBJECT_NOT_EXIST,id);
+        PSendSysMessage(LANG_GAMEOBJECT_NOT_EXIST, id);
         SetSentErrorMessage(true);
         return false;
     }
@@ -1083,20 +1085,18 @@ bool ChatHandler::HandleGameObjectAddCommand(char* args)
     if (gInfo->displayId && !sGameObjectDisplayInfoStore.LookupEntry(gInfo->displayId))
     {
         // report to DB errors log as in loading case
-        sLog.outErrorDb("Gameobject (Entry %u GoType: %u) have invalid displayId (%u), not spawned.",id, gInfo->type, gInfo->displayId);
-        PSendSysMessage(LANG_GAMEOBJECT_HAVE_INVALID_DATA,id);
+        sLog.outErrorDb("Gameobject (Entry %u GoType: %u) have invalid displayId (%u), not spawned.", id, gInfo->type, gInfo->displayId);
+        PSendSysMessage(LANG_GAMEOBJECT_HAVE_INVALID_DATA, id);
         SetSentErrorMessage(true);
         return false;
     }
 
-    Player *chr = m_session->GetPlayer();
-    float x = float(chr->GetPositionX());
-    float y = float(chr->GetPositionY());
-    float z = float(chr->GetPositionZ());
-    float o = float(chr->GetOrientation());
-    Map *map = chr->GetMap();
-
-    GameObject* pGameObj = new GameObject;
+    Player* plr = m_session->GetPlayer();
+    float x = float(plr->GetPositionX());
+    float y = float(plr->GetPositionY());
+    float z = float(plr->GetPositionZ());
+    float o = float(plr->GetOrientation());
+    Map* map = plr->GetMap();
 
     // used guids from specially reserved range (can be 0 if no free values)
     uint32 db_lowGUID = sObjectMgr.GenerateStaticGameObjectLowGuid();
@@ -1107,7 +1107,8 @@ bool ChatHandler::HandleGameObjectAddCommand(char* args)
         return false;
     }
 
-    if (!pGameObj->Create(db_lowGUID, gInfo->id, map, chr->GetPhaseMaskForSpawn(), x, y, z, o))
+    GameObject* pGameObj = new GameObject;
+    if (!pGameObj->Create(db_lowGUID, gInfo->id, map, plr->GetPhaseMaskForSpawn(), x, y, z, o))
     {
         delete pGameObj;
         return false;
@@ -1117,7 +1118,7 @@ bool ChatHandler::HandleGameObjectAddCommand(char* args)
         pGameObj->SetRespawnTime(spawntimeSecs);
 
     // fill the gameobject data and save to the db
-    pGameObj->SaveToDB(map->GetId(), (1 << map->GetSpawnMode()),chr->GetPhaseMaskForSpawn());
+    pGameObj->SaveToDB(map->GetId(), (1 << map->GetSpawnMode()), plr->GetPhaseMaskForSpawn());
 
     // this will generate a new guid if the object is in an instance
     if (!pGameObj->LoadFromDB(db_lowGUID, map))
@@ -1780,7 +1781,7 @@ bool ChatHandler::HandleNpcAddMoveCommand(char* args)
     {
         pCreature->SetDefaultMovementType(WAYPOINT_MOTION_TYPE);
         pCreature->GetMotionMaster()->Initialize();
-        if (pCreature->isAlive())                            // dead creature will reset movement generator at respawn
+        if (pCreature->isAlive())                           // dead creature will reset movement generator at respawn
         {
             pCreature->SetDeathState(JUST_DIED);
             pCreature->Respawn();
@@ -1967,7 +1968,7 @@ bool ChatHandler::HandleNpcMoveCommand(char* args)
         }
         pCreature->GetMap()->CreatureRelocation(pCreature,x, y, z,o);
         pCreature->GetMotionMaster()->Initialize();
-        if (pCreature->isAlive())                            // dead creature will reset movement generator at respawn
+        if (pCreature->isAlive())                           // dead creature will reset movement generator at respawn
         {
             pCreature->SetDeathState(JUST_DIED);
             pCreature->Respawn();
@@ -2061,7 +2062,7 @@ bool ChatHandler::HandleNpcSetMoveTypeCommand(char* args)
     {
         pCreature->SetDefaultMovementType(move_type);
         pCreature->GetMotionMaster()->Initialize();
-        if (pCreature->isAlive())                            // dead creature will reset movement generator at respawn
+        if (pCreature->isAlive())                           // dead creature will reset movement generator at respawn
         {
             pCreature->SetDeathState(JUST_DIED);
             pCreature->Respawn();
@@ -2170,7 +2171,7 @@ bool ChatHandler::HandleNpcSpawnDistCommand(char* args)
     pCreature->SetRespawnRadius((float)option);
     pCreature->SetDefaultMovementType(mtype);
     pCreature->GetMotionMaster()->Initialize();
-    if (pCreature->isAlive())                                // dead creature will reset movement generator at respawn
+    if (pCreature->isAlive())                               // dead creature will reset movement generator at respawn
     {
         pCreature->SetDeathState(JUST_DIED);
         pCreature->Respawn();
@@ -2260,10 +2261,11 @@ bool ChatHandler::HandleNpcUnFollowCommand(char* /*args*/)
 bool ChatHandler::HandleNpcTameCommand(char* /*args*/)
 {
     Creature *creatureTarget = getSelectedCreature ();
-    if (!creatureTarget || creatureTarget->IsPet ())
+
+    if (!creatureTarget || creatureTarget->IsPet())
     {
-        PSendSysMessage (LANG_SELECT_CREATURE);
-        SetSentErrorMessage (true);
+        PSendSysMessage(LANG_SELECT_CREATURE);
+        SetSentErrorMessage(true);
         return false;
     }
 
@@ -2810,8 +2812,9 @@ bool ChatHandler::HandleTicketCommand(char* args)
 
         ticket->SetResponseText(args);
 
-        if (Player* pl = sObjectMgr.GetPlayer(ticket->GetPlayerGuid()))
-            pl->GetSession()->SendGMResponse(ticket);
+        Player* plr = sObjectMgr.GetPlayer(ticket->GetPlayerGuid());
+        if (plr)
+            plr->GetSession()->SendGMResponse(ticket);
 
         return true;
     }
@@ -2893,10 +2896,11 @@ bool ChatHandler::HandleDelTicketCommand(char *args)
         sTicketMgr.Delete(guid);
 
         //notify player
-        if (Player* pl = sObjectMgr.GetPlayer(guid))
+        Player* plr = sObjectMgr.GetPlayer(guid);
+        if (plr)
         {
-            pl->GetSession()->SendGMTicketGetTicket(0x0A);
-            PSendSysMessage(LANG_COMMAND_TICKETPLAYERDEL, GetNameLink(pl).c_str());
+            plr->GetSession()->SendGMTicketGetTicket(0x0A);
+            PSendSysMessage(LANG_COMMAND_TICKETPLAYERDEL, GetNameLink(plr).c_str());
         }
         else
             PSendSysMessage(LANG_COMMAND_TICKETDEL);
@@ -3073,7 +3077,7 @@ bool ChatHandler::HandleWpAddCommand(char* args)
     {
         target->SetDefaultMovementType(WAYPOINT_MOTION_TYPE);
         target->GetMotionMaster()->Initialize();
-        if (target->isAlive())                               // dead creature will reset movement generator at respawn
+        if (target->isAlive())                              // dead creature will reset movement generator at respawn
         {
             target->SetDeathState(JUST_DIED);
             target->Respawn();
@@ -3293,7 +3297,7 @@ bool ChatHandler::HandleWpModifyCommand(char* args)
         if (npcCreature)
         {
             npcCreature->GetMotionMaster()->Initialize();
-            if (npcCreature->isAlive())                      // dead creature will reset movement generator at respawn
+            if (npcCreature->isAlive())                     // dead creature will reset movement generator at respawn
             {
                 npcCreature->SetDeathState(JUST_DIED);
                 npcCreature->Respawn();
@@ -3373,7 +3377,7 @@ bool ChatHandler::HandleWpModifyCommand(char* args)
                 delete result2;
             }
             npcCreature->GetMotionMaster()->Initialize();
-            if (npcCreature->isAlive())                      // dead creature will reset movement generator at respawn
+            if (npcCreature->isAlive())                     // dead creature will reset movement generator at respawn
             {
                 npcCreature->SetDeathState(JUST_DIED);
                 npcCreature->Respawn();
@@ -3437,7 +3441,7 @@ bool ChatHandler::HandleWpModifyCommand(char* args)
             if (npcCreature)
             {
                 npcCreature->GetMotionMaster()->Initialize();
-                if (npcCreature->isAlive())                  // dead creature will reset movement generator at respawn
+                if (npcCreature->isAlive())                 // dead creature will reset movement generator at respawn
                 {
                     npcCreature->SetDeathState(JUST_DIED);
                     npcCreature->Respawn();
@@ -3471,7 +3475,7 @@ bool ChatHandler::HandleWpModifyCommand(char* args)
     {
         npcCreature->SetDefaultMovementType(WAYPOINT_MOTION_TYPE);
         npcCreature->GetMotionMaster()->Initialize();
-        if (npcCreature->isAlive())                          // dead creature will reset movement generator at respawn
+        if (npcCreature->isAlive())                         // dead creature will reset movement generator at respawn
         {
             npcCreature->SetDeathState(JUST_DIED);
             npcCreature->Respawn();
@@ -4816,10 +4820,6 @@ bool ChatHandler::HandleLookupPoolCommand(char * args)
         return false;
 
     std::string namepart = args;
-
-    //Player* player = m_session ? m_session->GetPlayer() : NULL;
-    //MapPersistentState* mapState = player ? player->GetMap()->GetPersistentState() : NULL;
-
     strToLower(namepart);
 
     uint32 counter = 0;
@@ -4845,7 +4845,7 @@ bool ChatHandler::HandleLookupPoolCommand(char * args)
     return true;
 }
 
-bool ChatHandler::HandlePoolListCommand(char* args)
+bool ChatHandler::HandlePoolListCommand(char* /*args*/)
 {
     Player* player = m_session->GetPlayer();
 
@@ -4863,7 +4863,6 @@ bool ChatHandler::HandlePoolListCommand(char* args)
     // spawn pools for expected map or for not initialized shared pools state for non-instanceable maps
     for(uint16 pool_id = 0; pool_id < sPoolMgr.GetMaxPoolId(); ++pool_id)
     {
-        //PoolTemplateData const& pool_template = sPoolMgr.GetPoolTemplate(pool_id);
         if (sPoolMgr.GetPoolTemplate(pool_id).CanBeSpawnedAtMap(mapState->GetMapEntry()))
         {
             ShowPoolListHelper(pool_id);
@@ -4919,6 +4918,12 @@ bool ChatHandler::HandlePoolInfoCommand(char* args)
     uint32 pool_id;
     if (!ExtractUint32KeyFromLink(&args, "Hpool", pool_id))
         return false;
+
+    if (pool_id > sPoolMgr.GetMaxPoolId())
+    {
+        PSendSysMessage("Pool %u not found", pool_id);
+        return true;
+    }
 
     Player* player = m_session ? m_session->GetPlayer() : NULL;
 
@@ -5628,5 +5633,96 @@ bool ChatHandler::HandleMmapStatsCommand(char* /*args*/)
     PSendSysMessage(" %u triangles (%u vertices)", triCount, triVertCount);
     PSendSysMessage(" %.2f MB of data (not including pointers)", ((float)dataSize / sizeof(unsigned char)) / 1048576);
 
+    return true;
+}
+
+bool ChatHandler::HandleWorldStateUpdateCommand(char* args)
+{
+    uint32 Id;
+    if (!ExtractUInt32(&args, Id))
+        return false;
+
+    uint32 value;
+    if (!ExtractUInt32(&args, value))
+        return false;
+
+    WorldState const* state = sWorldStateMgr.GetWorldState(Id, m_session->GetPlayer()->GetInstanceId());
+
+    if (state)
+        PSendSysMessage(LANG_WORLDSTATE_UPDATE,Id, m_session->GetPlayer()->GetInstanceId(), state->GetValue(), value);
+    else
+        PSendSysMessage(LANG_WORLDSTATE_SET,Id, m_session->GetPlayer()->GetInstanceId(), value);
+
+    m_session->GetPlayer()->UpdateWorldState(Id, value);
+    return true;
+}
+
+bool ChatHandler::HandleWorldStateCommand(char* args)
+{
+    uint32 Id;
+    if (!ExtractUInt32(&args, Id))
+    {
+        // All WS settings here
+        PSendSysMessage(LANG_WORLDSTATE_SETTINGS," This place for your ads!");
+        return true;
+    }
+
+    WorldState const* state = sWorldStateMgr.GetWorldState(Id, m_session->GetPlayer()->GetInstanceId());
+
+    if (state)
+        PSendSysMessage(LANG_WORLDSTATE_UPDATE,Id, m_session->GetPlayer()->GetInstanceId(), state->GetValue(), state->GetValue());
+    else
+        PSendSysMessage(LANG_WORLDSTATE_ERROR);
+
+    return true;
+}
+
+bool ChatHandler::HandleWorldStateListCommand(char* args)
+{
+    WorldStateSet wsSet = sWorldStateMgr.GetWorldStatesFor(m_session->GetPlayer());
+
+    if (wsSet.empty())
+        return false;
+
+    for (WorldStateSet::const_iterator itr = wsSet.begin(); itr != wsSet.end(); ++itr)
+    {
+        PSendSysMessage(LANG_WORLDSTATE_LIST,(*itr)->GetId(), (*itr)->GetType(), (*itr)->GetCondition(), (*itr)->GetInstance(), (*itr)->GetValue());
+    }
+    return true;
+}
+
+bool ChatHandler::HandleWorldStateListAllCommand(char* args)
+{
+    WorldStateSet wsSet = sWorldStateMgr.GetWorldStates(UINT32_MAX);
+    if (wsSet.empty())
+        return false;
+
+    for (WorldStateSet::const_iterator itr = wsSet.begin(); itr != wsSet.end(); ++itr)
+    {
+        PSendSysMessage(LANG_WORLDSTATE_LIST_FULL, (*itr)->GetId(), (*itr)->GetType(), (*itr)->GetCondition(), (*itr)->GetInstance(), (*itr)->GetValue());
+    }
+    return true;
+}
+
+bool ChatHandler::HandleWorldStateAddCommand(char* args)
+{
+    uint32 Id;
+    if (!ExtractUInt32(&args, Id))
+        return false;
+
+    WorldState const* state = sWorldStateMgr.GetWorldState(Id, m_session->GetPlayer()->GetInstanceId());
+
+    if (state)
+        PSendSysMessage(LANG_WORLDSTATE_UPDATE,Id, m_session->GetPlayer()->GetInstanceId(), state->GetValue(), state->GetValue());
+    else
+        PSendSysMessage(LANG_WORLDSTATE_UPDATE_FULL,Id, m_session->GetPlayer()->GetInstanceId());
+
+    return true;
+}
+
+bool ChatHandler::HandleWorldStateReloadCommand(char* args)
+{
+    sWorldStateMgr.Initialize();
+    PSendSysMessage(LANG_WORLDSTATE_RELOAD,sWorldStateMgr.GetWorldStatesCount(),sWorldStateMgr.GetWorldStateTemplatesCount());
     return true;
 }

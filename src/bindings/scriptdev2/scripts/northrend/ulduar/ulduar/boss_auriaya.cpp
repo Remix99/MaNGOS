@@ -106,7 +106,7 @@ struct MANGOS_DLL_DECL boss_auriayaAI : public ScriptedAI
         m_uiTerrifyingScreechTimer  = 38000;
         m_uiDefenderTimer           = 1*MINUTE*IN_MILLISECONDS;
 
-        for (GUIDList::iterator itr = m_pInstance->m_lSanctumSentryGuids.begin(); itr != m_pInstance->m_lSanctumSentryGuids.end(); ++itr)
+        for (GuidList::iterator itr = m_pInstance->m_lSanctumSentryGuids.begin(); itr != m_pInstance->m_lSanctumSentryGuids.end(); ++itr)
         {
             if (Creature* pSanity = m_creature->GetMap()->GetCreature(*itr))
             {
@@ -132,7 +132,7 @@ struct MANGOS_DLL_DECL boss_auriayaAI : public ScriptedAI
         if (m_pInstance)
             m_pInstance->SetData(TYPE_AURIAYA, IN_PROGRESS);
 
-        for (GUIDList::iterator itr = m_pInstance->m_lSanctumSentryGuids.begin(); itr != m_pInstance->m_lSanctumSentryGuids.end(); ++itr)
+        for (GuidList::iterator itr = m_pInstance->m_lSanctumSentryGuids.begin(); itr != m_pInstance->m_lSanctumSentryGuids.end(); ++itr)
         {
             if (Creature* pSanity = m_creature->GetMap()->GetCreature(*itr))
             {
@@ -418,7 +418,7 @@ struct MANGOS_DLL_DECL boss_sanctum_sentryAI : public ScriptedAI
                     pAuriaya->SetInCombatWithZone();
             }
 
-            for (GUIDList::iterator itr = m_pInstance->m_lSanctumSentryGuids.begin(); itr != m_pInstance->m_lSanctumSentryGuids.end(); ++itr)
+            for (GuidList::iterator itr = m_pInstance->m_lSanctumSentryGuids.begin(); itr != m_pInstance->m_lSanctumSentryGuids.end(); ++itr)
             {
                 if (Creature* pSanity = m_creature->GetMap()->GetCreature(*itr))
                 {

@@ -678,13 +678,40 @@ struct MANGOS_DLL_DECL boss_taldaram_iccAI : public base_blood_prince_council_bo
     void JustSummoned(Creature *pSummoned)
     {
         pSummoned->SetInCombatWithZone();
-        if (Unit *pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, 99999, SELECT_FLAG_IN_LOS|SELECT_FLAG_PLAYER))
+        Player* pTarget = GetFarthestPlayer(pSummoned, 60.0f);
+
+        if (pTarget)
         {
             pSummoned->AddThreat(pTarget, 1000000.0f, true);
             pSummoned->AI()->AttackStart(pTarget);
             if (m_bIsEmpowered)
                 pSummoned->CastSpell(pSummoned, SPELL_BALL_FLAMES_PERIODIC, true);
         }
+    }
+
+    Player* GetFarthestPlayer(Creature *pCreature, float MaxRangeDistance = 100.0f)
+    {
+        Player* farPlayer;
+        uint32 m_iuMaxDistance = 0;
+        uint32 m_iuCurDistance = 0;
+        Map* pMap = pCreature->GetMap();
+        Map::PlayerList const& pPlayers = pMap->GetPlayers();
+
+        if (!pPlayers.isEmpty())
+        for (Map::PlayerList::const_iterator itr = pPlayers.begin(); itr != pPlayers.end(); ++itr)
+        {
+            Player* pPlayer = itr->getSource();
+            if(pPlayer)
+            {
+                m_iuCurDistance = pCreature->GetDistance(pPlayer);
+                if (m_iuCurDistance > m_iuMaxDistance && m_iuCurDistance < MaxRangeDistance)
+                {
+                    m_iuMaxDistance = m_iuCurDistance;
+                    farPlayer = pPlayer;
+                }
+            }
+        }
+        return farPlayer;
     }
 
     void UpdateAI(const uint32 uiDiff)
@@ -783,6 +810,7 @@ struct MANGOS_DLL_DECL mob_dark_nucleusAI : public base_icc_bossAI
     {
         DoResetThreat();
         m_creature->AddThreat(pDealer, 100000.0f);
+        m_creature->InterruptNonMeleeSpells(true);
     }
 
     void UpdateAI(const uint32 uiDiff)

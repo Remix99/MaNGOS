@@ -20,6 +20,7 @@
 
 #include "SpellAuraDefines.h"
 #include "DBCEnums.h"
+#include "DBCStores.h"
 #include "ObjectGuid.h"
 #include "ObjectHandler.h"
 
@@ -195,13 +196,14 @@ class MANGOS_DLL_SPEC SpellAuraHolder
 
     private:
         void AddAura(Aura aura, SpellEffectIndex index);
+
+        SpellEntry const* m_spellProto;
+
         Unit* m_target;
         ObjectGuid m_casterGuid;
         ObjectGuid m_castItemGuid;                          // it is NOT safe to keep a pointer to the item because it may get deleted
         ObjectGuid m_originalCasterGuid;                    // real source of auras cast, used for set cast source in  area auras with "exclusive target"
         time_t m_applyTime;
-
-        SpellEntry const* m_spellProto;
 
         uint8 m_auraSlot;                                   // Aura slot on unit (for show in client)
         uint8 m_auraFlags;                                  // Aura info flag (for send data to client)
@@ -281,7 +283,6 @@ class MANGOS_DLL_SPEC Aura
         void HandleAuraFeatherFall(bool Apply, bool Real);
         void HandleAuraHover(bool Apply, bool Real);
         void HandleAddModifier(bool Apply, bool Real);
-
         void HandleAuraModStun(bool Apply, bool Real);
         void HandleModDamageDone(bool Apply, bool Real);
         void HandleAuraUntrackable(bool Apply, bool Real);
@@ -309,6 +310,7 @@ class MANGOS_DLL_SPEC Aura
         void HandleAuraModReflectSpells(bool Apply, bool Real);
         void HandleAuraModStat(bool Apply, bool Real);
         void HandleDetectAmore(bool Apply, bool Real);
+        void HandleAuraFakeInebriation(bool Apply, bool Real);
         void HandleAuraModIncreaseSpeed(bool Apply, bool Real);
         void HandleAuraModIncreaseMountedSpeed(bool Apply, bool Real);
         void HandleAuraModIncreaseFlightSpeed(bool Apply, bool Real);
@@ -382,6 +384,7 @@ class MANGOS_DLL_SPEC Aura
         void HandleAuraModAttackPowerOfStatPercent(bool apply, bool Real);
         void HandleAuraModAttackPowerOfArmor(bool apply, bool Real);
         void HandleSpiritOfRedemption(bool apply, bool Real);
+        void HandleAuraAoECharm(bool apply, bool Real);
         void HandleModManaRegen(bool apply, bool Real);
         void HandleComprehendLanguage(bool apply, bool Real);
         void HandleShieldBlockValue(bool apply, bool Real);

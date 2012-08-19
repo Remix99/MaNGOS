@@ -733,7 +733,7 @@ void AddSC_sholazar_basin()
     pNewScript->pGossipSelect = &GossipSelect_npc_mosswalker_victim;
     pNewScript->RegisterSelf();
 
-        pNewScript = new Script;
+    pNewScript = new Script;
     pNewScript->Name = "mob_taste_test";
     pNewScript->GetAI = &GetAI_mob_taste_test;
     pNewScript->pEffectDummyNPC = &EffectDummyNPC_mob_taste_test;

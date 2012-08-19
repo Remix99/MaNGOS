@@ -16,12 +16,13 @@
 
 /* ScriptData
 SDName: Boss Pathaleon the Calculator
-SD%Complete: 40
-SDComment: Pathway event NYI; The Nether Wraith script is wrong - needs research and update
+SD%Complete: 95
+SDComment: Timers may need update.
 SDCategory: Tempest Keep, The Mechanar
 EndScriptData */
 
 #include "precompiled.h"
+#include "mechanar.h"
 
 enum
 {
@@ -40,7 +41,8 @@ enum
     SPELL_DOMINATION                = 35280,
     SPELL_ARCANE_EXPLOSION_H        = 15453,
     SPELL_FRENZY                    = 36992,
-    SPELL_DISGRUNTLED_ANGER         = 35289,        // research where to use this - possible to be used by Nether Wraits when boss is at 20% HP
+    SPELL_SUICIDE                   = 35301,        // kill the Nether Wraiths
+    SPELL_DISGRUNTLED_ANGER         = 35289,        // empower a Nether Wraith
 
     SPELL_SUMMON_NETHER_WRAITH_1    = 35285,
     SPELL_SUMMON_NETHER_WRAITH_2    = 35286,
@@ -58,28 +60,26 @@ struct MANGOS_DLL_DECL boss_pathaleon_the_calculatorAI : public ScriptedAI
 {
     boss_pathaleon_the_calculatorAI(Creature* pCreature) : ScriptedAI(pCreature)
     {
-        // Add the summon spells to a vector for better handling
-        for (uint8 i = 0; i < 4; ++i)
-            m_vSummonSpells.push_back(aWraithSummonSpells[i]);
-
+        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         m_bIsRegularMode = pCreature->GetMap()->IsRegularDifficulty();
         Reset();
     }
 
+    ScriptedInstance* m_pInstance;
     bool m_bIsRegularMode;
 
     uint32 m_uiSummonTimer;
+    uint32 m_uiAngerTimer;
     uint32 m_uiManaTapTimer;
     uint32 m_uiArcaneTorrentTimer;
     uint32 m_uiDominationTimer;
     uint32 m_uiArcaneExplosionTimer;
     bool m_bIsEnraged;
 
-    std::vector<uint32> m_vSummonSpells;
-
     void Reset()
     {
         m_uiSummonTimer          = 30000;
+        m_uiAngerTimer           = urand(30000, 35000);
         m_uiManaTapTimer         = urand(12000, 20000);
         m_uiArcaneTorrentTimer   = urand(16000, 25000);
         m_uiDominationTimer      = urand(25000, 40000);
@@ -100,6 +100,9 @@ struct MANGOS_DLL_DECL boss_pathaleon_the_calculatorAI : public ScriptedAI
     void JustDied(Unit* pKiller)
     {
         DoScriptText(SAY_DEATH, m_creature);
+
+        if (m_pInstance)
+            m_pInstance->SetData(TYPE_PATHALEON, DONE);
     }
 
     void JustSummoned(Creature* pSummoned)
@@ -113,19 +116,6 @@ struct MANGOS_DLL_DECL boss_pathaleon_the_calculatorAI : public ScriptedAI
         //Return since we have no target
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
-
-        if (m_uiSummonTimer < uiDiff)
-        {
-            // Choose 3 random spells out of 4
-            std::random_shuffle(m_vSummonSpells.begin(), m_vSummonSpells.end());
-            for (uint8 i = 0; i < 3; ++i)
-                DoCastSpellIfCan(m_creature, m_vSummonSpells[i], CAST_TRIGGERED);
-
-            DoScriptText(SAY_SUMMON, m_creature);
-            m_uiSummonTimer = urand(30000, 45000);
-        }
-        else
-            m_uiSummonTimer -= uiDiff;
 
         if (m_uiManaTapTimer < uiDiff)
         {
@@ -141,7 +131,7 @@ struct MANGOS_DLL_DECL boss_pathaleon_the_calculatorAI : public ScriptedAI
         if (m_uiArcaneTorrentTimer < uiDiff)
         {
             if (DoCastSpellIfCan(m_creature, SPELL_ARCANE_TORRENT) == CAST_OK)
-                m_uiArcaneTorrentTimer = urand(12000, 18000);
+                m_uiArcaneTorrentTimer = urand(40000, 50000);
         }
         else
             m_uiArcaneTorrentTimer -= uiDiff;
@@ -166,7 +156,7 @@ struct MANGOS_DLL_DECL boss_pathaleon_the_calculatorAI : public ScriptedAI
             if (m_uiArcaneExplosionTimer < uiDiff)
             {
                 if (DoCastSpellIfCan(m_creature, SPELL_ARCANE_EXPLOSION_H) == CAST_OK)
-                    m_uiArcaneExplosionTimer = urand(10000, 14000);
+                    m_uiArcaneExplosionTimer = urand(18000, 20000);
             }
             else
                 m_uiArcaneExplosionTimer -= uiDiff;
@@ -176,10 +166,33 @@ struct MANGOS_DLL_DECL boss_pathaleon_the_calculatorAI : public ScriptedAI
         {
             if (DoCastSpellIfCan(m_creature, SPELL_FRENZY) == CAST_OK)
             {
-                // ToDo: despawn nether wraiths here
+                DoCastSpellIfCan(m_creature, SPELL_SUICIDE, CAST_TRIGGERED);
                 DoScriptText(SAY_ENRAGE, m_creature);
                 m_bIsEnraged = true;
             }
+        }
+        // Summon and empower Nether Wraiths only when not enraged
+        else
+        {
+            if (m_uiSummonTimer < uiDiff)
+            {
+                uint8 uiMaxWraith = urand(3, 4);
+                for (uint8 i = 0; i < uiMaxWraith; ++i)
+                    DoCastSpellIfCan(m_creature, aWraithSummonSpells[i], CAST_TRIGGERED);
+
+                DoScriptText(SAY_SUMMON, m_creature);
+                m_uiSummonTimer = 50000;
+            }
+            else
+                m_uiSummonTimer -= uiDiff;
+
+            if (m_uiAngerTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_DISGRUNTLED_ANGER) == CAST_OK)
+                    m_uiAngerTimer = urand(60000, 90000);
+            }
+            else
+                m_uiAngerTimer -= uiDiff;
         }
 
         DoMeleeAttackIfReady();
@@ -196,7 +209,7 @@ struct MANGOS_DLL_DECL mob_nether_wraithAI : public ScriptedAI
     void Reset()
     {
         m_uiArcaneMissilesTimer = urand(1000, 4000);
-        m_uiDetonationTimer = 20000;
+        m_uiDetonationTimer = 30000;
     }
 
     void UpdateAI(const uint32 uiDiff)
@@ -223,11 +236,12 @@ struct MANGOS_DLL_DECL mob_nether_wraithAI : public ScriptedAI
         {
             if (m_uiDetonationTimer <= uiDiff)
             {
-                if (DoCastSpellIfCan(m_creature, SPELL_DETONATION) == CAST_OK)
+                if (DoCastSpellIfCan(m_creature, SPELL_DETONATION, CAST_TRIGGERED) == CAST_OK)
                 {
-                    // Not sure if this one needs to be despawned here. Needs further research
-                    //m_creature->ForcedDespawn(2200);
+                    // Selfkill after the detonation
+                    m_creature->DealDamage(m_creature, m_creature->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NONE, NULL, false);
                     m_uiDetonationTimer = 0;
+                    return;
                 }
             }
             else

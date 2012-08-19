@@ -24,9 +24,19 @@ enum
     DATA_OPERA_PERFORMANCE          = 11,
     DATA_OPERA_OZ_DEATHCOUNT        = 12,
 
+    NPC_ATTUMEN                     = 15550,
+    NPC_MIDNIGHT                    = 16151,
     NPC_MOROES                      = 15687,
     // NPC_TERESTIAN                = 15688,
     NPC_NIGHTBANE                   = 17225,
+
+    // Moroes event related
+    NPC_LADY_KEIRA_BERRYBUCK        = 17007,
+    NPC_LADY_CATRIONA_VON_INDI      = 19872,
+    NPC_LORD_CRISPIN_FERENCE        = 19873,
+    NPC_BARON_RAFE_DREUGER          = 19874,
+    NPC_BARONESS_DOROTHEA_MILLSTIPE = 19875,
+    NPC_LORD_ROBIN_DARIS            = 19876,
 
     GO_STAGE_CURTAIN                = 183932,
     GO_STAGE_DOOR_LEFT              = 184278,

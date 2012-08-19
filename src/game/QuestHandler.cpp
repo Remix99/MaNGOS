@@ -126,10 +126,10 @@ void WorldSession::HandleQuestgiverAcceptQuestOpcode(WorldPacket & recv_data)
 
     Object* pObject = _player->GetObjectByTypeMask(guid, TYPEMASK_CREATURE_GAMEOBJECT_PLAYER_OR_ITEM);
 
-    // no or incorrect quest giver
-    if(!pObject
-        || (pObject->GetTypeId()!=TYPEID_PLAYER && !pObject->HasQuest(quest))
-        || (pObject->GetTypeId()==TYPEID_PLAYER && !((Player*)pObject)->CanShareQuest(quest))
+    // no or incorrect quest giver (player himself is questgiver for SPELL_EFFECT_QUEST_OFFER)
+    if (!pObject
+        || (pObject->GetTypeId() != TYPEID_PLAYER && !pObject->HasQuest(quest))
+        || (pObject->GetTypeId() == TYPEID_PLAYER && pObject != _player && !((Player*)pObject)->CanShareQuest(quest))
         )
     {
         _player->PlayerTalkClass->CloseGossip();
@@ -323,22 +323,32 @@ void WorldSession::HandleQuestLogRemoveQuest(WorldPacket& recv_data)
     uint8 slot;
     recv_data >> slot;
 
-    DEBUG_LOG( "WORLD: Received CMSG_QUESTLOG_REMOVE_QUEST slot = %u",slot );
+    DEBUG_LOG("WORLD: Received CMSG_QUESTLOG_REMOVE_QUEST slot = %u", slot);
 
-    if( slot < MAX_QUEST_LOG_SIZE )
+    if (slot < MAX_QUEST_LOG_SIZE)
     {
-        if(uint32 quest = _player->GetQuestSlotQuestId(slot))
+        if (uint32 quest = _player->GetQuestSlotQuestId(slot))
         {
-            if(!_player->TakeQuestSourceItem( quest, true ))
+            if (!_player->TakeQuestSourceItem(quest, true))
                 return;                                     // can't un-equip some items, reject quest cancel
 
-            if (const Quest *pQuest = sObjectMgr.GetQuestTemplate(quest))
+            if (const Quest* pQuest = sObjectMgr.GetQuestTemplate(quest))
             {
                 if (pQuest->HasSpecialFlag(QUEST_SPECIAL_FLAG_TIMED))
                     _player->RemoveTimedQuest(quest);
+
+                for (int i = 0; i < QUEST_SOURCE_ITEM_IDS_COUNT; ++i)
+                {
+                    if (pQuest->ReqSourceId[i])
+                    {
+                        ItemPrototype const* iProto = ObjectMgr::GetItemPrototype(pQuest->ReqSourceId[i]);
+                        if (iProto && iProto->Bonding == BIND_QUEST_ITEM)
+                            _player->DestroyItemCount(pQuest->ReqSourceId[i], pQuest->ReqSourceCount[i], true, false, true);
+                    }
+                }
             }
 
-            _player->SetQuestStatus( quest, QUEST_STATUS_NONE);
+            _player->SetQuestStatus(quest, QUEST_STATUS_NONE);
         }
 
         _player->SetQuestSlot(slot, 0);
@@ -602,7 +612,7 @@ void WorldSession::HandleQuestgiverStatusMultipleQuery(WorldPacket& /*recvPacket
     WorldPacket data(SMSG_QUESTGIVER_STATUS_MULTIPLE, 4);
     data << uint32(count);                                  // placeholder
 
-    for(ObjectGuidSet::const_iterator itr = _player->m_clientGUIDs.begin(); itr != _player->m_clientGUIDs.end(); ++itr)
+    for(GuidSet::const_iterator itr = _player->m_clientGUIDs.begin(); itr != _player->m_clientGUIDs.end(); ++itr)
     {
         uint8 dialogStatus = DIALOG_STATUS_NONE;
 

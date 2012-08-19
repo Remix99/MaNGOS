@@ -116,6 +116,9 @@ enum BossSpells
     NPC_DREAM_PORTAL_PRE            = 38186,
     NPC_DREAM_PORTAL                = 37945,
     NPC_DREAM_CLOUD                 = 37985,
+
+    // Achievements
+    SPELL_ACHIEVEMENT_CREDIT        = 72706,
 };
 
 enum
@@ -178,6 +181,8 @@ struct MANGOS_DLL_DECL boss_valithria_dreamwalkerAI : public ScriptedAI
     uint32 m_uiSummonSuppresserCounter;
     uint32 m_uiSummonSkeletonCounter;
 
+    GuidList m_lSummonedAddsGuids;
+
     void Reset()
     {
         m_bCombatStarted            = false;
@@ -200,12 +205,15 @@ struct MANGOS_DLL_DECL boss_valithria_dreamwalkerAI : public ScriptedAI
         m_uiSummonSuppresserCounter = 0;
         m_uiSummonSkeletonCounter   = 0;
 
+        m_lSummonedAddsGuids.clear();
+
         m_creature->SetHealth(m_creature->GetMaxHealth() / 2.0f);
         DoCastSpellIfCan(m_creature, SPELL_CORRUPTION, CAST_TRIGGERED);
     }
 
     void JustReachedHome()
     {
+        DoRemoveAdds();
         DoCastSpellIfCan(m_creature, SPELL_CORRUPTION, CAST_TRIGGERED);
 
         if (m_pInstance)
@@ -229,13 +237,21 @@ struct MANGOS_DLL_DECL boss_valithria_dreamwalkerAI : public ScriptedAI
             {
                 m_pInstance->SetData(TYPE_VALITHRIA, IN_PROGRESS);
 
-                if (Creature *pTmp = m_pInstance->GetSingleCreatureFromStorage(NPC_COMBAT_TRIGGER))
+                if (Creature *pTmp = m_pInstance->GetSingleCreatureFromStorage(NPC_GREEN_DRAGON_COMBAT_TRIGGER))
                 {
                     pTmp->SetInCombatWithZone();
                     m_bCombatStarted = true;
                 }
             }
         }
+    }
+
+    // be passive
+    void AttackStart(Unit *pWho)
+    {
+        // prevent non-removed adds from killing Valithria - may sometimes get bugged
+        if (!m_bCombatStarted)
+            EnterEvadeMode();
     }
 
     void EnterEvadeMode()
@@ -258,7 +274,7 @@ struct MANGOS_DLL_DECL boss_valithria_dreamwalkerAI : public ScriptedAI
         {
             m_pInstance->SetData(TYPE_VALITHRIA, FAIL);
 
-            if (Creature *pTrigger = m_pInstance->GetSingleCreatureFromStorage(NPC_COMBAT_TRIGGER))
+            if (Creature *pTrigger = m_pInstance->GetSingleCreatureFromStorage(NPC_GREEN_DRAGON_COMBAT_TRIGGER))
                 pTrigger->AI()->EnterEvadeMode();
         }
 
@@ -268,7 +284,8 @@ struct MANGOS_DLL_DECL boss_valithria_dreamwalkerAI : public ScriptedAI
     void DoSummonAdd(uint32 uiEntry)
     {
         uint32 loc = urand(1, 2 + (m_bIs25Man ? 2 : 0));
-        m_creature->SummonCreature(uiEntry, SpawnLoc[loc].x, SpawnLoc[loc].y, SpawnLoc[loc].z, 0.0f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 10000);
+        if (Creature *pTmp = m_creature->SummonCreature(uiEntry, SpawnLoc[loc].x, SpawnLoc[loc].y, SpawnLoc[loc].z, 0.0f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 10000))
+            m_lSummonedAddsGuids.push_back(pTmp->GetObjectGuid());
 
         // some additional control of summoning adds (anti flood system)
         if (!m_bIsEnrage)
@@ -282,6 +299,25 @@ struct MANGOS_DLL_DECL boss_valithria_dreamwalkerAI : public ScriptedAI
                 m_uiSummonArchmageTimer += 5000;
             else if (m_uiSummonSkeletonTimer < 5000)
                 m_uiSummonSkeletonTimer += 5000;
+        }
+    }
+
+    void DoRemoveAdds()
+    {
+        for(GuidList::iterator i = m_lSummonedAddsGuids.begin(); i != m_lSummonedAddsGuids.end(); ++i)
+        {
+            if (Creature *pTmp = m_creature->GetMap()->GetCreature(*i))
+            {
+                if (pTmp->isAlive())
+                    pTmp->ForcedDespawn();
+            }
+        }
+        std::list<Creature*> lWorms;
+        GetCreatureListWithEntryInGrid(lWorms, m_creature, NPC_ROT_WORM, 100.0f);
+        for(std::list<Creature*>::iterator i = lWorms.begin(); i != lWorms.end(); ++i)
+        {
+            if ((*i)->isAlive())
+                (*i)->ForcedDespawn();
         }
     }
 
@@ -319,17 +355,8 @@ struct MANGOS_DLL_DECL boss_valithria_dreamwalkerAI : public ScriptedAI
     void JustSummoned(Creature *pCreature)
     {
         pCreature->SetInCombatWithZone();
-
-        if (pCreature->GetEntry() == NPC_SUPPRESSER)
-        {
-            pCreature->AddThreat(m_creature, 100000);
-            pCreature->GetMotionMaster()->MoveChase(m_creature);
-        }
-        else
-        {
-            if (Unit *pTarget = SelectRandomPlayer(500))
-                pCreature->AI()->AttackStart(pTarget);
-        }
+        pCreature->AddThreat(m_creature, pCreature->GetEntry() == NPC_SUPPRESSER ? 1000000 : 5000);
+        pCreature->AI()->AttackStart(m_creature);
     }
 
     void UpdateAI(const uint32 uiDiff)
@@ -346,10 +373,15 @@ struct MANGOS_DLL_DECL boss_valithria_dreamwalkerAI : public ScriptedAI
                 {
                     m_pInstance->SetData(TYPE_VALITHRIA, DONE);
 
-                    if (Creature *pDummy = m_pInstance->GetSingleCreatureFromStorage(NPC_COMBAT_TRIGGER))
-                        m_creature->DealDamage(pDummy, pDummy->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NONE, NULL, false);
+                    if (Creature *pDummy = m_pInstance->GetSingleCreatureFromStorage(NPC_GREEN_DRAGON_COMBAT_TRIGGER))
+                    {
+                        // Set Valithria credit
+                        pDummy->CastSpell(pDummy, SPELL_ACHIEVEMENT_CREDIT, true);
+                        pDummy->ForcedDespawn(1000);
+                    }
                 }
 
+                DoRemoveAdds(); // just to be sure
                 m_uiOutroTimer = 30000;
                 m_creature->ForcedDespawn(1000);
             }
@@ -728,7 +760,7 @@ struct MANGOS_DLL_DECL mob_risen_archmageAI : public ScriptedAI
         // Column of Frost
         if (m_uiColumnOfFrostTimer <= uiDiff)
         {
-            if (Unit *pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            if (Unit *pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_PLAYER))
             {
                 if (DoCastSpellIfCan(pTarget, SPELL_COLUMN_OF_FROST) == CAST_OK)
                     m_uiColumnOfFrostTimer = urand(10000, 15000);
@@ -740,7 +772,7 @@ struct MANGOS_DLL_DECL mob_risen_archmageAI : public ScriptedAI
         // Mana Void
         if (m_uiManaVoidTimer <= uiDiff)
         {
-            if (Unit *pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            if (Unit *pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_PLAYER))
             {
                 if (DoCastSpellIfCan(pTarget, SPELL_MANA_VOID) == CAST_OK)
                     m_uiManaVoidTimer = urand(10000, 15000);
@@ -783,7 +815,7 @@ struct MANGOS_DLL_DECL mob_blazing_skeletonAI : public ScriptedAI
         // Fireball
         if (m_uiFireballTimer <= uiDiff)
         {
-            if (Unit *pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            if (Unit *pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_PLAYER))
             {
                 if (DoCastSpellIfCan(pTarget, SPELL_FIREBALL) == CAST_OK)
                     m_uiFireballTimer = urand(3000, 5000);
@@ -836,9 +868,10 @@ struct MANGOS_DLL_DECL mob_suppresserAI : public ScriptedAI
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        if (m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
+        if (m_creature->getVictim()->GetEntry() == NPC_VALITHRIA)
         {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_SUPPRESSION);
+            if (m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_SUPPRESSION);
         }
     }
 };

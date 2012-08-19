@@ -422,18 +422,30 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
     switch (action.type)
     {
         case ACTION_T_TEXT:
+        case ACTION_T_CHANCED_TEXT:
         {
             if (!action.text.TextId[0])
                 return;
 
             int32 temp = 0;
 
-            if (action.text.TextId[1] && action.text.TextId[2])
-                temp = action.text.TextId[rand()%3];
-            else if (action.text.TextId[1] && urand(0,1))
-                temp = action.text.TextId[1];
-            else
-                temp = action.text.TextId[0];
+            if (action.type == ACTION_T_TEXT)
+            {
+                if (action.text.TextId[1] && action.text.TextId[2])
+                    temp = action.text.TextId[urand(0, 2)];
+                else if (action.text.TextId[1] && urand(0, 1))
+                    temp = action.text.TextId[1];
+                else
+                    temp = action.text.TextId[0];
+            }
+            // ACTION_T_CHANCED_TEXT, chance hits
+            else if (urand(0, 99) < action.chanced_text.chance)
+            {
+                if (action.chanced_text.TextId[0] && action.chanced_text.TextId[1])
+                    temp = action.chanced_text.TextId[urand(0, 1)];
+                else
+                    temp = action.chanced_text.TextId[0];
+            }
 
             if (temp)
             {
@@ -1248,9 +1260,42 @@ inline Unit* CreatureEventAI::GetTargetByType(uint32 Target, Unit* pActionInvoke
             return m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1);
         case TARGET_T_ACTION_INVOKER:
             return pActionInvoker;
+
+        case TARGET_T_VEHICLE_PASSENGER:
+        {
+            if (m_creature->GetObjectGuid().IsVehicle())
+            for (int8 seatId = 0; seatId < MAX_VEHICLE_SEAT; ++seatId)
+                if (Unit* passenger = m_creature->GetVehicleKit()->GetPassenger(seatId))
+                    return passenger;
+            break;
+        }
+        case TARGET_T_VEHICLE_PASSENGER_0:
+        case TARGET_T_VEHICLE_PASSENGER_1:
+        case TARGET_T_VEHICLE_PASSENGER_2:
+        case TARGET_T_VEHICLE_PASSENGER_3:
+        case TARGET_T_VEHICLE_PASSENGER_4:
+        case TARGET_T_VEHICLE_PASSENGER_5:
+        case TARGET_T_VEHICLE_PASSENGER_6:
+        case TARGET_T_VEHICLE_PASSENGER_7:
+        {
+            if (m_creature->GetObjectGuid().IsVehicle())
+                if (Unit* passenger = m_creature->GetVehicleKit()->GetPassenger(Target - TARGET_T_VEHICLE_PASSENGER_0))
+                    return passenger;
+            break;
+        }
+
+        case TARGET_T_CURRENT_VEHICLE:
+        {
+            if (VehicleKit* vehicle = m_creature->GetVehicle())
+                if (Unit* base = vehicle->GetBase())
+                    return base;
+            break;
+        }
+
         default:
-            return NULL;
-    };
+            break;
+    }
+    return NULL;
 }
 
 Unit* CreatureEventAI::DoSelectLowestHpFriendly(float range, uint32 MinHPDiff)
@@ -1401,7 +1446,7 @@ void CreatureEventAI::ReceiveEmote(Player* pPlayer, uint32 text_emote)
             if ((*itr).Event.receive_emote.emoteId != text_emote)
                 return;
 
-            PlayerCondition pcon((*itr).Event.receive_emote.condition,(*itr).Event.receive_emote.conditionValue1,(*itr).Event.receive_emote.conditionValue2);
+            PlayerCondition pcon(0, (*itr).Event.receive_emote.condition,(*itr).Event.receive_emote.conditionValue1,(*itr).Event.receive_emote.conditionValue2);
             if (pcon.Meets(pPlayer))
             {
                 DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "CreatureEventAI: ReceiveEmote CreatureEventAI: Condition ok, processing");

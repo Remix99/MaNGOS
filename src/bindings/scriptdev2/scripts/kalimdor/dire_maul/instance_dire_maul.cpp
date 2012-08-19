@@ -32,7 +32,10 @@ instance_dire_maul::instance_dire_maul(Map* pMap) : ScriptedInstance(pMap),
 
 void instance_dire_maul::Initialize()
 {
-    memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
+    for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
+        m_auiEncounter[i] = 0;
+
+    m_luiHighborneSummonerGUIDs.clear();
 }
 
 void instance_dire_maul::OnCreatureCreate(Creature* pCreature)
@@ -50,7 +53,7 @@ void instance_dire_maul::OnCreatureCreate(Creature* pCreature)
             break;
         case NPC_ARCANE_ABERRATION:
         case NPC_MANA_REMNANT:
-            m_lGeneratorGuardGUIDs.push_back(pCreature->GetObjectGuid());
+            m_lGeneratorGuardGUIDs.push(pCreature->GetObjectGuid());
             return;
         case NPC_IMMOLTHAR:
             break;
@@ -166,7 +169,7 @@ void instance_dire_maul::SetData(uint32 uiType, uint32 uiData)
 
                 if (!m_lFelvineShardGUIDs.empty())
                 {
-                    for(GUIDList::const_iterator itr = m_lFelvineShardGUIDs.begin(); itr != m_lFelvineShardGUIDs.end(); ++itr)
+                    for(GuidList::const_iterator itr = m_lFelvineShardGUIDs.begin(); itr != m_lFelvineShardGUIDs.end(); ++itr)
                         DoRespawnGameObject(*itr);
                 }
             }
@@ -355,7 +358,7 @@ void instance_dire_maul::ProcessForceFieldOpening()
         return;
 
     bool bHasYelled = false;
-    for (GUIDList::const_iterator itr = m_luiHighborneSummonerGUIDs.begin(); itr != m_luiHighborneSummonerGUIDs.end(); ++itr)
+    for (GuidList::const_iterator itr = m_luiHighborneSummonerGUIDs.begin(); itr != m_luiHighborneSummonerGUIDs.end(); ++itr)
     {
         Creature* pSummoner = instance->GetCreature(*itr);
 
@@ -375,33 +378,23 @@ void instance_dire_maul::ProcessForceFieldOpening()
 
 void instance_dire_maul::SortPylonGuards()
 {
-    if (!m_lGeneratorGuardGUIDs.empty())
+    // Sort all remaining (alive) NPCs to unfinished generators
+    while(!m_lGeneratorGuardGUIDs.empty())
     {
+        ObjectGuid guid = m_lGeneratorGuardGUIDs.front();
+        m_lGeneratorGuardGUIDs.pop();
+
+        Creature* pGuard = instance->GetCreature(guid);
+        if (!pGuard || pGuard->isDead())    // Remove invalid guids and dead guards
+            continue;
+
         for (uint8 i = 0; i < MAX_GENERATORS; ++i)
         {
             GameObject* pGenerator = instance->GetGameObject(m_aCrystalGeneratorGuid[i]);
             // Skip non-existing or finished generators
-            if (!pGenerator || GetData(TYPE_PYLON_1 + i) == DONE)
-                continue;
-
-            // Sort all remaining (alive) NPCs to unfinished generators
-            for (GUIDList::iterator itr = m_lGeneratorGuardGUIDs.begin(); itr != m_lGeneratorGuardGUIDs.end();)
-            {
-                Creature* pGuard = instance->GetCreature(*itr);
-                if (!pGuard || pGuard->isDead())    // Remove invalid guids and dead guards
-                {
-                    m_lGeneratorGuardGUIDs.erase(itr++);
-                    continue;
-                }
-
-                if (pGuard->IsWithinDistInMap(pGenerator, 20.0f))
-                {
-                    m_sSortedGeneratorGuards[i].insert(pGuard->GetGUIDLow());
-                    m_lGeneratorGuardGUIDs.erase(itr++);
-                }
-                else
-                    ++itr;
-            }
+            if (pGenerator && GetData(TYPE_PYLON_1 + i) != DONE &&
+                pGuard->IsWithinDistInMap(pGenerator, 20.0f))
+                m_sSortedGeneratorGuards[i].insert(guid);
         }
     }
 }
@@ -415,9 +408,9 @@ void instance_dire_maul::PylonGuardJustDied(Creature* pCreature)
             continue;
 
         // Only process generator where the npc is sorted in
-        if (m_sSortedGeneratorGuards[i].find(pCreature->GetGUIDLow()) != m_sSortedGeneratorGuards[i].end())
+        if (m_sSortedGeneratorGuards[i].find(pCreature->GetObjectGuid()) != m_sSortedGeneratorGuards[i].end())
         {
-            m_sSortedGeneratorGuards[i].erase(pCreature->GetGUIDLow());
+            m_sSortedGeneratorGuards[i].erase(pCreature->GetObjectGuid());
             if (m_sSortedGeneratorGuards[i].empty())
                 SetData(TYPE_PYLON_1 + i, DONE);
 

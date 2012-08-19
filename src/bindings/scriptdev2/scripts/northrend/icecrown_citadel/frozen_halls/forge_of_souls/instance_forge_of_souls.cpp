@@ -68,7 +68,7 @@ void instance_forge_of_souls::ProcessEventNpcs(Player* pPlayer, bool bChanged)
     if (m_auiEncounter[0] != DONE || m_auiEncounter[1] != DONE)
     {
         // Spawn Begin Mobs
-        for (uint8 i = 0; i < sizeof(aEventBeginLocations)/sizeof(sIntoEventNpcSpawnLocations); ++i)
+        for (uint8 i = 0; i < countof(aEventBeginLocations); ++i)
         {
             if (Creature* pSummon = pPlayer->SummonCreature(m_uiTeam == HORDE ? aEventBeginLocations[i].uiEntryHorde : aEventBeginLocations[i].uiEntryAlliance,
                                                             aEventBeginLocations[i].fSpawnX, aEventBeginLocations[i].fSpawnY, aEventBeginLocations[i].fSpawnZ, aEventBeginLocations[i].fSpawnO, TEMPSUMMON_DEAD_DESPAWN, 24*HOUR*IN_MILLISECONDS))
@@ -80,13 +80,13 @@ void instance_forge_of_souls::ProcessEventNpcs(Player* pPlayer, bool bChanged)
         // if bChanged, despawn Begin Mobs, spawn End Mobs at Spawn, else spawn EndMobs at End
         if (bChanged)
         {
-            for (GUIDList::const_iterator itr = m_lEventMobGUIDs.begin(); itr != m_lEventMobGUIDs.end(); ++itr)
+            for (GuidList::const_iterator itr = m_lEventMobGUIDs.begin(); itr != m_lEventMobGUIDs.end(); ++itr)
             {
                 if (Creature* pSummoned = instance->GetCreature(*itr))
                     pSummoned->ForcedDespawn();
             }
 
-            for (uint8 i = 0; i < sizeof(aEventEndLocations)/sizeof(sExtroEventNpcLocations); ++i)
+            for (uint8 i = 0; i < countof(aEventEndLocations); ++i)
             {
                 pPlayer->SummonCreature(m_uiTeam == HORDE ? aEventEndLocations[i].uiEntryHorde : aEventEndLocations[i].uiEntryAlliance,
                                         aEventEndLocations[i].fSpawnX, aEventEndLocations[i].fSpawnY, aEventEndLocations[i].fSpawnZ, aEventEndLocations[i].fStartO, TEMPSUMMON_DEAD_DESPAWN, 24*HOUR*IN_MILLISECONDS);
@@ -96,7 +96,7 @@ void instance_forge_of_souls::ProcessEventNpcs(Player* pPlayer, bool bChanged)
         }
         else
         {   // Summon at end, without event
-            for (uint8 i = 0; i < sizeof(aEventEndLocations)/sizeof(sExtroEventNpcLocations); ++i)
+            for (uint8 i = 0; i < countof(aEventEndLocations); ++i)
             {
                 pPlayer->SummonCreature(m_uiTeam == HORDE ? aEventEndLocations[i].uiEntryHorde : aEventEndLocations[i].uiEntryAlliance,
                                         aEventEndLocations[i].fEndX, aEventEndLocations[i].fEndY, aEventEndLocations[i].fEndZ, aEventEndLocations[i].fEndO, TEMPSUMMON_DEAD_DESPAWN, 24*HOUR*IN_MILLISECONDS);
@@ -126,7 +126,7 @@ void instance_forge_of_souls::SetData(uint32 uiType, uint32 uiData)
             m_auiEncounter[0] = uiData;
 
             // Despawn remaining adds and clear list
-            for (GUIDList::const_iterator itr = m_luiSoulFragmentAliveGUIDs.begin(); itr != m_luiSoulFragmentAliveGUIDs.end(); ++itr)
+            for (GuidList::const_iterator itr = m_luiSoulFragmentAliveGUIDs.begin(); itr != m_luiSoulFragmentAliveGUIDs.end(); ++itr)
             {
                 if (Creature* pFragment = instance->GetCreature(*itr))
                     pFragment->ForcedDespawn();

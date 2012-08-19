@@ -67,7 +67,7 @@ class MANGOS_DLL_SPEC ChatHandler
     public:
         explicit ChatHandler(WorldSession* session);
         explicit ChatHandler(Player* player);
-        ~ChatHandler();
+        virtual ~ChatHandler();
 
         static void FillMessageData( WorldPacket *data, WorldSession* session, uint8 type, uint32 language, const char *channelName, ObjectGuid targetGuid, const char *message, Unit *speaker);
 
@@ -218,7 +218,6 @@ class MANGOS_DLL_SPEC ChatHandler
         bool HandleDebugSpellCheckCommand(char* args);
         bool HandleDebugSpellCoefsCommand(char* args);
         bool HandleDebugSpellModsCommand(char* args);
-        bool HandleDebugUpdateWorldStateCommand(char* args);
         bool HandleDebugEnterVehicleCommand(char* args);
         bool HandleDebugSendCalendarResultCommand(char* args);
 
@@ -414,15 +413,16 @@ class MANGOS_DLL_SPEC ChatHandler
         bool HandleReloadAchievementRewardCommand(char* args);
         bool HandleReloadAreaTriggerTavernCommand(char* args);
         bool HandleReloadAreaTriggerTeleportCommand(char* args);
+        bool HandleReloadBattleEventCommand(char* args);
+        bool HandleReloadCommandCommand(char* args);
+        bool HandleReloadConditionsCommand(char* args);
+        bool HandleReloadCreatureQuestRelationsCommand(char* args);
+        bool HandleReloadCreatureQuestInvRelationsCommand(char* args);
+        bool HandleReloadDbScriptStringCommand(char* args);
         bool HandleReloadEventScriptsCommand(char* args);
         bool HandleReloadEventAITextsCommand(char* args);
         bool HandleReloadEventAISummonsCommand(char* args);
         bool HandleReloadEventAIScriptsCommand(char* args);
-        bool HandleReloadCommandCommand(char* args);
-        bool HandleReloadBattleEventCommand(char* args);
-        bool HandleReloadCreatureQuestRelationsCommand(char* args);
-        bool HandleReloadCreatureQuestInvRelationsCommand(char* args);
-        bool HandleReloadDbScriptStringCommand(char* args);
         bool HandleReloadGameGraveyardZoneCommand(char* args);
         bool HandleReloadGameObjectScriptsCommand(char* args);
         bool HandleReloadGameTeleCommand(char* args);
@@ -621,6 +621,14 @@ class MANGOS_DLL_SPEC ChatHandler
         bool HandleMmapStatsCommand(char* args);
         bool HandleMmap(char* args);
         bool HandleMmapTestArea(char* args);
+
+        // WorldState operations
+        bool HandleWorldStateCommand(char* args);
+        bool HandleWorldStateListCommand(char* args);
+        bool HandleWorldStateListAllCommand(char* args);
+        bool HandleWorldStateAddCommand(char* args);
+        bool HandleWorldStateUpdateCommand(char* args);
+        bool HandleWorldStateReloadCommand(char* args);
 
         //! Development Commands
         bool HandleSaveAllCommand(char* args);

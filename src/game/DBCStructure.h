@@ -24,6 +24,7 @@
 #include "Path.h"
 #include "Platform/Define.h"
 #include "SpellClassMask.h"
+#include "SharedDefines.h"
 
 #include <map>
 #include <set>
@@ -540,7 +541,7 @@ struct AreaTableEntry
     char*   area_name[16];                                  // 11-26    m_AreaName_lang
                                                             // 27 string flags
     uint32  team;                                           // 28       m_factionGroupMask
-                                                            // 29-32    m_liquidTypeID[4]
+    uint32  LiquidTypeOverride[4];                          // 29-32    m_liquidTypeID[4]
                                                             // 33       m_minElevation
                                                             // 34       m_ambient_multiplier
                                                             // 35       m_lightid
@@ -963,8 +964,8 @@ struct FactionTemplateEntry
 
 struct GameObjectDisplayInfoEntry
 {
-    uint32      Displayid;                                  // 0
-    // char* filename;                                      // 1        m_modelName
+    uint32      Displayid;                                  // 0        m_ID
+    char* filename;                                         // 1        m_modelName
     // uint32 unknown2[10];                                 // 2-11     m_Sound
     float       minX;                                       // 12       m_geoBoxMinX (use first value as interact dist, mostly in hacks way)
     float       minY;                                       // 13       m_geoBoxMinY
@@ -1277,6 +1278,29 @@ struct LFGDungeonExpansionEntry
     m_target_level_max
 };*/
 
+struct LiquidTypeEntry
+{
+    uint32 Id;                                              // 0
+    //char*  Name;                                          // 1
+    //uint32 Flags;                                         // 2            Water: 1|2|4|8, Magma: 8|16|32|64, Slime: 2|64|256, WMO Ocean: 1|2|4|8|512
+    uint32 Type;                                            // 3            0: Water, 1: Ocean, 2: Magma, 3: Slime
+    //uint32 SoundId;                                       // 4            Reference to SoundEntries.dbc
+    uint32 SpellId;                                         // 5            Reference to Spell.dbc
+    //float MaxDarkenDepth;                                 // 6            Only oceans got values here!
+    //float FogDarkenIntensity;                             // 7            Only oceans got values here!
+    //float AmbDarkenIntensity;                             // 8            Only oceans got values here!
+    //float DirDarkenIntensity;                             // 9            Only oceans got values here!
+    //uint32 LightID;                                       // 10           Only Slime (6) and Magma (7)
+    //float ParticleScale;                                  // 11           0: Slime, 1: Water/Ocean, 4: Magma
+    //uint32 ParticleMovement;                              // 12
+    //uint32 ParticleTexSlots;                              // 13
+    //uint32 LiquidMaterialID;                              // 14
+    //char* Texture[6];                                     // 15-20
+    //uint32 Color[2];                                      // 21-22
+    //float Unk1[18];                                       // 23-40    Most likely these are attributes for the shaders. Water: (23, TextureTilesPerBlock),(24, Rotation) Magma: (23, AnimationX),(24, AnimationY)
+    //uint32 Unk2[4];                                       // 41-44
+};
+
 #define MAX_LOCK_CASE 8
 
 struct LockEntry
@@ -1347,7 +1371,7 @@ struct MapEntry
 
     bool IsTransport() const
     {
-        return map_type == MAP_COMMON &&  mapFlags == 1;
+        return map_type == MAP_COMMON && mapFlags == MAP_FLAG_INSTANCEABLE;
     }
 };
 
@@ -1667,71 +1691,71 @@ struct ClassFamilyMask
     template <CFM_ARGS_1>
     bool test() const
     {
-        return Flags  & BitMask<uint64, true,  CFM_VALUES_1>::value ||
-               Flags2 & BitMask<uint32, false, CFM_VALUES_1>::value;
+        return (Flags  & BitMask<uint64, true,  CFM_VALUES_1>::value) ||
+               (Flags2 & BitMask<uint32, false, CFM_VALUES_1>::value);
     }
 
     template <CFM_ARGS_2>
     bool test() const
     {
-        return Flags  & BitMask<uint64, true,  CFM_VALUES_2>::value ||
-               Flags2 & BitMask<uint32, false, CFM_VALUES_2>::value;
+        return (Flags  & BitMask<uint64, true,  CFM_VALUES_2>::value) ||
+               (Flags2 & BitMask<uint32, false, CFM_VALUES_2>::value);
     }
 
     template <CFM_ARGS_3>
     bool test() const
     {
-        return Flags  & BitMask<uint64, true,  CFM_VALUES_3>::value ||
-               Flags2 & BitMask<uint32, false, CFM_VALUES_3>::value;
+        return (Flags  & BitMask<uint64, true,  CFM_VALUES_3>::value) ||
+               (Flags2 & BitMask<uint32, false, CFM_VALUES_3>::value);
     }
 
     template <CFM_ARGS_4>
     bool test() const
     {
-        return Flags  & BitMask<uint64, true,  CFM_VALUES_4>::value ||
-               Flags2 & BitMask<uint32, false, CFM_VALUES_4>::value;
+        return (Flags  & BitMask<uint64, true,  CFM_VALUES_4>::value) ||
+               (Flags2 & BitMask<uint32, false, CFM_VALUES_4>::value);
     }
 
     template <CFM_ARGS_5>
     bool test() const
     {
-        return Flags  & BitMask<uint64, true,  CFM_VALUES_5>::value ||
-               Flags2 & BitMask<uint32, false, CFM_VALUES_5>::value;
+        return (Flags  & BitMask<uint64, true,  CFM_VALUES_5>::value) ||
+               (Flags2 & BitMask<uint32, false, CFM_VALUES_5>::value);
     }
 
     template <CFM_ARGS_6>
     bool test() const
     {
-        return Flags  & BitMask<uint64, true,  CFM_VALUES_6>::value ||
-               Flags2 & BitMask<uint32, false, CFM_VALUES_6>::value;
+        return (Flags  & BitMask<uint64, true,  CFM_VALUES_6>::value) ||
+               (Flags2 & BitMask<uint32, false, CFM_VALUES_6>::value);
     }
 
     template <CFM_ARGS_7>
     bool test() const
     {
-        return Flags  & BitMask<uint64, true,  CFM_VALUES_7>::value ||
-               Flags2 & BitMask<uint32, false, CFM_VALUES_7>::value;
+        return (Flags  & BitMask<uint64, true,  CFM_VALUES_7>::value) ||
+               (Flags2 & BitMask<uint32, false, CFM_VALUES_7>::value);
     }
 
     template <CFM_ARGS_8>
     bool test() const
     {
-        return Flags  & BitMask<uint64, true,  CFM_VALUES_8>::value ||
-               Flags2 & BitMask<uint32, false, CFM_VALUES_8>::value;
+        return (Flags  & BitMask<uint64, true,  CFM_VALUES_8>::value) ||
+               (Flags2 & BitMask<uint32, false, CFM_VALUES_8>::value);
     }
 
     template <CFM_ARGS_9>
     bool test() const
     {
-        return Flags  & BitMask<uint64, true,  CFM_VALUES_9>::value ||
-               Flags2 & BitMask<uint32, false, CFM_VALUES_9>::value;
+        return (Flags  & BitMask<uint64, true,  CFM_VALUES_9>::value) ||
+               (Flags2 & BitMask<uint32, false, CFM_VALUES_9>::value);
     }
 
     template <CFM_ARGS_10>
     bool test() const
     {
-        return Flags  & BitMask<uint64, true,  CFM_VALUES_10>::value ||
-               Flags2 & BitMask<uint32, false, CFM_VALUES_10>::value;
+        return (Flags  & BitMask<uint64, true,  CFM_VALUES_10>::value) ||
+               (Flags2 & BitMask<uint32, false, CFM_VALUES_10>::value);
     }
 
     // named constructors (compile-time)
@@ -1905,6 +1929,48 @@ private:
     {
         static T const value = 0;
     };
+};
+
+struct SpellEntry;
+
+struct SpellEffectEntry
+{
+    SpellEffectEntry(SpellEntry const* spellEntry, SpellEffectIndex i);
+
+    //uint32        Id;                                         // 0        m_ID
+    uint32        Effect;                                       // 73-75    m_effect
+    float         EffectMultipleValue;                          // 106-108  m_effectAmplitude
+    uint32        EffectApplyAuraName;                          // 100-102  m_effectAura
+    uint32        EffectAmplitude;                              // 103-105  m_effectAuraPeriod
+    int32         EffectBasePoints;                             // 82-84    m_effectBasePoints (don't must be used in spell/auras explicitly, must be used cached Spell::m_currentBasePoints)
+    //float         unk_320_4;                                  // 169-171  3.2.0
+    float         DmgMultiplier;                                // 156-158  m_effectChainAmplitude
+    uint32        EffectChainTarget;                            // 109-111  m_effectChainTargets
+    int32         EffectDieSides;                               // 76-78    m_effectDieSides
+    uint32        EffectItemType;                               // 112-114  m_effectItemType
+    uint32        EffectMechanic;                               // 85-87    m_effectMechanic
+    int32         EffectMiscValue;                              // 115-117  m_effectMiscValue
+    int32         EffectMiscValueB;                             // 118-120  m_effectMiscValueB
+    float         EffectPointsPerComboPoint;                    // 124-126  m_effectPointsPerCombo
+    uint32        EffectRadiusIndex;                            // 94-96    m_effectRadiusIndex - spellradius.dbc
+    //uint32        EffectRadiusMaxIndex;                       // 97-99    4.0.0
+    float         EffectRealPointsPerLevel;                     // 79-81    m_effectRealPointsPerLevel
+    ClassFamilyMask EffectSpellClassMask;                       // 127-129  m_effectSpellClassMask
+    uint32        EffectTriggerSpell;                           // 121-123  m_effectTriggerSpell
+    uint32        EffectImplicitTargetA;                        // 88-90    m_implicitTargetA
+    uint32        EffectImplicitTargetB;                        // 91-93    m_implicitTargetB
+    uint32        EffectSpellId;                                // new 4.0.0
+    uint32        EffectIndex;                                  // new 4.0.0
+    //uint32        unk;                                        // 24 - 4.2.0
+    // helpers
+
+    int32 CalculateSimpleValue() const { return EffectBasePoints; };
+
+    void Initialize(const SpellEntry* spellEntry, SpellEffectIndex i);
+
+    private:
+        SpellEffectEntry() {};
+        SpellEffectEntry(SpellEffectEntry const&) {};
 };
 
 #define MAX_SPELL_REAGENTS 8
@@ -2111,6 +2177,27 @@ struct SpellEntry
         return SpellFamily(SpellFamilyName) == family && SpellFamilyFlags.test<CFM_VALUES_10>();
     }
 
+    inline bool HasAttribute(SpellAttributes attribute) const { return Attributes & attribute; }
+    inline bool HasAttribute(SpellAttributesEx attribute) const { return AttributesEx & attribute; }
+    inline bool HasAttribute(SpellAttributesEx2 attribute) const { return AttributesEx2 & attribute; }
+    inline bool HasAttribute(SpellAttributesEx3 attribute) const { return AttributesEx3 & attribute; }
+    inline bool HasAttribute(SpellAttributesEx4 attribute) const { return AttributesEx4 & attribute; }
+    inline bool HasAttribute(SpellAttributesEx5 attribute) const { return AttributesEx5 & attribute; }
+    inline bool HasAttribute(SpellAttributesEx6 attribute) const { return AttributesEx6 & attribute; }
+    inline bool HasAttribute(SpellAttributesEx7 attribute) const { return AttributesEx7 & attribute; }
+
+    inline uint32 GetMechanic() const { return Mechanic; };
+    inline uint32 GetManaCost() const { return manaCost; };
+    inline uint32 GetSpellFamilyName() const { return SpellFamilyName; };
+    inline uint32 GetAuraInterruptFlags() const { return AuraInterruptFlags; };
+    inline uint32 GetStackAmount() const { return StackAmount; };
+    inline uint32 GetEffectImplicitTargetAByIndex(SpellEffectIndex j) const { return EffectImplicitTargetA[j];};
+    inline uint32 GetEffectImplicitTargetBByIndex(SpellEffectIndex j) const { return EffectImplicitTargetB[j];};
+    inline uint32 GetEffectApplyAuraNameByIndex(SpellEffectIndex j) const   { return EffectApplyAuraName[j];};
+    inline uint32 GetEffectMiscValue(SpellEffectIndex j) const              { return EffectMiscValue[j];};
+
+    SpellEffectEntry const* GetSpellEffect(SpellEffectIndex j) const;
+
     private:
         // prevent creating custom entries (copy data from original in fact)
         SpellEntry(SpellEntry const&);                      // DON'T must have implementation
@@ -2119,6 +2206,12 @@ struct SpellEntry
         template<typename T>
         bool IsFitToFamilyMask(SpellFamily family, T t) const;
 };
+
+
+// A few fields which are required for automated convertion
+// NOTE that these fields are count by _skipping_ the fields that are unused!
+#define LOADED_SPELLDBC_FIELD_POS_EQUIPPED_ITEM_CLASS  65   // Must be converted to -1
+#define LOADED_SPELLDBC_FIELD_POS_SPELLNAME_0          132  // Links to "MaNGOS server-side spell"
 
 struct SpellCastTimesEntry
 {
@@ -2424,7 +2517,7 @@ struct VehicleSeatEntry
                                                             // 55       m_cameraEnteringZoom"
                                                             // 56       m_cameraSeatZoomMin
                                                             // 57       m_cameraSeatZoomMax
-    bool IsUsable() const { return (m_flags & SEAT_FLAG_USABLE || m_flags & SEAT_FLAG_CAN_CONTROL); }
+    bool IsUsable() const { return ((m_flags & SEAT_FLAG_USABLE) || (m_flags & SEAT_FLAG_CAN_CONTROL)); }
 };
 
 struct WMOAreaTableEntry
@@ -2498,7 +2591,7 @@ struct WorldStateEntry
     uint32    m_zone;                                       // 2        WorldState bind zone (0 - on battlegrounds)
     uint32    m_flags;                                      // 3
 //    char*     m_uiIcon;                                   // 4
-//    char*     m_uiMessage1[16]                            // 5-20
+    char*     m_uiMessage1[16];                             // 5-20
 //    uint32    m_flags1;                                   // 21       string flags
 //    char*     m_uiMessage2[16]                            // 22-37
 //    uint32    m_flags2;                                   // 38       string flags
@@ -2507,9 +2600,9 @@ struct WorldStateEntry
 //    char*     m_uiIcon2;                                  // 41
 //    char*     m_uiMessage3[16]                            // 42-57
 //    uint32    m_flags3;                                   // 58       string flags
-//    char*     m_uiType;                                   // 59       only CAPTUREPOINT type, or NULL
-//    uint32    m_unk60;                                    // 60
-//    uint32    m_unk61;                                    // 61
+    char*     m_uiType;                                     // 59       only CAPTUREPOINT type, or NULL
+    uint32    m_linked1;                                    // 60
+    uint32    m_linked2;                                    // 61
 //    uint32    m_unk62;                                    // 62       only 0
 };
 
@@ -2545,6 +2638,25 @@ struct TalentSpellPos
 };
 
 typedef std::map<uint32,TalentSpellPos> TalentSpellPosMap;
+
+struct SpellEffect
+{
+    SpellEffectEntry const* effects[MAX_EFFECT_INDEX];
+
+    SpellEffect()
+    {
+        for (uint8 i = 0; i < MAX_EFFECT_INDEX; ++i)
+            effects[SpellEffectIndex(i)] = NULL;
+    }
+
+    ~SpellEffect()
+    {
+        for (uint8 i = 0; i < MAX_EFFECT_INDEX; ++i)
+            delete effects[SpellEffectIndex(i)];
+    }
+};
+
+typedef std::map<uint32, SpellEffect> SpellEffectMap;
 
 struct TaxiPathBySourceAndDestination
 {

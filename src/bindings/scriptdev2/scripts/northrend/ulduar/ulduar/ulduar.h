@@ -104,6 +104,7 @@ enum
     NPC_CAPTAIN_HORDE           = 32907,
     NPC_MERCENARY_ALY           = 32885,
     NPC_MERCENARY_HORDE         = 32883,
+    NPC_THUNDER_ORB             = 33378,    // npc used to cast charged orb
     // Freya
     NPC_FREYA                   = 32906,
     NPC_BRIGHTLEAF              = 32915,
@@ -345,10 +346,19 @@ enum
     ACHIEV_START_XT_002_ID      = 21027,
     ACHIEV_START_YOGG_SARON_ID  = 21001,
 
+    // SPELLS
     // Special Auras for Achievments
     SPELL_IRON_BOOT_AURA        = 58501,
+    SPELL_RUNIC_SMASH_DMG       = 62465,
 
 
+};
+
+enum ExplosionSide
+{
+    LEFT_EXPLOSION  = 0,
+    RIGHT_EXPLOSION = 1,
+    NO_EXPLOSION    = 2,
 };
 
 class MANGOS_DLL_DECL instance_ulduar : public ScriptedInstance
@@ -385,15 +395,17 @@ class MANGOS_DLL_DECL instance_ulduar : public ScriptedInstance
         void CheckIronCouncil();
         void CheckKeepers();
         void SpawnFriendlyKeeper(uint32 uiWho);
+        void SortHandTrigger(Creature* pCreature);
+        void DoColossusExplosion(ExplosionSide explosionSide);
 
-        GUIDList m_lThorimMobsGuids;
-        GUIDList m_lLeftHandTriggerGuids;
-        GUIDList m_lRightHandTriggerGuids;
-        GUIDList m_lSanctumSentryGuids;
-        GUIDList m_lCLoudGuids;
+        GuidList m_lThorimMobsGuids;
+        GuidList m_lHandTriggerGuids[2][10];
+        GuidList m_lLowerOrbs;
+        GuidList m_lUpperOrbs;
+        GuidList m_lCloudGuids;
+        GuidList m_lSanctumSentryGuids;
 
-
-        GUIDVector m_lBreakHarpoonGUID;
+        GuidVector m_lBreakHarpoonGUID;
 
 
     protected:
@@ -417,8 +429,12 @@ class MANGOS_DLL_DECL instance_ulduar : public ScriptedInstance
     uint32  m_uiShatterTimer;        // Ignis Achievement
     bool    m_bOneIsDeath;
 
+    ExplosionSide m_explosionSide;
+    uint8   m_uiExplosionRow;
+    uint32  m_uiExplosionTimer;
 
-    GUIDList m_lIronConstructsGuids;
+
+    GuidList m_lIronConstructsGuids;
 };
 
 #endif

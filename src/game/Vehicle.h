@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 /dev/rsa for MangosR2 <http://github.com/MangosR2>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,10 +41,10 @@ class VehicleInfo
 
 struct VehicleSeat
 {
-    VehicleSeat(VehicleSeatEntry const *pSeatInfo = NULL) : seatInfo(pSeatInfo), passenger(NULL) {}
+    VehicleSeat(VehicleSeatEntry const *pSeatInfo = NULL) : seatInfo(pSeatInfo), passenger(ObjectGuid()) {}
 
     VehicleSeatEntry const* seatInfo;
-    Unit* passenger;
+    ObjectGuid              passenger;
     bool IsProtectPassenger() const;
 };
 
@@ -75,8 +76,8 @@ class MANGOS_DLL_SPEC VehicleKit
         void InstallAllAccessories(uint32 entry);
 
         bool HasEmptySeat(int8 seatId) const;
+        int8 GetNextEmptySeatWithFlag(int8 seatId, bool next = true, uint32 VehicleSeatFlag = 0) const;
         Unit *GetPassenger(int8 seatId) const;
-        int8 GetNextEmptySeat(int8 seatId, bool next) const;
         bool AddPassenger(Unit *passenger, int8 seatId = -1);
         void RemovePassenger(Unit *passenger, bool dismount = false);
         void RelocatePassengers(float x, float y, float z, float ang);

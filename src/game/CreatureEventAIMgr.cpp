@@ -131,8 +131,11 @@ void CreatureEventAIMgr::CheckUnusedAITexts()
                 switch(action.type)
                 {
                     case ACTION_T_TEXT:
+                    case ACTION_T_CHANCED_TEXT:
                     {
-                        for(int k = 0; k < 3; ++k)
+                        // ACTION_T_CHANCED_TEXT contains a chance value in first param
+                        int k = action.type == ACTION_T_TEXT ? 0 : 1;
+                        for (; k < 3; ++k)
                             if (action.text.TextId[k])
                                 idx_set.erase(action.text.TextId[k]);
                         break;
@@ -156,7 +159,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Summons(bool check_entry_use)
     m_CreatureEventAI_Summon_Map.clear();
 
     // Gather additional data for EventAI
-    QueryResult *result = WorldDatabase.Query("SELECT id, position_x, position_y, position_z, orientation, spawntimesecs FROM creature_ai_summons");
+    QueryResult* result = WorldDatabase.Query("SELECT id, position_x, position_y, position_z, orientation, spawntimesecs FROM creature_ai_summons");
     if (result)
     {
         BarGoLink bar(result->GetRowCount());
@@ -169,22 +172,21 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Summons(bool check_entry_use)
 
             CreatureEventAI_Summon temp;
 
-            uint32 i = fields[0].GetUInt32();
-            temp.id = i;
-            temp.position_x = fields[1].GetFloat();
-            temp.position_y = fields[2].GetFloat();
-            temp.position_z = fields[3].GetFloat();
-            temp.orientation = fields[4].GetFloat();
-            temp.SpawnTimeSecs = fields[5].GetUInt32();
+            temp.id             = fields[0].GetUInt32();
+            temp.position_x     = fields[1].GetFloat();
+            temp.position_y     = fields[2].GetFloat();
+            temp.position_z     = fields[3].GetFloat();
+            temp.orientation    = fields[4].GetFloat();
+            temp.SpawnTimeSecs  = fields[5].GetUInt32();
 
-            if (!MaNGOS::IsValidMapCoord(temp.position_x,temp.position_y,temp.position_z,temp.orientation))
+            if (!MaNGOS::IsValidMapCoord(temp.position_x, temp.position_y, temp.position_z, temp.orientation))
             {
-                sLog.outErrorDb("CreatureEventAI:  Summon id %u have wrong coordinates (%f,%f,%f,%f), skipping.", i,temp.position_x,temp.position_y,temp.position_z,temp.orientation);
+                sLog.outErrorDb("CreatureEventAI:  Summon id %u have wrong coordinates (%f, %f, %f, %f), skipping.", temp.id, temp.position_x, temp.position_y, temp.position_z, temp.orientation);
                 continue;
             }
 
             //Add to map
-            m_CreatureEventAI_Summon_Map[i] = temp;
+            m_CreatureEventAI_Summon_Map[temp.id] = temp;
             ++Count;
         }while (result->NextRow());
 
@@ -323,7 +325,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                     if (temp.percent_range.percentMax <= temp.percent_range.percentMin)
                         sLog.outErrorDb("CreatureEventAI:  Creature %u are using percentage event(%u) with param1 <= param2 (MaxPercent <= MinPercent). Event will never trigger! ", temp.creature_id, i);
 
-                    if (temp.event_flags & EFLAG_REPEATABLE && !temp.percent_range.repeatMin && !temp.percent_range.repeatMax)
+                    if ((temp.event_flags & EFLAG_REPEATABLE) && !temp.percent_range.repeatMin && !temp.percent_range.repeatMax)
                     {
                         sLog.outErrorDb("CreatureEventAI:  Creature %u has param3 and param4=0 (RepeatMin/RepeatMax) but cannot be repeatable without timers. Removing EFLAG_REPEATABLE for event %u.", temp.creature_id, i);
                         temp.event_flags &= ~EFLAG_REPEATABLE;
@@ -371,6 +373,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                         case SPAWNED_EVENT_ZONE:
                             if(!GetAreaEntryByAreaID(temp.spawned.conditionValue1))
                                 sLog.outErrorDb("CreatureEventAI:  Creature %u are using spawned event(%u) with param1 = %u 'area specific' but area (param2: %u) does not exist. Event will never repeat.", temp.creature_id, i, temp.spawned.condition, temp.spawned.conditionValue1);
+                            break;
                         default:
                             sLog.outErrorDb("CreatureEventAI:  Creature %u are using invalid spawned event %u mode (%u) in param1", temp.creature_id, i, temp.spawned.condition);
                             break;
@@ -446,7 +449,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                         continue;
                     }
 
-                    if (!PlayerCondition::IsValid(ConditionType(temp.receive_emote.condition), temp.receive_emote.conditionValue1, temp.receive_emote.conditionValue2))
+                    if (!PlayerCondition::IsValid(0, ConditionType(temp.receive_emote.condition), temp.receive_emote.conditionValue1, temp.receive_emote.conditionValue2))
                     {
                         sLog.outErrorDb("CreatureEventAI: Creature %u using event %u: param2 (Condition: %u) are not valid.",temp.creature_id, i, temp.receive_emote.condition);
                         continue;
@@ -509,15 +512,23 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                 {
                     case ACTION_T_NONE:
                         break;
+                    case ACTION_T_CHANCED_TEXT:
+                        // Check first param as chance
+                        if (!action.chanced_text.chance)
+                            sLog.outErrorDb("CreatureEventAI:  Event %u Action %u has not set chance param1. Text will not be displayed", i, j + 1);
+                        else if (action.chanced_text.chance >= 100)
+                            sLog.outErrorDb("CreatureEventAI:  Event %u Action %u has set chance param1 >= 100. Text will always be displayed", i, j + 1);
+                        // no break here to check texts
                     case ACTION_T_TEXT:
                     {
                         bool not_set = false;
-                        for(int k = 0; k < 3; ++k)
+                        int firstTextParam = action.type == ACTION_T_TEXT ? 0 : 1;
+                        for (int k = firstTextParam; k < 3; ++k)
                         {
                             if (action.text.TextId[k])
                             {
-                                if (k > 0 && not_set)
-                                    sLog.outErrorDb("CreatureEventAI:  Event %u Action %u has param%d, but it follow after not set param. Required for randomized text.", i, j+1, k+1);
+                                if (k > firstTextParam && not_set)
+                                    sLog.outErrorDb("CreatureEventAI:  Event %u Action %u has param%d, but it follow after not set param. Required for randomized text.", i, j + 1, k + 1);
 
                                 if(!action.text.TextId[k])
                                     not_set = true;

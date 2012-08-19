@@ -30,13 +30,6 @@ enum Spells
     SPELL_RED_SEAT                          = 49464,
 };
 
-enum NPC
-{
-    NPC_GREEN_DRAGON                        = 27692,
-    NPC_YELLOW_DRAGON                       = 27755,
-    NPC_RED_DRAGON                          = 27756,
-};
-
 struct MANGOS_DLL_DECL mob_oculus_dragonAI : public ScriptedAI
 {
     mob_oculus_dragonAI(Creature* pCreature) : ScriptedAI(pCreature)

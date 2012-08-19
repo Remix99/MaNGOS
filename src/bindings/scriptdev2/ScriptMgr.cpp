@@ -124,7 +124,7 @@ void InitScriptLibrary()
 
     // Get configuration file
     if (!SD2Config.SetSource(_SCRIPTDEV2_CONFIG))
-        error_log("SD2: Unable to open configuration file. Database will be unaccessible. Configuration values will use default.");
+        error_log("SD2: Unable to open configuration file %s. Database will be unaccessible. Configuration values will use default.",_SCRIPTDEV2_CONFIG);
     else
         outstring_log("SD2: Using configuration file %s",_SCRIPTDEV2_CONFIG);
 

@@ -46,7 +46,13 @@ enum TempSummonType
     TEMPSUMMON_CORPSE_TIMED_DESPAWN        = 6,             // despawns after a specified time after death
     TEMPSUMMON_DEAD_DESPAWN                = 7,             // despawns when the creature disappears
     TEMPSUMMON_MANUAL_DESPAWN              = 8,             // despawns when UnSummon() is called
-    TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT_OR_DEAD_DESPAWN = 9 // despawns after a specified time after the creature is out of combat OR when the creature disappears
+    TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT_OR_DEAD_DESPAWN = 9, // despawns after a specified time after the creature is out of combat OR when the creature disappears
+    // Place for future despawn types
+    TEMPSUMMON_LOST_OWNER_DESPAWN                           = 20,            // despawns when creature lost charmer/owner
+    TEMPSUMMON_DEAD_OR_LOST_OWNER_DESPAWN                   = 21,            // despawns when creature lost charmer/owner
+    TEMPSUMMON_TIMED_OR_DEAD_OR_LOST_OWNER_DESPAWN          = 22,            // despawns when creature lost charmer/owner, or by time
+    TEMPSUMMON_TIMED_OR_DEAD_OR_LOST_UNIQUENESS_DESPAWN     = 23,            // despawns when owner spawn creature this type in visible range, or by rules of TEMPSUMMON_TIMED_OR_DEAD_DESPAWN
+    TEMPSUMMON_DEAD_OR_LOST_UNIQUENESS_DESPAWN              = 24,            // despawns when owner spawn creature this type in visible range, or by rules of TEMPSUMMON_DEAD_DESPAWN
 };
 
 enum PhaseMasks
@@ -68,7 +74,7 @@ class Map;
 class UpdateMask;
 class InstanceData;
 class TerrainInfo;
-class ZoneScript;
+class Transport;
 
 typedef UNORDERED_MAP<Player*, UpdateData> UpdateDataMapType;
 
@@ -456,6 +462,13 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         void GetPosition( WorldLocation &loc ) const
             { loc.mapid = m_mapId; GetPosition(loc.coord_x, loc.coord_y, loc.coord_z); loc.orientation = GetOrientation(); }
         float GetOrientation( ) const { return m_position.o; }
+
+        virtual Transport* GetTransport() const { return NULL; }
+        virtual float GetTransOffsetX() const { return 0.0f; }
+        virtual float GetTransOffsetY() const { return 0.0f; }
+        virtual float GetTransOffsetZ() const { return 0.0f; }
+        virtual float GetTransOffsetO() const { return 0.0f; }
+
         void GetNearPoint2D( float &x, float &y, float distance, float absAngle) const;
         void GetNearPoint(WorldObject const* searcher, float &x, float &y, float &z, float searcher_bounding_radius, float distance2d, float absAngle) const;
         void GetClosePoint(float &x, float &y, float &z, float bounding_radius, float distance2d = 0, float angle = 0, const WorldObject* obj = NULL ) const
@@ -519,8 +532,8 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         {
             return obj && IsInMap(obj) && _IsWithinDist(obj,dist2compare,is3D);
         }
-        bool IsWithinLOS(float x, float y, float z, bool strict = true) const;
-        bool IsWithinLOSInMap(const WorldObject* obj, bool strict = true) const;
+        bool IsWithinLOS(float x, float y, float z) const;
+        bool IsWithinLOSInMap(const WorldObject* obj) const;
         bool GetDistanceOrder(WorldObject const* obj1, WorldObject const* obj2, bool is3D = true) const;
         bool IsInRange(WorldObject const* obj, float minRange, float maxRange, bool is3D = true) const;
         bool IsInRange2d(float x, float y, float minRange, float maxRange) const;
@@ -589,9 +602,6 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         //obtain terrain data for map where this object belong...
         TerrainInfo const* GetTerrain() const;
 
-        void SetZoneScript();
-        ZoneScript * GetZoneScript() const { return m_zoneScript; }
-
         void AddToClientUpdateList();
         void RemoveFromClientUpdateList();
         void BuildUpdateData(UpdateDataMapType &);
@@ -619,10 +629,17 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         bool isActiveObject() const { return m_isActiveObject || m_viewPoint.hasViewers(); }
         void SetActiveObjectState(bool active);
 
+        uint32 GetLastUpdateTime() const { return m_LastUpdateTime; }
+        void SetLastUpdateTime() { m_LastUpdateTime = WorldTimer::getMSTime(); }
+
         ViewPoint& GetViewPoint() { return m_viewPoint; }
 
         // ASSERT print helper
         bool PrintCoordinatesError(float x, float y, float z, char const* descr) const;
+
+        // WorldState operations
+        void UpdateWorldState(uint32 state, uint32 value);
+        uint32 GetWorldState(uint32 state);
 
     protected:
         explicit WorldObject();
@@ -639,8 +656,6 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         ObjectGuid m_lootRecipientGuid;                     // player who will have rights for looting if m_lootGroupRecipient==0 or group disbanded
         uint32 m_lootGroupRecipientId;                      // group who will have rights for looting if set and exist
 
-        ZoneScript *m_zoneScript;
-
         std::string m_name;
 
     private:
@@ -654,6 +669,8 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         ViewPoint m_viewPoint;
         WorldUpdateCounter m_updateTracker;
         bool m_isActiveObject;
+
+        uint32 m_LastUpdateTime;
 };
 
 #endif

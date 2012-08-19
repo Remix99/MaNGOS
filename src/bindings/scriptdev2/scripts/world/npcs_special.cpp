@@ -24,6 +24,7 @@ EndScriptData
 
 #include "precompiled.h"
 #include "escort_ai.h"
+#include "pet_ai.h"
 #include "ObjectMgr.h"
 #include "GameEventMgr.h"
 
@@ -43,6 +44,8 @@ npc_locksmith            75%    list of keys needs to be confirmed
 npc_death_knight_gargoyle       AI for summoned gargoyle of deathknights
 npc_horseman_fire_bunny
 npc_shade_of_horseman
+npc_spring_rabbit         1%    Used for pet "Spring Rabbit" of Noblegarden
+npc_redemption_target   100%    Used for the paladin quests: 1779,1781,9600,9685
 EndContentData */
 
 /*########
@@ -109,9 +112,7 @@ struct MANGOS_DLL_DECL npc_air_force_botsAI : public ScriptedAI
         m_pSpawnAssoc = NULL;
 
         // find the correct spawnhandling
-        static uint32 uiEntryCount = sizeof(m_aSpawnAssociations)/sizeof(SpawnAssociation);
-
-        for (uint8 i=0; i<uiEntryCount; ++i)
+        for (uint8 i = 0; i < countof(m_aSpawnAssociations); ++i)
         {
             if (m_aSpawnAssociations[i].m_uiThisCreatureEntry == pCreature->GetEntry())
             {
@@ -486,7 +487,7 @@ struct MANGOS_DLL_DECL npc_doctorAI : public ScriptedAI
 
     bool Event;
 
-    GUIDList Patients;
+    GuidList Patients;
     std::vector<Location*> Coordinates;
 
     void Reset()
@@ -701,7 +702,7 @@ void npc_doctorAI::PatientSaved(Creature* soldier, Player* pPlayer, Location* Po
 
             if (PatientSavedCount == 15)
             {
-                for(GUIDList::const_iterator itr = Patients.begin(); itr != Patients.end(); ++itr)
+                for(GuidList::const_iterator itr = Patients.begin(); itr != Patients.end(); ++itr)
                 {
                     if (Creature* Patient = m_creature->GetMap()->GetCreature(*itr))
                         Patient->SetDeathState(JUST_DIED);
@@ -2184,7 +2185,7 @@ struct MANGOS_DLL_DECL npc_shade_of_horsemanAI : public ScriptedAI
     uint32 m_uiConflagrationProcTimer;
     bool bIsConflagrating;
 
-    GUIDList lFireBunnies;
+    GuidList lFireBunnies;
 
     void Reset()
     {
@@ -2218,7 +2219,7 @@ struct MANGOS_DLL_DECL npc_shade_of_horsemanAI : public ScriptedAI
         if (!bIsConflagrating)
         {
             bool IsVictory = true;
-            for (GUIDList::iterator itr = lFireBunnies.begin(); itr != lFireBunnies.end(); ++itr)
+            for (GuidList::iterator itr = lFireBunnies.begin(); itr != lFireBunnies.end(); ++itr)
                 if (Creature* pFireBunny = m_creature->GetMap()->GetCreature(*itr))
                     if (pFireBunny->HasAura(SPELL_FLAMES_LARGE))
                         IsVictory = false;
@@ -2249,7 +2250,7 @@ struct MANGOS_DLL_DECL npc_shade_of_horsemanAI : public ScriptedAI
                 case PHASE_FAIL:
                     DoScriptText(YELL_FAIL, m_creature);
                     m_creature->ForcedDespawn(10000);
-                    for (GUIDList::iterator itr = lFireBunnies.begin(); itr != lFireBunnies.end(); ++itr)
+                    for (GuidList::iterator itr = lFireBunnies.begin(); itr != lFireBunnies.end(); ++itr)
                         if (Creature* pFireBunny = m_creature->GetMap()->GetCreature(*itr))
                         {
                             if (pFireBunny->HasAura(SPELL_FLAMES_LARGE))
@@ -2300,8 +2301,8 @@ struct MANGOS_DLL_DECL npc_shade_of_horsemanAI : public ScriptedAI
 
                 if (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE)
                     return;
-                
-                for (GUIDList::iterator itr = lFireBunnies.begin(); itr != lFireBunnies.end(); ++itr)
+
+                for (GuidList::iterator itr = lFireBunnies.begin(); itr != lFireBunnies.end(); ++itr)
                     if (Creature* pFireBunny = m_creature->GetMap()->GetCreature(*itr))
                         if (!pFireBunny->HasAura(SPELL_FLAMES_LARGE))
                         {
@@ -2351,7 +2352,7 @@ struct MANGOS_DLL_DECL npc_wild_turkeyAI : public ScriptedAI
     {
         DoMeleeAttackIfReady();
     }
-    
+
     void JustDied(Unit* pKiller)
     {
         if (pKiller && pKiller->GetTypeId() == TYPEID_PLAYER)
@@ -2450,6 +2451,289 @@ bool GossipSelect_npc_experience(Player* pPlayer, Creature* /*pCreature*/, uint3
     }
     pPlayer->PlayerTalkClass->CloseGossip();
     return true;
+}
+
+/*########
+## npc_spring_rabbit
+## ATTENTION: This is actually a "fun" script, entirely done without proper source!
+######*/
+
+enum
+{
+    NPC_SPRING_RABBIT           = 32791,
+
+    SPELL_SPRING_RABBIT_JUMP    = 61724,
+    SPELL_SPRING_RABBIT_WANDER  = 61726,
+    SEPLL_SUMMON_BABY_BUNNY     = 61727,
+    SPELL_SPRING_RABBIT_IN_LOVE = 61728,
+    SPELL_SPRING_FLING          = 61875,
+};
+
+static const float DIST_START_EVENT = 15.0f;                // Guesswork
+
+struct MANGOS_DLL_DECL npc_spring_rabbitAI : public ScriptedPetAI
+{
+    npc_spring_rabbitAI(Creature* pCreature) : ScriptedPetAI(pCreature) { Reset(); }
+
+    ObjectGuid m_partnerGuid;
+    uint32 m_uiStep;
+    uint32 m_uiStepTimer;
+    float m_fMoveAngle;
+
+    void Reset()
+    {
+        m_uiStep = 0;
+        m_uiStepTimer = 0;
+        m_partnerGuid.Clear();
+        m_fMoveAngle = 0.0f;
+    }
+
+    bool CanStartWhatRabbitsDo() { return !m_partnerGuid && !m_uiStepTimer; }
+
+    void StartWhatRabbitsDo(Creature* pPartner)
+    {
+        m_partnerGuid = pPartner->GetObjectGuid();
+        m_uiStep = 1;
+        m_uiStepTimer = 30000;
+        // Calculate meeting position
+        float m_fMoveAngle = m_creature->GetAngle(pPartner);
+        float fDist = m_creature->GetDistance(pPartner);
+        float fX, fY, fZ;
+        m_creature->GetNearPoint(m_creature, fX, fY, fZ, m_creature->GetObjectBoundingRadius(), fDist * 0.5f - m_creature->GetObjectBoundingRadius(), m_fMoveAngle);
+
+        m_creature->GetMotionMaster()->Clear();
+        m_creature->GetMotionMaster()->MovePoint(1, fX, fY, fZ);
+    }
+
+    // Helper to get the Other Bunnies AI
+    npc_spring_rabbitAI* GetPartnerAI(Creature* pBunny = NULL)
+    {
+        if (!pBunny)
+            pBunny = m_creature->GetMap()->GetAnyTypeCreature(m_partnerGuid);
+
+        if (!pBunny)
+            return NULL;
+
+        return dynamic_cast<npc_spring_rabbitAI*>(pBunny->AI());
+    }
+
+    // Event Starts when two rabbits see each other
+    void MoveInLineOfSight(Unit* pWho)
+    {
+        if (m_creature->getVictim())
+            return;
+
+        if (pWho->GetTypeId() == TYPEID_UNIT && pWho->GetEntry() == NPC_SPRING_RABBIT && CanStartWhatRabbitsDo() && m_creature->IsFriendlyTo(pWho) && m_creature->IsWithinDistInMap(pWho, DIST_START_EVENT, true))
+        {
+            if (npc_spring_rabbitAI* pOtherBunnyAI = GetPartnerAI((Creature*)pWho))
+            {
+                if (pOtherBunnyAI->CanStartWhatRabbitsDo())
+                {
+                    StartWhatRabbitsDo((Creature*)pWho);
+                    pOtherBunnyAI->StartWhatRabbitsDo(m_creature);
+                }
+            }
+            return;
+        }
+
+        ScriptedPetAI::MoveInLineOfSight(pWho);
+    }
+
+    bool ReachedMeetingPlace()
+    {
+        if (m_uiStep == 3)                                  // Already there
+        {
+            m_uiStepTimer = 3000;
+            m_uiStep = 2;
+            return true;
+        }
+        else
+            return false;
+    }
+
+    void MovementInform(uint32 uiMovementType, uint32 uiData)
+    {
+        if (uiMovementType != POINT_MOTION_TYPE || uiData != 1)
+            return;
+
+        if (!m_partnerGuid)
+            return;
+
+        m_uiStep = 3;
+        if (npc_spring_rabbitAI* pOtherBunnyAI = GetPartnerAI())
+        {
+            if (pOtherBunnyAI->ReachedMeetingPlace())
+            {
+                m_creature->SetFacingTo(pOtherBunnyAI->m_creature->GetOrientation());
+                m_uiStepTimer = 3000;
+            }
+            else
+                m_creature->SetFacingTo(m_fMoveAngle + M_PI_F * 0.5f);
+        }
+
+        //m_creature->GetMotionMaster()->MoveRandom(); // does not move around current position, hence not usefull right now
+        m_creature->GetMotionMaster()->MoveIdle();
+    }
+
+    // Overwrite ScriptedPetAI::UpdateAI, to prevent re-following while the event is active!
+    void UpdateAI(const uint32 uiDiff)
+    {
+        if (!m_partnerGuid || !m_uiStepTimer)
+        {
+            ScriptedPetAI::UpdateAI(uiDiff);
+            return;
+        }
+
+        if (m_uiStep == 6)
+            ScriptedPetAI::UpdateAI(uiDiff);                // Event nearly finished, do normal following
+
+        if (m_uiStepTimer <= uiDiff)
+        {
+            switch (m_uiStep)
+            {
+                case 1:                                     // Timer expired, before reached meeting point. Reset.
+                    Reset();
+                    break;
+
+                case 2:                                     // Called for the rabbit first reached meeting point
+                    if (Creature* pBunny = m_creature->GetMap()->GetAnyTypeCreature(m_partnerGuid))
+                        pBunny->CastSpell(pBunny, SPELL_SPRING_RABBIT_IN_LOVE, false);
+
+                    DoCastSpellIfCan(m_creature, SPELL_SPRING_RABBIT_IN_LOVE);
+                    // no break here
+                case 3:
+                    m_uiStepTimer = 5000;
+                    m_uiStep += 2;
+                    break;
+
+                case 4:                                     // Called for the rabbit first reached meeting point
+                    DoCastSpellIfCan(m_creature, SEPLL_SUMMON_BABY_BUNNY);
+                    // no break here
+                case 5:
+                    // Let owner cast achievement related spell
+                    if (Unit* pOwner = m_creature->GetCharmerOrOwner())
+                        pOwner->CastSpell(pOwner, SPELL_SPRING_FLING, true);
+
+                    m_uiStep = 6;
+                    m_uiStepTimer = 30000;
+                    break;
+                case 6:
+                    m_creature->RemoveAurasDueToSpell(SPELL_SPRING_RABBIT_IN_LOVE);
+                    Reset();
+                    break;
+            }
+        }
+        else
+            m_uiStepTimer -= uiDiff;
+    }
+};
+
+CreatureAI* GetAI_npc_spring_rabbit(Creature* pCreature)
+{
+    return new npc_spring_rabbitAI(pCreature);
+}
+
+/*######
+## npc_redemption_target
+######*/
+
+enum
+{
+    SAY_HEAL                    = -1000187,
+
+    SPELL_SYMBOL_OF_LIFE        = 8593,
+    SPELL_SHIMMERING_VESSEL     = 31225,
+    SPELL_REVIVE_SELF           = 32343,
+
+    NPC_FURBOLG_SHAMAN          = 17542,        // draenei side
+    NPC_BLOOD_KNIGHT            = 17768,        // blood elf side
+};
+
+struct MANGOS_DLL_DECL npc_redemption_targetAI : public ScriptedAI
+{
+    npc_redemption_targetAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+
+    uint32 m_uiEvadeTimer;
+    uint32 m_uiHealTimer;
+
+    ObjectGuid m_playerGuid;
+
+    void Reset()
+    {
+        m_uiEvadeTimer = 0;
+        m_uiHealTimer  = 0;
+
+        m_creature->SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_DEAD);
+        m_creature->SetStandState(UNIT_STAND_STATE_DEAD);
+    }
+
+    void DoReviveSelf(ObjectGuid m_guid)
+    {
+        // Wait until he resets again
+        if (m_uiEvadeTimer)
+            return;
+
+        DoCastSpellIfCan(m_creature, SPELL_REVIVE_SELF);
+        m_creature->SetDeathState(JUST_ALIVED);
+        m_playerGuid = m_guid;
+        m_uiHealTimer = 2000;
+    }
+
+    void UpdateAI(const uint32 uiDiff)
+    {
+        if (m_uiHealTimer)
+        {
+            if (m_uiHealTimer <= uiDiff)
+            {
+                if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
+                {
+                    DoScriptText(SAY_HEAL, m_creature, pPlayer);
+
+                    // Quests 9600 and 9685 requires kill credit
+                    if (m_creature->GetEntry() == NPC_FURBOLG_SHAMAN || m_creature->GetEntry() == NPC_BLOOD_KNIGHT)
+                        pPlayer->KilledMonsterCredit(m_creature->GetEntry(), m_creature->GetObjectGuid());
+                }
+
+                m_creature->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_DEAD);
+                m_creature->SetStandState(UNIT_STAND_STATE_STAND);
+                m_uiHealTimer = 0;
+                m_uiEvadeTimer = 2*MINUTE*IN_MILLISECONDS;
+            }
+            else
+                m_uiHealTimer -= uiDiff;
+        }
+
+        if (m_uiEvadeTimer)
+        {
+            if (m_uiEvadeTimer <= uiDiff)
+            {
+                EnterEvadeMode();
+                m_uiEvadeTimer = 0;
+            }
+            else
+                m_uiEvadeTimer -= uiDiff;
+        }
+    }
+};
+
+CreatureAI* GetAI_npc_redemption_target(Creature* pCreature)
+{
+    return new npc_redemption_targetAI(pCreature);
+}
+
+bool EffectDummyCreature_npc_redemption_target(Unit* pCaster, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Creature* pCreatureTarget)
+{
+    //always check spellid and effectindex
+    if ((uiSpellId == SPELL_SYMBOL_OF_LIFE || uiSpellId == SPELL_SHIMMERING_VESSEL) && uiEffIndex == EFFECT_INDEX_0)
+    {
+        if (npc_redemption_targetAI* pTargetAI = dynamic_cast<npc_redemption_targetAI*>(pCreatureTarget->AI()))
+            pTargetAI->DoReviveSelf(pCaster->GetObjectGuid());
+
+        //always return true when we are handling this spell and effect
+        return true;
+    }
+
+    return false;
 }
 
 void AddSC_npcs_special()
@@ -2567,10 +2851,21 @@ void AddSC_npcs_special()
     pNewScript->Name = "npc_wild_turkey";
     pNewScript->GetAI = &GetAI_npc_wild_turkey;
     pNewScript->RegisterSelf();
-    
+
     pNewScript = new Script;
     pNewScript->Name = "npc_experience";
     pNewScript->pGossipHello =  &GossipHello_npc_experience;
     pNewScript->pGossipSelect = &GossipSelect_npc_experience;
+    pNewScript->RegisterSelf();
+
+    pNewScript = new Script;
+    pNewScript->Name = "npc_spring_rabbit";
+    pNewScript->GetAI = &GetAI_npc_spring_rabbit;
+    pNewScript->RegisterSelf();
+
+    pNewScript = new Script;
+    pNewScript->Name = "npc_redemption_target";
+    pNewScript->GetAI = &GetAI_npc_redemption_target;
+    pNewScript->pEffectDummyNPC = &EffectDummyCreature_npc_redemption_target;
     pNewScript->RegisterSelf();
 }

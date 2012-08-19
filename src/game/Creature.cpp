@@ -41,7 +41,7 @@
 #include "InstanceData.h"
 #include "MapPersistentStateMgr.h"
 #include "BattleGroundMgr.h"
-#include "WorldPvP/WorldPvPMgr.h"
+#include "OutdoorPvP/OutdoorPvP.h"
 #include "Spell.h"
 #include "Util.h"
 #include "GridNotifiers.h"
@@ -130,7 +130,7 @@ bool ForcedDespawnDelayEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
     return true;
 }
 
-void CreatureCreatePos::SelectFinalPoint(Creature* cr)
+void CreatureCreatePos::SelectFinalPoint(Creature* cr, bool checkLOS)
 {
     // if object provided then selected point at specific dist/angle from object forward look
     if (m_closeObject)
@@ -140,6 +140,14 @@ void CreatureCreatePos::SelectFinalPoint(Creature* cr)
             m_pos.x = m_closeObject->GetPositionX();
             m_pos.y = m_closeObject->GetPositionY();
             m_pos.z = m_closeObject->GetPositionZ();
+        }
+        else if (checkLOS)
+        {
+            m_closeObject->GetClosePoint(m_pos.x, m_pos.y, m_pos.z, 0.0f, m_dist + m_closeObject->GetObjectBoundingRadius(), m_angle);
+            float ox, oy, oz;
+            m_closeObject->GetPosition(ox, oy, oz);
+            m_map->GetHitPosition(ox, oy, oz, m_pos.x, m_pos.y, m_pos.z, GetPhaseMask(), -0.5f);
+            m_closeObject->UpdateAllowedPositionZ(m_pos.x, m_pos.y, m_pos.z);
         }
         else
             m_closeObject->GetClosePoint(m_pos.x, m_pos.y, m_pos.z, cr->GetObjectBoundingRadius(), m_dist, m_angle);
@@ -192,7 +200,10 @@ void Creature::AddToWorld()
 {
     ///- Register the creature for guid lookup
     if (!IsInWorld() && GetObjectGuid().IsCreatureOrVehicle())
+    {
+        MAPLOCK_WRITE(this, MAP_LOCK_TYPE_DEFAULT);
         GetMap()->GetObjectsStore().insert<Creature>(GetObjectGuid(), (Creature*)this);
+    }
 
     if (IsInWorld() && GetObjectGuid().IsPet())
     {
@@ -210,7 +221,10 @@ void Creature::RemoveFromWorld()
 {
     ///- Remove the creature from the accessor
     if (IsInWorld() && GetObjectGuid().IsCreatureOrVehicle())
+    {
+        MAPLOCK_WRITE(this, MAP_LOCK_TYPE_DEFAULT);
         GetMap()->GetObjectsStore().erase<Creature>(GetObjectGuid(), (Creature*)NULL);
+    }
 
     if (IsInWorld() && GetObjectGuid().IsPet())
     {
@@ -450,7 +464,7 @@ uint32 Creature::ChooseDisplayId(const CreatureInfo *cinfo, const CreatureData *
         // Where it's expected to select one of two, model must have a alternative model defined (alternative model is normally the same as defined in ModelId1).
         // Same pattern is used in the above model selection, but the result may be ModelId3 and not ModelId2 as here.
         uint32 modelid_tmp = sObjectMgr.GetCreatureModelAlternativeModel(cinfo->ModelId[1]);
-        display_id = modelid_tmp ? modelid_tmp : cinfo->ModelId[1];
+        display_id = modelid_tmp ? cinfo->ModelId[urand(0, 1)] : cinfo->ModelId[1];
     }
     else if (cinfo->ModelId[0])
     {
@@ -523,8 +537,8 @@ void Creature::Update(uint32 update_diff, uint32 diff)
                 if (AI())
                     AI()->JustRespawned();
 
-                if (m_zoneScript)
-                    m_zoneScript->OnCreatureRespawn(this);
+                if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(GetZoneId()))
+                    outdoorPvP->HandleCreatureRespawn(this);
 
                 if (m_isCreatureLinkingTrigger)
                     GetMap()->GetCreatureLinkingHolder()->DoCreatureLinkingEvent(LINKING_EVENT_RESPAWN, this);
@@ -808,10 +822,9 @@ bool Creature::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo cons
     if (InstanceData* iData = GetMap()->GetInstanceData())
         iData->OnCreatureCreate(this);
 
-    // Init and notify outdoor pvp script
-    SetZoneScript();
-    if (m_zoneScript)
-        m_zoneScript->OnCreatureCreate(this);
+    // Notify the outdoor pvp script
+    if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(GetZoneId()))
+        outdoorPvP->HandleCreatureCreate(this);
 
     switch (GetCreatureInfo()->rank)
     {
@@ -1335,7 +1348,7 @@ bool Creature::LoadFromDB(uint32 guidlow, Map *map)
         m_deathState = DEAD;
         if (CanFly())
         {
-            float tz = GetTerrain()->GetHeight(data->posX, data->posY, data->posZ, false);
+            float tz = GetMap()->GetHeight(GetPhaseMask(), data->posX, data->posY, data->posZ, false);
             if (data->posZ - tz > 0.1)
                 Relocate(data->posX, data->posY, tz);
         }
@@ -1365,7 +1378,7 @@ bool Creature::LoadFromDB(uint32 guidlow, Map *map)
             // Just set to dead, so need to relocate like above
             if (CanFly())
             {
-                float tz = GetTerrain()->GetHeight(data->posX, data->posY, data->posZ, false);
+                float tz = GetMap()->GetHeight(data->phaseMask, data->posX, data->posY, data->posZ, false);
                 if (data->posZ - tz > 0.1)
                     Relocate(data->posX, data->posY, tz);
             }
@@ -2029,14 +2042,10 @@ bool Creature::LoadCreatureAddon(bool reload)
     return true;
 }
 
-/// Send a message to LocalDefense channel for players opposition team in the zone
+/// Sends a message to LocalDefense and WorldDefense channels for players of the other team
 void Creature::SendZoneUnderAttackMessage(Player* attacker)
 {
-    Team enemy_team = attacker->GetTeam();
-
-    WorldPacket data(SMSG_ZONE_UNDER_ATTACK, 4);
-    data << uint32(GetZoneId());
-    sWorld.SendGlobalMessage(&data, NULL, (enemy_team == ALLIANCE ? HORDE : ALLIANCE));
+    sWorld.SendZoneUnderAttackMessage(GetZoneId(), attacker->GetTeam() == ALLIANCE ? HORDE : ALLIANCE);
 }
 
 void Creature::SetInCombatWithZone()
@@ -2078,27 +2087,24 @@ void Creature::SetInCombatWithZone()
 
 bool Creature::MeetsSelectAttackingRequirement(Unit* pTarget, SpellEntry const* pSpellInfo, uint32 selectFlags) const
 {
-    if (selectFlags & SELECT_FLAG_PLAYER && pTarget->GetTypeId() != TYPEID_PLAYER)
+    if ((selectFlags & SELECT_FLAG_PLAYER) && pTarget->GetTypeId() != TYPEID_PLAYER)
         return false;
 
-    if (selectFlags & SELECT_FLAG_POWER_MANA && pTarget->getPowerType() != POWER_MANA)
+    if ((selectFlags & SELECT_FLAG_POWER_MANA) && pTarget->getPowerType() != POWER_MANA)
         return false;
-    else if (selectFlags & SELECT_FLAG_POWER_RAGE && pTarget->getPowerType() != POWER_RAGE)
+    else if ((selectFlags & SELECT_FLAG_POWER_RAGE) && pTarget->getPowerType() != POWER_RAGE)
         return false;
-    else if (selectFlags & SELECT_FLAG_POWER_ENERGY && pTarget->getPowerType() != POWER_ENERGY)
+    else if ((selectFlags & SELECT_FLAG_POWER_ENERGY) && pTarget->getPowerType() != POWER_ENERGY)
         return false;
-    else if (selectFlags & SELECT_FLAG_POWER_RUNIC && pTarget->getPowerType() != POWER_RUNIC_POWER)
-        return false;
-
-    if (selectFlags & SELECT_FLAG_IN_MELEE_RANGE && !CanReachWithMeleeAttack(pTarget))
-        return false;
-    if (selectFlags & SELECT_FLAG_NOT_IN_MELEE_RANGE && CanReachWithMeleeAttack(pTarget))
+    else if ((selectFlags & SELECT_FLAG_POWER_RUNIC) && pTarget->getPowerType() != POWER_RUNIC_POWER)
         return false;
 
-    if (selectFlags & SELECT_FLAG_NOT_IN_MELEE_RANGE && CanReachWithMeleeAttack(pTarget))
+    if ((selectFlags & SELECT_FLAG_IN_MELEE_RANGE) && !CanReachWithMeleeAttack(pTarget))
+        return false;
+    if ((selectFlags & SELECT_FLAG_NOT_IN_MELEE_RANGE) && CanReachWithMeleeAttack(pTarget))
         return false;
 
-    if (selectFlags & SELECT_FLAG_IN_LOS && !IsWithinLOSInMap(pTarget))
+    if ((selectFlags & SELECT_FLAG_IN_LOS) && !IsWithinLOSInMap(pTarget))
         return false;
 
     if (pSpellInfo)
@@ -2221,9 +2227,14 @@ bool Creature::HasSpellCooldown(uint32 spell_id) const
     return (itr != m_CreatureSpellCooldowns.end() && itr->second > time(NULL)) || HasCategoryCooldown(spell_id);
 }
 
+uint8 Creature::getRace() const
+{
+    return GetCreatureModelRace(GetNativeDisplayId());
+}
+
 bool Creature::IsInEvadeMode() const
 {
-    return i_motionMaster.GetCurrentMovementGeneratorType() == HOME_MOTION_TYPE;
+    return IsInUnitState(UNIT_ACTION_HOME);
 }
 
 bool Creature::HasSpell(uint32 spellID)
@@ -2495,7 +2506,7 @@ void Creature::ApplyGameEventSpells(GameEventCreatureData const* eventData, bool
         CastSpell(this, cast_spell, true);
 }
 
-void Creature::FillGuidsListFromThreatList( std::vector<ObjectGuid>& guids, uint32 maxamount /*= 0*/ )
+void Creature::FillGuidsListFromThreatList(GuidVector& guids, uint32 maxamount /*= 0*/)
 {
     if (!CanHaveThreatList())
         return;
@@ -2669,3 +2680,89 @@ bool AttackResumeEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
     return true;
 }
 
+Unit* Creature::SelectPreferredTargetForSpell(SpellEntry const* spellInfo)
+{
+    Unit* target = NULL;
+
+    if (spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE && HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED))
+        return NULL;
+    if (spellInfo->PreventionType == SPELL_PREVENTION_TYPE_PACIFY && HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED))
+        return NULL;
+
+    SpellRangeEntry const* srange = sSpellRangeStore.LookupEntry(spellInfo->rangeIndex);
+    float max_range = GetSpellMaxRange(srange);
+    if (Player* modOwner = GetSpellModOwner())
+        modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_RANGE, max_range);
+
+    switch (GetPreferredTargetForSpell(spellInfo))
+    {
+        case SPELL_PREFERRED_TARGET_SELF:
+            target = this;
+            break;
+
+        case SPELL_PREFERRED_TARGET_VICTIM:
+            if (getVictim())
+                target = getVictim();
+            else
+                target = SelectAttackingTarget(ATTACKING_TARGET_TOPAGGRO, 0, spellInfo, 0);
+            break;
+
+        case SPELL_PREFERRED_TARGET_ENEMY:
+                target = SelectAttackingTarget(ATTACKING_TARGET_TOPAGGRO, 0, spellInfo, 0);
+            break;
+
+        case SPELL_PREFERRED_TARGET_OWNER:
+            if (GetCharmerOrOwner())
+                target = GetCharmerOrOwner();
+            else
+                target = this;
+            break;
+
+        case SPELL_PREFERRED_TARGET_FRIEND:
+            target = SelectRandomFriendlyTarget(this,max_range);
+            break;
+
+        case SPELL_PREFERRED_TARGET_AREA:
+        case SPELL_PREFERRED_TARGET_MAX:
+        default:
+            break;
+    }
+
+    if (!target)
+        return NULL;
+
+    if (target && target != this)
+    {
+        float dist = GetDistance(target);
+        if ( dist > max_range || dist < GetSpellMinRange(srange))
+            target = NULL;
+    }
+
+    if (target && IsSpellAppliesAura(spellInfo))
+    {
+        for (int j = 0; j < MAX_EFFECT_INDEX; ++j)
+        {
+            if (target && spellInfo->Effect[j] == SPELL_EFFECT_APPLY_AURA)
+            {
+                if (spellInfo->StackAmount <= 1)
+                {
+                    if (target->HasAura(spellInfo->Id, SpellEffectIndex(j)) )
+                        target = NULL;
+                }
+                else
+                {
+                    if (Aura* aura = target->GetAura(spellInfo->Id, SpellEffectIndex(j)))
+                        if (aura->GetStackAmount() >= spellInfo->StackAmount)
+                            target = NULL;
+                }
+            }
+            else if (IsAreaAuraEffect(spellInfo->Effect[j]))
+            {
+                if (target->HasAura(spellInfo->Id, SpellEffectIndex(j)) )
+                    target = NULL;
+            }
+        }
+    }
+
+    return target;
+}

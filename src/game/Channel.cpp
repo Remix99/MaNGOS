@@ -576,7 +576,7 @@ void Channel::Say(ObjectGuid p, const char *what, uint32 lang)
         data << ObjectGuid(p);
         data << uint32(messageLength);
         data << what;
-        data << uint8(plr ? plr->chatTag() : 0);
+        data << uint8(plr ? plr->GetChatTag() : CHAT_TAG_NONE);
 
         SendToAll(&data, !m_players[p].IsModerator() ? p : ObjectGuid());
     }
@@ -664,9 +664,12 @@ void Channel::SetOwner(ObjectGuid guid, bool exclaim)
 void Channel::SendToAll(WorldPacket *data, ObjectGuid p)
 {
     for(PlayerList::const_iterator i = m_players.begin(); i != m_players.end(); ++i)
-        if (Player *plr = sObjectMgr.GetPlayer(i->first))
+    {
+        Player* plr = sObjectMgr.GetPlayer(i->first);
+        if (plr)
             if (!p || !plr->GetSocial()->HasIgnore(p))
                 plr->GetSession()->SendPacket(data);
+    }
 }
 
 void Channel::SendToOne(WorldPacket *data, ObjectGuid who)

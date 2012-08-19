@@ -84,7 +84,10 @@ void instance_ramparts::SetData(uint32 uiType, uint32 uiData)
                 return;
             }
             if (uiData == DONE && m_auiEncounter[0] == DONE)
+            {
                 DoRespawnGameObject(instance->IsRegularDifficulty() ? GO_FEL_IRON_CHEST : GO_FEL_IRON_CHEST_H, HOUR);
+                DoToggleGameObjectFlags(instance->IsRegularDifficulty() ? GO_FEL_IRON_CHEST : GO_FEL_IRON_CHEST_H, GO_FLAG_NO_INTERACT, false);
+            }
             if (uiData == FAIL && m_auiEncounter[1] != FAIL)
                 DoFailVazruden();
 
@@ -112,7 +115,7 @@ void instance_ramparts::DoFailVazruden()
 
     // Restore Sentries (counter and respawn them)
     m_uiSentryCounter = 0;
-    for (GUIDList::const_iterator itr = m_lSentryGUIDs.begin(); itr != m_lSentryGUIDs.end(); ++itr)
+    for (GuidList::const_iterator itr = m_lSentryGUIDs.begin(); itr != m_lSentryGUIDs.end(); ++itr)
     {
         if (Creature* pSentry = instance->GetCreature(*itr))
             pSentry->Respawn();

@@ -473,7 +473,7 @@ struct MANGOS_DLL_DECL boss_thaddiusAddsAI : public ScriptedAI
     {
         Reset();                                            // Needed to reset the flags properly
 
-        GUIDList lTeslaGUIDList;
+        GuidList lTeslaGUIDList;
         if (!m_pInstance)
             return;
 
@@ -481,7 +481,7 @@ struct MANGOS_DLL_DECL boss_thaddiusAddsAI : public ScriptedAI
         if (lTeslaGUIDList.empty())
             return;
 
-        for (GUIDList::const_iterator itr = lTeslaGUIDList.begin(); itr != lTeslaGUIDList.end(); ++itr)
+        for (GuidList::const_iterator itr = lTeslaGUIDList.begin(); itr != lTeslaGUIDList.end(); ++itr)
         {
             if (Creature* pTesla = m_pInstance->instance->GetCreature(*itr))
             {
@@ -555,9 +555,9 @@ struct MANGOS_DLL_DECL boss_thaddiusAddsAI : public ScriptedAI
                             m_bBothDead = true;             // Now both adds are counting dead
                             pOtherAI->m_bBothDead = true;
                             // Set both Teslas to overload
-                            GUIDList lTeslaGUIDList;
+                            GuidList lTeslaGUIDList;
                             m_pInstance->GetThadTeslaCreatures(lTeslaGUIDList);
-                            for (GUIDList::const_iterator itr = lTeslaGUIDList.begin(); itr != lTeslaGUIDList.end(); ++itr)
+                            for (GuidList::const_iterator itr = lTeslaGUIDList.begin(); itr != lTeslaGUIDList.end(); ++itr)
                             {
                                 if (Creature* pTesla = m_pInstance->instance->GetCreature(*itr))
                                 {
@@ -596,7 +596,9 @@ struct MANGOS_DLL_DECL boss_thaddiusAddsAI : public ScriptedAI
                 DoCastSpellIfCan(m_creature, SPELL_MAGNETIC_PULL_B);
             m_uiHoldTimer = 3000;
             m_uiMagneticPullTimer = 30*IN_MILLISECONDS;
-        }else m_uiMagneticPullTimer -= uiDiff;
+        }
+        else
+            m_uiMagneticPullTimer -= uiDiff;
 
         UpdateAddAI(uiDiff);                    // For Add Specific Abilities
 

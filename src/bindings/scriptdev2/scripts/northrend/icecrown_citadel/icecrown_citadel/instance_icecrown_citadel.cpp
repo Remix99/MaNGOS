@@ -124,7 +124,7 @@ void instance_icecrown_spire::OnCreatureCreate(Creature* pCreature)
         case NPC_SPINESTALKER:
         case NPC_STINKY:
         case NPC_PRECIOUS:
-        case NPC_COMBAT_TRIGGER:
+        case NPC_GREEN_DRAGON_COMBAT_TRIGGER:
         case NPC_FROSTMOURNE_TRIGGER:
         case NPC_FROSTMOURNE_HOLDER:
         case NPC_BLOOD_ORB_CONTROL:
@@ -223,6 +223,10 @@ void instance_icecrown_spire::OnObjectCreate(GameObject* pGo)
                 pGo->SetGoState(GO_STATE_ACTIVE);
             m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
             break;
+        case GO_DRINK_ME_TABLE:
+            pGo->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NO_INTERACT);
+            m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
+            break;
         case GO_SAURFANG_CACHE_10:
         case GO_SAURFANG_CACHE_25:
         case GO_SAURFANG_CACHE_10_H:
@@ -261,7 +265,7 @@ void instance_icecrown_spire::OnObjectCreate(GameObject* pGo)
         case GO_GREEN_DRAGON_DOOR_1:
         case GO_BLOODWING_DOOR:
         case GO_ORATORY_DOOR:
-	case GO_SINDRAGOSA_ICE_WALL:
+        case GO_SINDRAGOSA_ICE_WALL:
             m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
             break;
     }
@@ -269,6 +273,9 @@ void instance_icecrown_spire::OnObjectCreate(GameObject* pGo)
 
 void instance_icecrown_spire::SetData(uint32 uiType, uint32 uiData)
 {
+
+    bool bChange = bool(m_auiEncounter[uiType] != uiData);
+
     switch(uiType)
     {
         case TYPE_TELEPORT:
@@ -396,6 +403,25 @@ void instance_icecrown_spire::SetData(uint32 uiType, uint32 uiData)
 
             DoUseDoorOrButton(GO_CRIMSON_HALL_DOOR);
 
+            if (bChange && uiData == IN_PROGRESS)
+            {
+                if (Creature* prince = GetSingleCreatureFromStorage(NPC_TALDARAM))
+                    UpdateSpecialEncounterState(ENCOUNTER_FRAME_ENGAGE, prince->GetObjectGuid());
+                if (Creature* prince = GetSingleCreatureFromStorage(NPC_VALANAR))
+                    UpdateSpecialEncounterState(ENCOUNTER_FRAME_ENGAGE, prince->GetObjectGuid());
+                if (Creature* prince = GetSingleCreatureFromStorage(NPC_KELESETH))
+                    UpdateSpecialEncounterState(ENCOUNTER_FRAME_ENGAGE, prince->GetObjectGuid());
+            }
+            else if (bChange)
+            {
+                if (Creature* prince = GetSingleCreatureFromStorage(NPC_TALDARAM))
+                    UpdateSpecialEncounterState(ENCOUNTER_FRAME_DISENGAGE, prince->GetObjectGuid());
+                if (Creature* prince = GetSingleCreatureFromStorage(NPC_VALANAR))
+                    UpdateSpecialEncounterState(ENCOUNTER_FRAME_DISENGAGE, prince->GetObjectGuid());
+                if (Creature* prince = GetSingleCreatureFromStorage(NPC_KELESETH))
+                    UpdateSpecialEncounterState(ENCOUNTER_FRAME_DISENGAGE, prince->GetObjectGuid());
+            }
+
             if (uiData == DONE)
             {
                 DoUseDoorOrButton(GO_COUNCIL_DOOR_1);
@@ -432,6 +458,14 @@ void instance_icecrown_spire::SetData(uint32 uiType, uint32 uiData)
                 DoUseDoorOrButton(GO_VALITHRIA_DOOR_4);
             }
 
+            if (Creature* valithria = GetSingleCreatureFromStorage(NPC_VALITHRIA))
+            {
+                if (bChange && uiData == IN_PROGRESS)
+                    UpdateSpecialEncounterState(ENCOUNTER_FRAME_ENGAGE, valithria->GetObjectGuid());
+                else if (bChange)
+                    UpdateSpecialEncounterState(ENCOUNTER_FRAME_DISENGAGE, valithria->GetObjectGuid());
+            }
+
             if (uiData == DONE)
             {
                 DoUseDoorOrButton(GO_GREEN_DRAGON_DOOR_2);
@@ -451,7 +485,7 @@ void instance_icecrown_spire::SetData(uint32 uiType, uint32 uiData)
             m_auiEncounter[TYPE_SINDRAGOSA] = uiData;
 
             DoUseDoorOrButton(GO_SINDRAGOSA_ENTRANCE);
-	    DoUseDoorOrButton(GO_SINDRAGOSA_ICE_WALL);
+            DoUseDoorOrButton(GO_SINDRAGOSA_ICE_WALL);
 
             if (uiData == DONE)
             {

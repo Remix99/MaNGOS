@@ -43,56 +43,63 @@ struct MANGOS_DLL_DECL npc_shenthulAI : public ScriptedAI
 {
     npc_shenthulAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
 
-    bool CanTalk;
-    bool CanEmote;
-    uint32 Salute_Timer;
-    uint32 Reset_Timer;
+    uint32 m_uiSaluteTimer;
+    uint32 m_uiResetTimer;
+
     ObjectGuid m_playerGuid;
 
     void Reset()
     {
-        CanTalk = false;
-        CanEmote = false;
-        Salute_Timer = 6000;
-        Reset_Timer = 0;
+        m_uiSaluteTimer = 0;
+        m_uiResetTimer = 0;
+
         m_playerGuid.Clear();
     }
 
-    void ReceiveEmote(Player* pPlayer, uint32 emote)
+    void ReceiveEmote(Player* pPlayer, uint32 uiTextEmote)
     {
-        if (emote == TEXTEMOTE_SALUTE && pPlayer->GetQuestStatus(QUEST_SHATTERED_SALUTE) == QUEST_STATUS_INCOMPLETE)
+        if (m_uiResetTimer && uiTextEmote == TEXTEMOTE_SALUTE && pPlayer->GetQuestStatus(QUEST_SHATTERED_SALUTE) == QUEST_STATUS_INCOMPLETE)
         {
-            if (CanEmote)
-            {
-                pPlayer->AreaExploredOrEventHappens(QUEST_SHATTERED_SALUTE);
-                Reset();
-            }
+            pPlayer->AreaExploredOrEventHappens(QUEST_SHATTERED_SALUTE);
+            EnterEvadeMode();
         }
     }
 
-    void UpdateAI(const uint32 diff)
+    void DoStartQuestEvent(Player* pPlayer)
     {
-        if (CanEmote)
+        m_playerGuid = pPlayer->GetObjectGuid();
+        m_uiSaluteTimer = 6000;
+    }
+
+    void UpdateAI(const uint32 uiDiff)
+    {
+        if (m_uiResetTimer)
         {
-            if (Reset_Timer < diff)
+            if (m_uiResetTimer <= uiDiff)
             {
                 if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
                 {
                     if (pPlayer->GetTypeId() == TYPEID_PLAYER && pPlayer->GetQuestStatus(QUEST_SHATTERED_SALUTE) == QUEST_STATUS_INCOMPLETE)
                         pPlayer->FailQuest(QUEST_SHATTERED_SALUTE);
                 }
-                Reset();
-            } else Reset_Timer -= diff;
+
+                m_uiResetTimer = 0;
+                EnterEvadeMode();
+            }
+            else
+                m_uiResetTimer -= uiDiff;
         }
 
-        if (CanTalk && !CanEmote)
+        if (m_uiSaluteTimer)
         {
-            if (Salute_Timer < diff)
+            if (m_uiSaluteTimer <= uiDiff)
             {
                 m_creature->HandleEmote(EMOTE_ONESHOT_SALUTE);
-                CanEmote = true;
-                Reset_Timer = 60000;
-            } else Salute_Timer -= diff;
+                m_uiResetTimer = 60000;
+                m_uiSaluteTimer = 0;
+            }
+            else
+                m_uiSaluteTimer -= uiDiff;
         }
 
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
@@ -112,11 +119,9 @@ bool QuestAccept_npc_shenthul(Player* pPlayer, Creature* pCreature, const Quest*
     if (pQuest->GetQuestId() == QUEST_SHATTERED_SALUTE)
     {
         if (npc_shenthulAI* pShenAI = dynamic_cast<npc_shenthulAI*>(pCreature->AI()))
-        {
-            pShenAI->CanTalk = true;
-            pShenAI->m_playerGuid = pPlayer->GetObjectGuid();
-        }
+            pShenAI->DoStartQuestEvent(pPlayer);
     }
+
     return true;
 }
 
@@ -124,56 +129,17 @@ bool QuestAccept_npc_shenthul(Player* pPlayer, Creature* pCreature, const Quest*
 ## npc_thrall_warchief
 ######*/
 
-#define QUEST_6566              6566
-
-#define SPELL_CHAIN_LIGHTNING   16033
-#define SPELL_SHOCK             16034
-
-//TODO: verify abilities/timers
-struct MANGOS_DLL_DECL npc_thrall_warchiefAI : public ScriptedAI
+enum
 {
-    npc_thrall_warchiefAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
-
-    uint32 ChainLightning_Timer;
-    uint32 Shock_Timer;
-
-    void Reset()
-    {
-        ChainLightning_Timer = 2000;
-        Shock_Timer = 8000;
-    }
-
-    void UpdateAI(const uint32 diff)
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-            return;
-
-        if (ChainLightning_Timer < diff)
-        {
-            DoCastSpellIfCan(m_creature->getVictim(),SPELL_CHAIN_LIGHTNING);
-            ChainLightning_Timer = 9000;
-        }else ChainLightning_Timer -= diff;
-
-        if (Shock_Timer < diff)
-        {
-            DoCastSpellIfCan(m_creature->getVictim(),SPELL_SHOCK);
-            Shock_Timer = 15000;
-        }else Shock_Timer -= diff;
-
-        DoMeleeAttackIfReady();
-    }
+    QUEST_ID_WHAT_THE_WIND_CARRIES      = 6566,
 };
-CreatureAI* GetAI_npc_thrall_warchief(Creature* pCreature)
-{
-    return new npc_thrall_warchiefAI(pCreature);
-}
 
 bool GossipHello_npc_thrall_warchief(Player* pPlayer, Creature* pCreature)
 {
     if (pCreature->isQuestGiver())
         pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
 
-    if (pPlayer->GetQuestStatus(QUEST_6566) == QUEST_STATUS_INCOMPLETE)
+    if (pPlayer->GetQuestStatus(QUEST_ID_WHAT_THE_WIND_CARRIES) == QUEST_STATUS_INCOMPLETE)
         pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Please share your wisdom with me, Warchief.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
 
     pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
@@ -210,7 +176,7 @@ bool GossipSelect_npc_thrall_warchief(Player* pPlayer, Creature* pCreature, uint
             break;
         case GOSSIP_ACTION_INFO_DEF+7:
             pPlayer->CLOSE_GOSSIP_MENU();
-            pPlayer->AreaExploredOrEventHappens(QUEST_6566);
+            pPlayer->AreaExploredOrEventHappens(QUEST_ID_WHAT_THE_WIND_CARRIES);
             break;
     }
     return true;
@@ -316,7 +282,6 @@ void AddSC_orgrimmar()
 
     pNewScript = new Script;
     pNewScript->Name = "npc_thrall_warchief";
-    pNewScript->GetAI = &GetAI_npc_thrall_warchief;
     pNewScript->pGossipHello =  &GossipHello_npc_thrall_warchief;
     pNewScript->pGossipSelect = &GossipSelect_npc_thrall_warchief;
     pNewScript->RegisterSelf();

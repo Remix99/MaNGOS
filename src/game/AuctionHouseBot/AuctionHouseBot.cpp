@@ -4,6 +4,7 @@
 #include "../ObjectMgr.h"
 #include "../AuctionHouseMgr.h"
 #include "SystemConfig.h"
+#include "../SQLStorages.h"
 
 // Format is YYYYMMDDRR where RR is the change in the conf file
 // for that day.
@@ -1780,7 +1781,8 @@ void AuctionHouseBot::PrepareStatusInfos(AuctionHouseBotStatusInfo& statusInfo)
         for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
         {
             AuctionEntry *Aentry = itr->second;
-            if (Item *item = sAuctionMgr.GetAItem(Aentry->itemGuidLow))
+            Item *item = sAuctionMgr.GetAItem(Aentry->itemGuidLow);
+            if (item)
             {
                 ItemPrototype const *prototype = item->GetProto();
                 if (!Aentry->owner)                         // Add only ahbot items

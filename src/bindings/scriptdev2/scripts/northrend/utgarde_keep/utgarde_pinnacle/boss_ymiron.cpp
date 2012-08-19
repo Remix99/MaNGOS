@@ -123,7 +123,7 @@ struct MANGOS_DLL_DECL boss_ymironAI: public ScriptedAI
 
         uint32 m_uiSpecialCast;
 
-        GUIDList addsList;
+        GuidList addsList;
 
         void Reset()
         {
@@ -196,7 +196,7 @@ struct MANGOS_DLL_DECL boss_ymironAI: public ScriptedAI
             {
                 m_pInstance->SetData(TYPE_YMIRON, FAIL);
             }
-            for(GUIDList::iterator itr = addsList.begin(); itr != addsList.end(); ++itr)
+            for(GuidList::iterator itr = addsList.begin(); itr != addsList.end(); ++itr)
             {
                 if (Creature * pTemp = m_creature->GetMap()->GetCreature(*itr))
                 {
@@ -211,7 +211,7 @@ struct MANGOS_DLL_DECL boss_ymironAI: public ScriptedAI
             {
                 m_pInstance->SetData(TYPE_YMIRON, DONE);
             }
-            for(GUIDList::iterator itr = addsList.begin(); itr != addsList.end(); ++itr)
+            for(GuidList::iterator itr = addsList.begin(); itr != addsList.end(); ++itr)
             {
                 if (Creature * pTemp = m_creature->GetMap()->GetCreature(*itr))
                 {

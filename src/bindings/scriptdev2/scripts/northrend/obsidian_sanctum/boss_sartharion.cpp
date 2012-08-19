@@ -289,7 +289,7 @@ struct MANGOS_DLL_DECL boss_sartharionAI : public ScriptedAI
                     pVesp->AI()->EnterEvadeMode();
             }
 
-            m_pInstance->m_lHitByVolcanoGUIDList.clear();
+            m_pInstance->m_lHitByVolcanoGuidList.clear();
         }
 
         m_bTenebronHelpedInFight = false;
@@ -304,14 +304,14 @@ struct MANGOS_DLL_DECL boss_sartharionAI : public ScriptedAI
 
         m_pInstance->SetData(TYPE_SARTHARION_EVENT, FAIL);
 
-        if (m_pInstance->m_lBlazesGUIDList.empty() )
+        if (m_pInstance->m_lBlazesGuidList.empty() )
             return;
 
-        for (GUIDList::iterator i = m_pInstance->m_lBlazesGUIDList.begin(); i != m_pInstance->m_lBlazesGUIDList.end(); i++)
+        for (GuidList::iterator i = m_pInstance->m_lBlazesGuidList.begin(); i != m_pInstance->m_lBlazesGuidList.end(); i++)
             if (Creature *pBlaze = m_pInstance->instance->GetCreature(*i))
                 if (pBlaze->isAlive())
                     pBlaze->ForcedDespawn();
-        m_pInstance->m_lBlazesGUIDList.clear();
+        m_pInstance->m_lBlazesGuidList.clear();
     }
 
     void Aggro(Unit* pWho)
@@ -326,7 +326,7 @@ struct MANGOS_DLL_DECL boss_sartharionAI : public ScriptedAI
             // trash mobs in the area should help Sartharion in the fight
             if (!m_pInstance->m_lTrashMobsGUIDlist.empty())
             {
-                for (GUIDList::iterator itr = m_pInstance->m_lTrashMobsGUIDlist.begin(); itr != m_pInstance->m_lTrashMobsGUIDlist.end(); itr++)
+                for (GuidList::iterator itr = m_pInstance->m_lTrashMobsGUIDlist.begin(); itr != m_pInstance->m_lTrashMobsGUIDlist.end(); itr++)
                 {
                     if (Creature *pCreature = m_pInstance->instance->GetCreature(*itr) )
                         pCreature->AI()->AttackStart(pWho);
@@ -662,8 +662,8 @@ struct MANGOS_DLL_DECL boss_sartharionAI : public ScriptedAI
                         }
                     }
                 }
-                if (!m_pInstance->m_lEggsGUIDList.empty())
-                    for (GUIDList::iterator itr = m_pInstance->m_lEggsGUIDList.begin(); itr != m_pInstance->m_lEggsGUIDList.end(); ++itr)
+                if (!m_pInstance->m_lEggsGuidList.empty())
+                    for (GuidList::iterator itr = m_pInstance->m_lEggsGuidList.begin(); itr != m_pInstance->m_lEggsGuidList.end(); ++itr)
                         if (Creature* pTemp = m_pInstance->instance->GetCreature(*itr))
                             if (pTemp->isAlive())
                                 bNoAliveTwilightRealm = false;
@@ -813,14 +813,11 @@ struct MANGOS_DLL_DECL dummy_dragonAI : public ScriptedAI
             return;
         }
 
-        //get amount of common points
-        uint32 uiCommonWPCount = sizeof(m_aDragonCommon)/sizeof(Waypoint);
-
         //increase
         m_uiWaypointId = uiPointId+1;
 
         //if we have reached a point bigger or equal to count, it mean we must reset to point 0
-        if (m_uiWaypointId >= uiCommonWPCount)
+        if (m_uiWaypointId >= countof(m_aDragonCommon))
         {
             if (!m_bCanMoveFree)
                 m_bCanMoveFree = true;
@@ -883,7 +880,8 @@ struct MANGOS_DLL_DECL dummy_dragonAI : public ScriptedAI
 
         //using a grid search here seem to be more efficient than caching all four guids
         //in instance script and calculate range to each.
-        if (GameObject* pPortal = GetClosestGameObjectWithEntry(m_creature, GO_TWILIGHT_PORTAL, 100.0f))
+        GameObject* pPortal = m_creature->SummonGameobject(GO_TWILIGHT_PORTAL, m_creature->GetPositionX()+frand(-10.0f, 10.0f), m_creature->GetPositionY()+frand(-10.0f, 10.0f), m_creature->GetPositionZ(), 0.0f, 0);
+        if (pPortal)
         {
             Creature* pAcolyte = NULL;
             switch(m_creature->GetEntry())
@@ -965,11 +963,10 @@ struct MANGOS_DLL_DECL dummy_dragonAI : public ScriptedAI
 
             DoRaidWhisper(iTextId);
 
-            //By using SetRespawnTime() we will actually "spawn" the object with our defined time.
+            //By using SetRespawnTime() with SetSpawnedByDefault(false) we will actually "despawn" the object with our defined time.
             //Once time is up, portal will disappear again.
-            
+            pPortal->SetSpawnedByDefault(false);
             pPortal->SetRespawnTime(iPortalRespawnTime);
-            pPortal->Refresh();
 
             //Unclear what are expected to happen if one drake has a portal open already
             //Refresh respawnTime so time again are set to 30secs?
@@ -1000,8 +997,8 @@ struct MANGOS_DLL_DECL dummy_dragonAI : public ScriptedAI
                     }
                 }
 
-            if (!m_pInstance->m_lEggsGUIDList.empty())
-                for (GUIDList::iterator itr = m_pInstance->m_lEggsGUIDList.begin(); itr != m_pInstance->m_lEggsGUIDList.end(); ++itr)
+            if (!m_pInstance->m_lEggsGuidList.empty())
+                for (GuidList::iterator itr = m_pInstance->m_lEggsGuidList.begin(); itr != m_pInstance->m_lEggsGuidList.end(); ++itr)
                     if (Creature* pTemp = m_pInstance->instance->GetCreature(*itr))
                         if (pTemp->isAlive())
                         {
@@ -1028,8 +1025,8 @@ struct MANGOS_DLL_DECL dummy_dragonAI : public ScriptedAI
                 m_pInstance->SetData(TYPE_TENEBRON, DONE);
                 iTextId = SAY_TENEBRON_DEATH;
                 
-                if (!m_pInstance->m_lEggsGUIDList.empty())
-                    for (GUIDList::iterator itr = m_pInstance->m_lEggsGUIDList.begin(); itr != m_pInstance->m_lEggsGUIDList.end(); ++itr)
+                if (!m_pInstance->m_lEggsGuidList.empty())
+                    for (GuidList::iterator itr = m_pInstance->m_lEggsGuidList.begin(); itr != m_pInstance->m_lEggsGuidList.end(); ++itr)
                         if (Creature* pEgg = m_pInstance->instance->GetCreature(*itr))
                             pEgg->ForcedDespawn();
                 break;
@@ -1132,19 +1129,19 @@ struct MANGOS_DLL_DECL mob_tenebronAI : public dummy_dragonAI
 
         m_pInstance->SetData(TYPE_TENEBRON, NOT_STARTED);
 
-        if (!m_pInstance->m_lEggsGUIDList.empty())
-            for (GUIDList::iterator i = m_pInstance->m_lEggsGUIDList.begin(); i != m_pInstance->m_lEggsGUIDList.end(); i++)
+        if (!m_pInstance->m_lEggsGuidList.empty())
+            for (GuidList::iterator i = m_pInstance->m_lEggsGuidList.begin(); i != m_pInstance->m_lEggsGuidList.end(); i++)
                 if (Creature *pEgg = m_pInstance->instance->GetCreature(*i))
                     if (pEgg->isAlive())
                         pEgg->ForcedDespawn();
-        m_pInstance->m_lEggsGUIDList.clear();
+        m_pInstance->m_lEggsGuidList.clear();
 
-        if (!m_pInstance->m_lWhelpsGUIDList.empty())
-            for (GUIDList::iterator i = m_pInstance->m_lWhelpsGUIDList.begin(); i != m_pInstance->m_lWhelpsGUIDList.end(); i++)
+        if (!m_pInstance->m_lWhelpsGuidList.empty())
+            for (GuidList::iterator i = m_pInstance->m_lWhelpsGuidList.begin(); i != m_pInstance->m_lWhelpsGuidList.end(); i++)
                 if (Creature *pWhelp = m_pInstance->instance->GetCreature(*i))
                     if (pWhelp->isAlive())
                         pWhelp->ForcedDespawn();
-        m_pInstance->m_lWhelpsGUIDList.clear();
+        m_pInstance->m_lWhelpsGuidList.clear();
     }
 
     void Aggro(Unit* pWho)
@@ -1579,7 +1576,7 @@ struct MANGOS_DLL_DECL mob_twilight_eggsAI : public ScriptedAI
         if (!m_pInstance)
             return;
 
-        m_pInstance->m_lWhelpsGUIDList.push_back(pCreature->GetObjectGuid());
+        m_pInstance->m_lWhelpsGuidList.push_back(pCreature->GetObjectGuid());
         pCreature->SetPhaseMask(1, true);
         pCreature->SetInCombatWithZone();
         m_creature->ForcedDespawn();
@@ -1618,14 +1615,14 @@ struct MANGOS_DLL_DECL mob_twilight_egg_controllerAI : public ScriptedAI
         else
             uiEggEntry = NPC_TWILIGHT_EGG;
 
-        m_pInstance->m_lEggsGUIDList.clear();
+        m_pInstance->m_lEggsGuidList.clear();
 
         for (uint8 i=0; i<6; ++i)
         {
             if (Creature* pEgg = m_creature->SummonCreature(uiEggEntry, m_creature->GetPositionX()-10+urand(0, 20), m_creature->GetPositionY()-10+urand(0, 20), m_creature->GetPositionZ()+1.0f, 0, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 30000))
             {
                 pEgg->SetPhaseMask(16, true);
-                m_pInstance->m_lEggsGUIDList.push_back(pEgg->GetObjectGuid());
+                m_pInstance->m_lEggsGuidList.push_back(pEgg->GetObjectGuid());
             }
         }
     }
@@ -1647,10 +1644,10 @@ struct MANGOS_DLL_DECL mob_twilight_egg_controllerAI : public ScriptedAI
         else
             return;
 
-        if (m_pInstance->m_lEggsGUIDList.empty())
+        if (m_pInstance->m_lEggsGuidList.empty())
             return;
 
-        for (GUIDList::iterator i = m_pInstance->m_lEggsGUIDList.begin(); i != m_pInstance->m_lEggsGUIDList.end(); i++)
+        for (GuidList::iterator i = m_pInstance->m_lEggsGuidList.begin(); i != m_pInstance->m_lEggsGuidList.end(); i++)
             if (Creature *pEgg = m_pInstance->instance->GetCreature(*i))
                 if (pEgg->isAlive())
                     pEgg->CastSpell(pEgg, spell, true);
@@ -1751,7 +1748,7 @@ struct MANGOS_DLL_DECL mob_fire_cycloneAI : public ScriptedAI
     {
         if (spellInfo->Id == SPELL_LAVA_STRIKE_DMG)
             if (m_pInstance && pVictim)
-                m_pInstance->m_lHitByVolcanoGUIDList.push_back(pVictim->GetObjectGuid());
+                m_pInstance->m_lHitByVolcanoGuidList.push_back(pVictim->GetObjectGuid());
     }
 
     void JustSummoned(Creature* pSummoned)
@@ -1765,7 +1762,7 @@ struct MANGOS_DLL_DECL mob_fire_cycloneAI : public ScriptedAI
             {
                 if(((boss_sartharionAI*)pSartharion->AI())->m_bIsSoftEnraged)
                 {
-                    m_pInstance->m_lBlazesGUIDList.push_back(pSummoned->GetObjectGuid());
+                    m_pInstance->m_lBlazesGuidList.push_back(pSummoned->GetObjectGuid());
                     pSummoned->setFaction(14);
                     pSummoned->SetInCombatWithZone();
                 }
@@ -1773,7 +1770,7 @@ struct MANGOS_DLL_DECL mob_fire_cycloneAI : public ScriptedAI
                 {
                     if (roll_chance_i(m_bIsRegularMode ? 8 : 18))
                     {
-                        m_pInstance->m_lBlazesGUIDList.push_back(pSummoned->GetObjectGuid());
+                        m_pInstance->m_lBlazesGuidList.push_back(pSummoned->GetObjectGuid());
                         pSummoned->setFaction(14);
                         pSummoned->SetInCombatWithZone();
                     }

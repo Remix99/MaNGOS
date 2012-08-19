@@ -68,7 +68,7 @@ struct MANGOS_DLL_DECL boss_ionarAI : public ScriptedAI
 
     ScriptedInstance* m_pInstance;
 
-    GUIDList m_lSparkGUIDList;
+    GuidList m_lSparkGuidList;
 
     bool m_bIsRegularMode;
 
@@ -159,7 +159,7 @@ struct MANGOS_DLL_DECL boss_ionarAI : public ScriptedAI
 
     void DespawnSpark()
     {
-        for (GUIDList::const_iterator itr = m_lSparkGUIDList.begin(); itr != m_lSparkGUIDList.end(); ++itr)
+        for (GuidList::const_iterator itr = m_lSparkGuidList.begin(); itr != m_lSparkGuidList.end(); ++itr)
         {
             if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
             {
@@ -168,13 +168,13 @@ struct MANGOS_DLL_DECL boss_ionarAI : public ScriptedAI
             }
         }
 
-        m_lSparkGUIDList.clear();
+        m_lSparkGuidList.clear();
     }
 
     // make sparks come back
     void CallBackSparks()
     {
-        for (GUIDList::const_iterator itr = m_lSparkGUIDList.begin(); itr != m_lSparkGUIDList.end(); ++itr)
+        for (GuidList::const_iterator itr = m_lSparkGuidList.begin(); itr != m_lSparkGuidList.end(); ++itr)
         {
             if (Creature* pSpark = m_creature->GetMap()->GetCreature(*itr))
             {
@@ -206,7 +206,7 @@ struct MANGOS_DLL_DECL boss_ionarAI : public ScriptedAI
             if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
                 pSummoned->AI()->AttackStart(pTarget);
 
-            m_lSparkGUIDList.push_back(pSummoned->GetObjectGuid());
+            m_lSparkGuidList.push_back(pSummoned->GetObjectGuid());
         }
     }
 

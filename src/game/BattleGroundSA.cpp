@@ -96,7 +96,7 @@ BattleGroundSA::~BattleGroundSA()
 {
 }
 
-void BattleGroundSA::FillInitialWorldStates(WorldPacket& data, uint32& count)
+void BattleGroundSA::FillInitialWorldStates()
 {
     for (uint8 i = 0; i < BG_SA_GRY_MAX; ++i)
     {
@@ -108,22 +108,22 @@ void BattleGroundSA::FillInitialWorldStates(WorldPacket& data, uint32& count)
 
     for (uint8 i = 0; i < BG_SA_MAX_WS; ++i)
     {
-        FillInitialWorldState(data, count, BG_SA_WorldStatusA[i], (GetDefender() == HORDE) ? 1 : 0);
-        FillInitialWorldState(data, count, BG_SA_WorldStatusH[i], (GetDefender() == HORDE) ? 0 : 1);
+        FillInitialWorldState(BG_SA_WorldStatusA[i], (GetDefender() == HORDE) ? 1 : 0);
+        FillInitialWorldState(BG_SA_WorldStatusH[i], (GetDefender() == HORDE) ? 0 : 1);
     }
 
     for (uint32 z = 0; z < BG_SA_GATE_MAX; ++z)
     {
-        FillInitialWorldState(data, count, BG_SA_GateStatus[z], GateStatus[z]);
+        FillInitialWorldState(BG_SA_GateStatus[z], GateStatus[z]);
         if ((z == 0) && (GetDefender() == HORDE))                                               // Ancient gate changes color depending on the defender
-            FillInitialWorldState(data, count, BG_SA_GateStatus[z], (GateStatus[z] + 3));
+            FillInitialWorldState(BG_SA_GateStatus[z], (GateStatus[z] + 3));
     }
 
     //Time will be sent on first update...
-    FillInitialWorldState(data, count, BG_SA_ENABLE_TIMER, TimerEnabled ? uint32(1) : uint32(0));
-    FillInitialWorldState(data, count, BG_SA_TIMER_MINUTES, uint32(0));
-    FillInitialWorldState(data, count, BG_SA_TIMER_10SEC, uint32(0));
-    FillInitialWorldState(data, count, BG_SA_TIMER_SEC, uint32(0));
+    FillInitialWorldState(BG_SA_ENABLE_TIMER, TimerEnabled ? uint32(1) : uint32(0));
+    FillInitialWorldState(BG_SA_TIMER_MINUTES, uint32(0));
+    FillInitialWorldState(BG_SA_TIMER_10SEC, uint32(0));
+    FillInitialWorldState(BG_SA_TIMER_SEC, uint32(0));
 }
 
 void BattleGroundSA::StartShips()
@@ -138,7 +138,8 @@ void BattleGroundSA::StartShips()
     {
         for (BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
         {
-            if (Player* p = sObjectMgr.GetPlayer(itr->first))
+            Player* p = sObjectMgr.GetPlayer(itr->first);
+            if (p)
             {
                 UpdateData data;
                 WorldPacket pkt;
@@ -201,8 +202,11 @@ void BattleGroundSA::Update(uint32 diff)
                 RoundScores[0].time = BG_SA_ROUNDLENGTH;
 
                 for (BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
-                    if (Player *plr = sObjectMgr.GetPlayer(itr->first))
+                {
+                    Player* plr = sObjectMgr.GetPlayer(itr->first);
+                    if (plr)
                         plr->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BE_SPELL_TARGET, BG_SA_END_OF_ROUND);
+                }
 
                 ResetBattle(0, defender);
             }
@@ -212,8 +216,11 @@ void BattleGroundSA::Update(uint32 diff)
                 RoundScores[1].winner = GetDefender();
 
                 for (BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
-                    if (Player *plr = sObjectMgr.GetPlayer(itr->first))
+                {
+                    Player* plr = sObjectMgr.GetPlayer(itr->first);
+                    if (plr)
                         plr->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BE_SPELL_TARGET, BG_SA_END_OF_ROUND);
+                }
 
                 if (RoundScores[0].winner == GetDefender())
                     EndBattleGround(GetDefender());
@@ -268,7 +275,8 @@ void BattleGroundSA::Update(uint32 diff)
 
             for (BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
             {
-                if (Player* plr = sObjectMgr.GetPlayer(itr->first))
+                Player* plr = sObjectMgr.GetPlayer(itr->first);
+                if (plr)
                     plr->RemoveAurasDueToSpell(SPELL_PREPARATION);
             }
         }
@@ -433,7 +441,8 @@ void BattleGroundSA::UpdatePhase()
         // adding Preparation buff for the 2nd round, has to be added in status STATUS_WAIT_JOIN
         for (BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
         {
-            if (Player* plr = sObjectMgr.GetPlayer(itr->first))
+            Player* plr = sObjectMgr.GetPlayer(itr->first);
+            if (plr)
                 plr->CastSpell(plr, SPELL_PREPARATION, true);
         }
         HandleInteractivity();
@@ -482,7 +491,8 @@ bool BattleGroundSA::SetupShips()
     {
         for (BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
         {
-            if (Player* plr = sObjectMgr.GetPlayer(itr->first))
+            Player* plr = sObjectMgr.GetPlayer(itr->first);
+            if (plr)
                 SendTransportsRemove(plr);
         }
     }
@@ -523,7 +533,8 @@ bool BattleGroundSA::SetupShips()
 
     for (BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
     {
-        if (Player* plr = sObjectMgr.GetPlayer(itr->first))
+        Player* plr = sObjectMgr.GetPlayer(itr->first);
+        if (plr)
             SendTransportInit(plr);
     }
     return true;
@@ -811,9 +822,12 @@ void BattleGroundSA::EventPlayerDamageGO(Player *player, GameObject* target_obj,
                 //Achievement Storm the Beach (1310)
                 for (BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
                 {
-                    if (Player *plr = sObjectMgr.GetPlayer(itr->first))
+                    Player* plr = sObjectMgr.GetPlayer(itr->first);
+                    if (plr)
+                    {
                         if (plr->GetTeam() != defender)
                             plr->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BE_SPELL_TARGET, BG_SA_STORM_THE_BEACH);
+                    }
                 }
 
                 if (Phase == SA_ROUND_ONE) // Victory at first round
@@ -874,6 +888,7 @@ int32 BattleGroundSA::_GatesName(GameObject* obj)
         case BG_SA_GO_GATES_YELLOW_MOON:  return LANG_BG_SA_GATE_YELLOW_MOON;
         default:
             MANGOS_ASSERT(0);
+            break;
     }
     return 0;
 }
@@ -887,6 +902,7 @@ int32 BattleGroundSA::_GydName(uint8 gyd)
         case 2: return LANG_BG_SA_SOUTH_GRAVEYARD;
         default:
             MANGOS_ASSERT(0);
+            break;
     }
     return 0;
 }

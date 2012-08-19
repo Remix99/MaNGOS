@@ -29,18 +29,18 @@ enum
     TYPE_LICH_KING              = 5,
     TYPE_ANUBARAK               = 6,
     TYPE_COUNTER                = 7,
-    TYPE_EVENT                  = 8,
-    MAX_ENCOUNTERS              = 9,
+    TYPE_DEATHS                 = 8,
+    TYPE_EVENT                  = 9,
+    MAX_ENCOUNTERS              = 10,
 
     TYPE_UPPER_BACK_PAIN        = 0,
-    TYPE_SIXTY_PAIN_SPIKE       = 1,
-    TYPE_SALT_AND_PEPPER        = 2,
-    TYPE_SKILL                  = 3,
-    TYPE_MAD_SKILL              = 4,
-    TYPE_INSANITY               = 5,
-    TYPE_DEDICATED_INSANITY     = 6,
-    TYPE_IMMORTALITY            = 7,
-    MAX_SPECIAL_ACHIEV_CRITS    = 8,
+    TYPE_THREE_SIXTY_PAIN_SPIKE = 1,
+    TYPE_SKILL                  = 2,
+    TYPE_MAD_SKILL              = 3,
+    TYPE_INSANITY               = 4,
+    TYPE_DEDICATED_INSANITY     = 5,
+    TYPE_IMMORTALITY            = 6,
+    MAX_SPECIAL_ACHIEV_CRITS    = 7,
 
     NPC_BARRENT                 = 34816,
     NPC_TIRION                  = 34996,
@@ -128,6 +128,9 @@ enum
     TYPE_EVENT_NPC              = 103,
     TYPE_NORTHREND_BEASTS       = 104,
     TYPE_CRUSADERS_COUNT        = 105,
+    TYPE_CRUSADERS_DEAD         = 106,
+    TYPE_CRUSADERS_ACHIEV_TIMER = 107,
+    TYPE_CRUSADERS_ACHIEV_FAIL  = 108,
 
     DATA_HEALTH_EYDIS           = 201,
     DATA_HEALTH_FJOLA           = 202,
@@ -135,25 +138,39 @@ enum
     DESPAWN_TIME                = 300000,
 
     CRITERIA_ACHIEV_UPPER_BACK_PAIN_10N             = 11779,
+    CRITERIA_ACHIEV_UPPER_BACK_PAIN_10H             = 11802,
     CRITERIA_ACHIEV_UPPER_BACK_PAIN_25N             = 11780,
+    CRITERIA_ACHIEV_UPPER_BACK_PAIN_25H             = 11801,
 
-    CRITERIA_ACHIEV_SIXTY_PAIN_SPIKE_10N            = 11838,
-    CRITERIA_ACHIEV_SIXTY_PAIN_SPIKE_25N            = 11839,
+    CRITERIA_ACHIEV_THREE_SIXTY_PAIN_SPIKE_10N      = 11838,
+    CRITERIA_ACHIEV_THREE_SIXTY_PAIN_SPIKE_10H      = 11861,
+    CRITERIA_ACHIEV_THREE_SIXTY_PAIN_SPIKE_25N      = 11839,
+    CRITERIA_ACHIEV_THREE_SIXTY_PAIN_SPIKE_25H      = 11862,
 
-    CRITERIA_ACHIEV_SALT_AND_PEPPER_10N             = 11778,
-    CRITERIA_ACHIEV_SALT_AND_PEPPER_10H             = 12258,
-    CRITERIA_ACHIEV_SALT_AND_PEPPER_25N             = 11818,
-    CRITERIA_ACHIEV_SALT_AND_PEPPER_25H             = 11860,
+    CRITERIA_ACHIEV_TRIBUTE_TO_SKILL_10_1           = 12344,
+    CRITERIA_ACHIEV_TRIBUTE_TO_SKILL_10_2           = 12345,
+//  CRITERIA_ACHIEV_TRIBUTE_TO_SKILL_10_3           = 12346,    // should be ignoring
+    CRITERIA_ACHIEV_TRIBUTE_TO_SKILL_25_1           = 12338,
+    CRITERIA_ACHIEV_TRIBUTE_TO_SKILL_25_2           = 12339,
+//  CRITERIA_ACHIEV_TRIBUTE_TO_SKILL_25_3           = 12340,    // should be ignoring
 
-    CRITERIA_ACHIEV_TRIBUTE_TO_SKILL_10             = 12344,
-    CRITERIA_ACHIEV_TRIBUTE_TO_SKILL_25             = 12338,
-    CRITERIA_ACHIEV_TRIBUTE_TO_MAD_SKILL_10         = 12347,
-    CRITERIA_ACHIEV_TRIBUTE_TO_MAD_SKILL_25         = 12341,
+    CRITERIA_ACHIEV_TRIBUTE_TO_MAD_SKILL_10_1       = 12347,
+    CRITERIA_ACHIEV_TRIBUTE_TO_MAD_SKILL_10_2       = 12348,
+    CRITERIA_ACHIEV_TRIBUTE_TO_MAD_SKILL_25_1       = 12341,
+    CRITERIA_ACHIEV_TRIBUTE_TO_MAD_SKILL_25_2       = 12342,
+
     CRITERIA_ACHIEV_TRIBUTE_TO_INSANITY_10          = 12349,
     CRITERIA_ACHIEV_TRIBUTE_TO_INSANITY_25          = 12343,
+
     CRITERIA_ACHIEV_TRIBUTE_TO_IMMORTALITY_HORDE    = 12247,
     CRITERIA_ACHIEV_TRIBUTE_TO_IMMORTALITY_ALLY     = 12359,
     CRITERIA_ACHIEV_TRIBUTE_TO_DEDICATED_INSANITY   = 12360,
+
+    SPELL_ACHIEV_FACTION_CHAMPIONS_DEFEAT           = 68184,
+    SPELL_ACHIEV_NOT_ONE_BUT_TWO_JORMUNGARS         = 68523,
+    SPELL_ACHIEV_RESILIENCE_WILL_FIX_IT             = 68620,
+
+    TIMER_ACHIEV_SALT_AND_PEPPER                    = 21853,
 };
 
 static Locations SpawnLoc[]=
@@ -291,6 +308,9 @@ private:
     uint32 m_uiTributeChest4;
 
     uint32 m_auiCrusadersCount;
+    uint32 m_auiCrusadersDead;
+    uint32 m_auiCrusadersAchievTimer;
+    uint32 m_auiCrusadersAchievFail;
 };
 
 #endif

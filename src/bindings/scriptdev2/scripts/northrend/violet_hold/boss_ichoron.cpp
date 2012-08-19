@@ -65,7 +65,7 @@ struct MANGOS_DLL_DECL boss_ichoronAI : public ScriptedAI
         Reset();
     }
     ScriptedInstance *m_pInstance;
-    std::list<ObjectGuid> m_lWaterElementsGUIDList;
+    std::list<ObjectGuid> m_lWaterElementsGuidList;
 
     bool m_bIsRegularMode;
     bool m_bIsExploded;
@@ -164,14 +164,14 @@ struct MANGOS_DLL_DECL boss_ichoronAI : public ScriptedAI
         pSummoned->SetSpeedRate(MOVE_RUN, 0.2f);
         pSummoned->GetMotionMaster()->MoveFollow(m_creature, 0, 0);
         pSummoned->CastSpell(pSummoned, SPELL_WATER_GLOBULE, false);
-        m_lWaterElementsGUIDList.push_back(pSummoned->GetObjectGuid());
+        m_lWaterElementsGuidList.push_back(pSummoned->GetObjectGuid());
     }
    void DespawnWaterElements()
     {
-        if (m_lWaterElementsGUIDList.empty())
+        if (m_lWaterElementsGuidList.empty())
             return;
 
-        for(std::list<ObjectGuid>::iterator itr = m_lWaterElementsGUIDList.begin(); itr != m_lWaterElementsGUIDList.end(); ++itr)
+        for(std::list<ObjectGuid>::iterator itr = m_lWaterElementsGuidList.begin(); itr != m_lWaterElementsGuidList.end(); ++itr)
         {
             if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
             {
@@ -181,7 +181,7 @@ struct MANGOS_DLL_DECL boss_ichoronAI : public ScriptedAI
             }
         }
 
-        m_lWaterElementsGUIDList.clear();
+        m_lWaterElementsGuidList.clear();
     }
 
     void StartMovement(uint32 id)

@@ -158,7 +158,7 @@ class PacketFilter
         explicit PacketFilter(WorldSession * pSession) : m_pSession(pSession) {}
         virtual ~PacketFilter() {}
 
-        virtual bool Process(WorldPacket * packet) { return true; }
+        virtual bool Process(WorldPacket* /*packet*/) { return true; }
         virtual bool ProcessLogout() const { return true; }
 
     protected:
@@ -210,7 +210,8 @@ class MANGOS_DLL_SPEC WorldSession
         void SendNotification(int32 string_id,...);
         void SendPetNameInvalid(uint32 error, const std::string& name, DeclinedName *declinedName);
         void SendPartyResult(PartyOperation operation, const std::string& member, PartyResult res);
-        void SendAreaTriggerMessage(const char* Text, ...) ATTR_PRINTF(2,3);
+        void SendGroupInvite(Player* player, bool alreadyInGroup = false);
+        void SendAreaTriggerMessage(const char* Text, ...) ATTR_PRINTF(2, 3);
         void SendSetPhaseShift(uint32 phaseShift);
         void SendQueryTimeResponse();
         void SendRedirectClient(std::string& ip, uint16 port);
@@ -272,8 +273,6 @@ class MANGOS_DLL_SPEC WorldSession
         void SendGMTicketGetTicket(uint32 status, GMTicket *ticket = NULL);
         void SendGMResponse(GMTicket *ticket);
 
-        void SendAttackStop(Unit const* enemy);
-
         void SendBattlegGroundList(ObjectGuid guid, BattleGroundTypeId bgTypeId);
 
         void SendTradeStatus(TradeStatus status);
@@ -333,9 +332,10 @@ class MANGOS_DLL_SPEC WorldSession
 
         //Taxi
         void SendTaxiStatus(ObjectGuid guid);
-        void SendTaxiMenu( Creature* unit );
-        void SendDoFlight( uint32 mountDisplayId, uint32 path, uint32 pathNode = 0 );
-        bool SendLearnNewTaxiNode( Creature* unit );
+        void SendTaxiMenu(Creature* unit);
+        void SendDoFlight(uint32 mountDisplayId, uint32 path, uint32 pathNode = 0);
+        bool SendLearnNewTaxiNode(Creature* unit);
+        void SendActivateTaxiReply(ActivateTaxiReply reply);
 
         // Guild/Arena Team
         void SendGuildCommandResult(uint32 typecmd, const std::string& str, uint32 cmdresult);
@@ -756,6 +756,7 @@ class MANGOS_DLL_SPEC WorldSession
         void HandleHearthandResurrect(WorldPacket & recv_data);
         void HandleInstanceLockResponse(WorldPacket& recv_data);
         void HandleSetSavedInstanceExtend(WorldPacket& recv_data);
+        void HandleUpdateMissileTrajectory(WorldPacket& recv_data);
 
         // Arena Team
         void HandleInspectArenaTeamsOpcode(WorldPacket& recv_data);
@@ -796,7 +797,6 @@ class MANGOS_DLL_SPEC WorldSession
         void HandleGuildBankDepositMoney(WorldPacket& recv_data);
         void HandleGuildBankWithdrawMoney(WorldPacket& recv_data);
         void HandleGuildBankSwapItems(WorldPacket& recv_data);
-
         void HandleGuildBankUpdateTab(WorldPacket& recv_data);
         void HandleGuildBankBuyTab(WorldPacket& recv_data);
         void HandleQueryGuildBankTabText(WorldPacket& recv_data);

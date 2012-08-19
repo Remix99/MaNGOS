@@ -113,8 +113,7 @@ void instance_halls_of_stone::SetData(uint32 uiType, uint32 uiData)
                     SortFaces();
                     break;
                 case DONE:
-                    if (GameObject* pChest = GetSingleGameObjectFromStorage(instance->IsRegularDifficulty() ? GO_TRIBUNAL_CHEST : GO_TRIBUNAL_CHEST_H))
-                        pChest->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_NO_INTERACT);
+                    DoToggleGameObjectFlags(instance->IsRegularDifficulty() ? GO_TRIBUNAL_CHEST : GO_TRIBUNAL_CHEST_H, GO_FLAG_NO_INTERACT, false);
                     // Door workaround because of the missing Bran event
                     DoUseDoorOrButton(GO_DOOR_SJONNIR);
                     break;
@@ -186,10 +185,10 @@ struct SortHelper
 };
 
 // Small Helper-function
-static void GetValidNPCsOfList(Map* pMap, GUIDList& lGUIDs, std::list<Creature*>& lNPCs)
+static void GetValidNPCsOfList(Map* pMap, GuidList& lGUIDs, std::list<Creature*>& lNPCs)
 {
     lNPCs.clear();
-    for (GUIDList::const_iterator itr = lGUIDs.begin(); itr != lGUIDs.end(); ++itr)
+    for (GuidList::const_iterator itr = lGUIDs.begin(); itr != lGUIDs.end(); ++itr)
     {
         if (Creature* pMob = pMap->GetCreature(*itr))
             lNPCs.push_back(pMob);

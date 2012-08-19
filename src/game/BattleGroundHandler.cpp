@@ -204,7 +204,7 @@ void WorldSession::HandleBattlemasterJoinOpcode( WorldPacket & recv_data )
     BattleGroundQueue& bgQueue = sBattleGroundMgr.m_BattleGroundQueues[bgQueueTypeId];
     if (joinAsGroup)
     {
-        GroupQueueInfo *ginfo = NULL;
+        GroupQueueInfo* ginfo = NULL;
         uint32 avgTime = 0;
 
         if(err > 0)
@@ -557,6 +557,7 @@ void WorldSession::HandleBattlefieldStatusOpcode( WorldPacket & /*recv_data*/ )
         BattleGroundQueueTypeId bgQueueTypeId = _player->GetBattleGroundQueueTypeId(i);
         if (!bgQueueTypeId)
             continue;
+
         BattleGroundTypeId bgTypeId = BattleGroundMgr::BGTemplateId(bgQueueTypeId);
         ArenaType arenaType = BattleGroundMgr::BGArenaType(bgQueueTypeId);
         if (bgTypeId == _player->GetBattleGroundTypeId())

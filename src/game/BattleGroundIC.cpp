@@ -335,6 +335,7 @@ int32 BattleGroundIC::_GetNodeNameId(uint8 node)
         case BG_IC_NODE_H_KEEP:   return LANG_BG_IC_HORDE_KEEP;
         default:
             MANGOS_ASSERT(0);
+            break;
     }
     return 0;
 }
@@ -360,24 +361,24 @@ void BattleGroundIC::UpdatePlayerScore(Player* Source, uint32 type, uint32 value
     }
 }
 
-void BattleGroundIC::FillInitialWorldStates(WorldPacket& data, uint32& count)
+void BattleGroundIC::FillInitialWorldStates()
 {
-    FillInitialWorldState(data, count, BG_TEAM_ALLIANCE_REINFORC_SET, BG_TEAM_ALLIANCE_REINFORC_SET);
-    FillInitialWorldState(data, count, BG_TEAM_HORDE_RENFORC_SET,     BG_TEAM_HORDE_RENFORC_SET);
-    FillInitialWorldState(data, count, BG_TEAM_ALLIANCE_REINFORC,     m_TeamScores[TEAM_INDEX_ALLIANCE]);
-    FillInitialWorldState(data, count, BG_TEAM_HORDE_REINFORC,        m_TeamScores[TEAM_INDEX_HORDE]);
+    FillInitialWorldState(BG_TEAM_ALLIANCE_REINFORC_SET, BG_TEAM_ALLIANCE_REINFORC_SET);
+    FillInitialWorldState(BG_TEAM_HORDE_RENFORC_SET,     BG_TEAM_HORDE_RENFORC_SET);
+    FillInitialWorldState(BG_TEAM_ALLIANCE_REINFORC,     m_TeamScores[TEAM_INDEX_ALLIANCE]);
+    FillInitialWorldState(BG_TEAM_HORDE_REINFORC,        m_TeamScores[TEAM_INDEX_HORDE]);
 
     // Gate icons
     for (uint8 z = 0; z < BG_IC_GATE_MAX; ++z)
-        FillInitialWorldState(data, count, BG_IC_GateStatus[z][GateStatus[z] == BG_IC_GO_GATES_DAMAGE ? 1 : 0], 1);
+        FillInitialWorldState(BG_IC_GateStatus[z][GateStatus[z] == BG_IC_GO_GATES_DAMAGE ? 1 : 0], 1);
 
     // Node icons
     for (uint8 node = 0; node < BG_IC_NODES_MAX; ++node)
-        FillInitialWorldState(data, count, BG_IC_OP_NODEICONS[node], m_Nodes[node] == 0);
+        FillInitialWorldState( BG_IC_OP_NODEICONS[node], m_Nodes[node] == 0);
 
     for (uint8 i = 0; i < BG_IC_NODES_MAX; ++i)
         for (uint8 j = 0; j < 4; j++)
-            FillInitialWorldState(data, count, BG_IC_NodeWorldStates[i][j], m_Nodes[i] == (j + 1));
+            FillInitialWorldState(BG_IC_NodeWorldStates[i][j], m_Nodes[i] == (j + 1));
 }
 
 bool BattleGroundIC::SetupBattleGround()
@@ -394,7 +395,8 @@ bool BattleGroundIC::SetupBattleGround()
     //Send transport init packet to all player in map
     for (BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end();itr++)
     {
-        if (Player* player = sObjectMgr.GetPlayer(itr->first))
+        Player* player = sObjectMgr.GetPlayer(itr->first);
+        if (player)
             SendTransportInit(player);
     }
 
@@ -827,7 +829,8 @@ void BattleGroundIC::HandleBuffs()
 {
     for (BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
     {
-        if (Player *plr = sObjectMgr.GetPlayer(itr->first))
+        Player *plr = sObjectMgr.GetPlayer(itr->first);
+        if (plr)
         {
             // quarry / refinery buffs
             for (uint8 node = BG_IC_NODE_QUARRY; node <= BG_IC_NODE_REFINERY; node++)
@@ -869,6 +872,7 @@ uint32 BattleGroundIC::GetCorrectFactionIC(uint8 vehicleType) const
 
             else if (m_Nodes[BG_IC_NODE_WORKSHOP] == BG_IC_NODE_STATUS_HORDE_OCCUPIED)
                 return VEHICLE_FACTION_HORDE;
+            break;
         }
         case VEHICLE_IC_CATAPULT:
         {
@@ -877,9 +881,10 @@ uint32 BattleGroundIC::GetCorrectFactionIC(uint8 vehicleType) const
 
             else if (m_Nodes[BG_IC_NODE_DOCKS] == BG_IC_NODE_STATUS_HORDE_OCCUPIED)
                 return VEHICLE_FACTION_HORDE;
+            break;
         }
         default:
-            return VEHICLE_FACTION_NEUTRAL;
+            break;
     }
     return VEHICLE_FACTION_NEUTRAL;
 }
