@@ -461,7 +461,6 @@ extern void AddSC_boss_skarvald_and_dalronn();
 extern void AddSC_instance_utgarde_keep();
 extern void AddSC_utgarde_keep();
 extern void AddSC_boss_gortok();                           // utgarde_keep, utgarde_pinnacle
-extern void AddSC_boss_skadi();
 extern void AddSC_boss_svala();
 extern void AddSC_boss_ymiron();
 extern void AddSC_instance_pinnacle();
@@ -1033,7 +1032,6 @@ void AddScripts()
     AddSC_instance_utgarde_keep();
     AddSC_utgarde_keep();
     AddSC_boss_gortok();                                    // UK, utgarde_pinnacle
-    AddSC_boss_skadi();
     AddSC_boss_svala();
     AddSC_boss_ymiron();
     AddSC_instance_pinnacle();
