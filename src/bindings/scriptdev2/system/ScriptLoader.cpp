@@ -444,7 +444,6 @@ extern void AddSC_boss_general_vezax();
 extern void AddSC_boss_hodir();
 extern void AddSC_boss_ignis();
 extern void AddSC_boss_kologarn();
-extern void AddSC_boss_mimiron();
 extern void AddSC_boss_razorscale();
 extern void AddSC_boss_thorim();
 extern void AddSC_boss_xt002();
@@ -1012,7 +1011,6 @@ void AddScripts()
     AddSC_boss_hodir();
     AddSC_boss_ignis();
     AddSC_boss_kologarn();
-    AddSC_boss_mimiron();
     AddSC_boss_razorscale();
     AddSC_boss_thorim();
     AddSC_boss_xt002();
